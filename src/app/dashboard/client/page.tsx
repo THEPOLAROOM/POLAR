@@ -1,27 +1,25 @@
-import { requireAuth } from "@/lib/auth/require-role";
+import { requireRole } from "@/lib/auth/require-role";
 import { logout } from "@/lib/actions/auth";
 
-// Server-side auth check happens FIRST, before anything else runs.
-// An unauthenticated request never reaches the content below.
 export default async function ClientDashboardPage() {
-  const { user } = await requireAuth();
+  const { user } = await requireRole("client");
 
   return (
     <main className="mx-auto max-w-xl px-6 py-16">
-      <h1 className="text-xl font-semibold text-polar-text">
+      <h1 className="text-xl font-semibold">
         Client Dashboard — Stage 3
       </h1>
-      <p className="mt-2 text-sm text-polar-muted">Signed in as {user.email}.</p>
-      <p className="mt-4 text-xs text-polar-muted">
-        Functional placeholder only. Client Profile Card, booking and other
-        client features are built in later stages.
+
+      <p className="mt-2 text-sm">
+        Signed in as {user.email}.
+      </p>
+
+      <p className="mt-4 text-sm">
+        Client role confirmed server-side.
       </p>
 
       <form action={logout} className="mt-6">
-        <button
-          type="submit"
-          className="rounded border border-polar-border px-4 py-2 text-sm text-polar-text"
-        >
+        <button type="submit">
           Log out
         </button>
       </form>
