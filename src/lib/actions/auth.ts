@@ -62,6 +62,7 @@ export async function signUpClient(formData: FormData): Promise<ActionResult> {
     email,
     password,
     options: {
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
       data: {
         full_name: fullName,
         phone,
@@ -159,6 +160,7 @@ export async function signUpBarber(formData: FormData): Promise<ActionResult> {
     email,
     password,
     options: {
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
       data: {
         full_name: fullName,
         phone,
