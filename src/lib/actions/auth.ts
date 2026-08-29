@@ -254,5 +254,11 @@ export async function resendVerification(formData: FormData): Promise<ActionResu
   const supabase = await createClient();
   // Errors are intentionally not surfaced in detail here (e.g. "no such
   // account") to avoid confirming which emails have POLAR accounts.
-  await supabase.auth.resend({ type: "signup", email });
+  await supabase.auth.resend({
+  type: "signup",
+  email,
+  options: {
+    emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+  },
+});
 }
