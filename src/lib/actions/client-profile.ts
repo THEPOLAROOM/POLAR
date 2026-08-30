@@ -1,6 +1,5 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth/require-role";
 
 type ActionResult = { error: string } | void;
@@ -43,5 +42,8 @@ export async function updateClientProfileDetails(
     return { error: error.message };
   }
 
-  revalidatePath(`/dashboard/barber/clients/${clientId}`);
+  // No revalidatePath: this route already reads cookies/auth on every
+  // request (fully dynamic), and calling it here raced the client's
+  // own post-save "Saved" state with an automatic router refresh,
+  // clobbering it before it could render.
 }
