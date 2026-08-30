@@ -1,0 +1,60 @@
+"use client";
+
+import { useState } from "react";
+import { updateClientProfileDetails } from "@/lib/actions/client-profile";
+import { SubmitButton } from "@/components/form";
+import type { ClientProfileDetails } from "@/lib/types";
+
+const FIELDS: { name: keyof ClientProfileDetails; label: string }[] = [
+  { name: "hair_type", label: "Hair type" },
+  { name: "hair_colour", label: "Hair colour" },
+  { name: "scalp_condition", label: "Scalp condition" },
+  { name: "skin_sensitivity", label: "Skin sensitivity" },
+  { name: "allergies", label: "Allergies" },
+  { name: "emergency_contact", label: "Emergency contact" },
+];
+
+export function ClientDetailsForm({
+  clientId,
+  details,
+}: {
+  clientId: string;
+  details: ClientProfileDetails | null;
+}) {
+  const [error, setError] = useState<string | null>(null);
+  const [pending, setPending] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+    setPending(true);
+    const formData = new FormData(e.currentTarget);
+    const result = await updateClientProfileDetails(formData);
+    setPending(false);
+    if (result && "error" in result) setError(result.error);
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="mt-2 space-y-4">
+      <input type="hidden" name="client_id" value={clientId} />
+
+      {FIELDS.map(({ name, label }) => (
+        <label key={name} className="block text-sm">
+          <span className="mb-1 block font-medium text-polar-text">
+            {label}
+          </span>
+          <input
+            name={name}
+            type="text"
+            defaultValue={details?.[name] ?? ""}
+            className="w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm outline-none focus:border-polar-text"
+          />
+        </label>
+      ))}
+
+      {error && <p className="text-sm text-polar-danger">{error}</p>}
+
+      <SubmitButton pending={pending} label="Save" pendingLabel="Saving…" />
+    </form>
+  );
+}

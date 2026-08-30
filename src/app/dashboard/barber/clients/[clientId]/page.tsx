@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/auth/require-role";
 import type { ClientProfileDetails, CustomFieldDefinition } from "@/lib/types";
+import { ClientDetailsForm } from "./client-details-form";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -77,32 +78,7 @@ export default async function ClientProfileCardPage({
         <h2 className="text-sm font-semibold text-polar-text">
           Client Details
         </h2>
-        {clientDetails ? (
-          <dl className="mt-2 space-y-1 text-sm text-polar-muted">
-            <DetailRow label="Hair type" value={clientDetails.hair_type} />
-            <DetailRow
-              label="Hair colour"
-              value={clientDetails.hair_colour}
-            />
-            <DetailRow
-              label="Scalp condition"
-              value={clientDetails.scalp_condition}
-            />
-            <DetailRow
-              label="Skin sensitivity"
-              value={clientDetails.skin_sensitivity}
-            />
-            <DetailRow label="Allergies" value={clientDetails.allergies} />
-            <DetailRow
-              label="Emergency contact"
-              value={clientDetails.emergency_contact}
-            />
-          </dl>
-        ) : (
-          <p className="mt-2 text-sm text-polar-muted">
-            No client details recorded yet.
-          </p>
-        )}
+        <ClientDetailsForm clientId={clientId} details={clientDetails} />
       </section>
 
       <section className="mt-8">
@@ -125,15 +101,6 @@ export default async function ClientProfileCardPage({
         )}
       </section>
     </main>
-  );
-}
-
-function DetailRow({ label, value }: { label: string; value: string | null }) {
-  return (
-    <div className="flex justify-between gap-4">
-      <dt>{label}</dt>
-      <dd>{value || "—"}</dd>
-    </div>
   );
 }
 
