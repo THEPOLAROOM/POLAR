@@ -23,15 +23,21 @@ export function ClientDetailsForm({
 }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
+    setSaved(false);
     setPending(true);
     const formData = new FormData(e.currentTarget);
     const result = await updateClientProfileDetails(formData);
     setPending(false);
-    if (result && "error" in result) setError(result.error);
+    if (result && "error" in result) {
+      setError(result.error);
+    } else {
+      setSaved(true);
+    }
   }
 
   return (
@@ -53,6 +59,7 @@ export function ClientDetailsForm({
       ))}
 
       {error && <p className="text-sm text-polar-danger">{error}</p>}
+      {saved && !error && <p className="text-sm text-polar-success">Saved</p>}
 
       <SubmitButton pending={pending} label="Save" pendingLabel="Saving…" />
     </form>
