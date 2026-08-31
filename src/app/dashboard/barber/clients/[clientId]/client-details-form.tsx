@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { updateClientProfileDetails } from "@/lib/actions/client-profile";
 import { SubmitButton } from "@/components/form";
 import type { ClientProfileDetails } from "@/lib/types";
@@ -24,20 +24,27 @@ export function ClientDetailsForm({
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [, startTransition] = useTransition();
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    const formData = new FormData(e.currentTarget);
     setError(null);
     setSaved(false);
     setPending(true);
-    const formData = new FormData(e.currentTarget);
-    const result = await updateClientProfileDetails(formData);
-    setPending(false);
-    if (result && "error" in result) {
-      setError(result.error);
-    } else {
-      setSaved(true);
-    }
+    // Server Functions invoked from an event handler (rather than a
+    // form's action prop) need to run inside a transition — otherwise
+    // the state update that depends on the resolved result isn't
+    // reliably applied. See React's Server Functions docs.
+    startTransition(async () => {
+      const result = await updateClientProfileDetails(formData);
+      setPending(false);
+      if (result && "error" in result) {
+        setError(result.error);
+      } else {
+        setSaved(true);
+      }
+    });
   }
 
   return (
