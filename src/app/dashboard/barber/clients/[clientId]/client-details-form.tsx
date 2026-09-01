@@ -5,8 +5,26 @@ import { updateClientProfileDetails } from "@/lib/actions/client-profile";
 import { SubmitButton } from "@/components/form";
 import type { ClientProfileDetails } from "@/lib/types";
 
-const FIELDS: { name: keyof ClientProfileDetails; label: string }[] = [
-  { name: "hair_type", label: "Hair type" },
+const HAIR_TYPE_OPTIONS = [
+  { value: "straight", label: "Straight" },
+  { value: "wavy", label: "Wavy" },
+  { value: "curly", label: "Curly" },
+  { value: "coily", label: "Coily" },
+];
+
+const HAIR_DENSITY_OPTIONS = [
+  { value: "low", label: "Low" },
+  { value: "normal", label: "Normal" },
+  { value: "high", label: "High" },
+];
+
+const FIELDS: {
+  name: keyof ClientProfileDetails;
+  label: string;
+  options?: { value: string; label: string }[];
+}[] = [
+  { name: "hair_type", label: "Hair type", options: HAIR_TYPE_OPTIONS },
+  { name: "hair_density", label: "Hair density", options: HAIR_DENSITY_OPTIONS },
   { name: "hair_colour", label: "Hair colour" },
   { name: "scalp_condition", label: "Scalp condition" },
   { name: "skin_sensitivity", label: "Skin sensitivity" },
@@ -51,17 +69,37 @@ export function ClientDetailsForm({
     <form onSubmit={handleSubmit} className="mt-2 space-y-4">
       <input type="hidden" name="client_id" value={clientId} />
 
-      {FIELDS.map(({ name, label }) => (
+      {FIELDS.map(({ name, label, options }) => (
         <label key={name} className="block text-sm">
           <span className="mb-1 block font-medium text-polar-text">
             {label}
           </span>
-          <input
-            name={name}
-            type="text"
-            defaultValue={details?.[name] ?? ""}
-            className="w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm outline-none focus:border-polar-text"
-          />
+          {options ? (
+            <select
+              name={name}
+              defaultValue={details?.[name] ?? ""}
+              className="w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm outline-none focus:border-polar-text"
+            >
+              {/* Placeholder is intentionally first: an existing value
+                  that doesn't match one of these options (unset, or a
+                  legacy free-text value) safely falls back to this
+                  rather than silently landing on — and then saving
+                  over the data with — the first real option. */}
+              <option value="">—</option>
+              {options.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <input
+              name={name}
+              type="text"
+              defaultValue={details?.[name] ?? ""}
+              className="w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm outline-none focus:border-polar-text"
+            />
+          )}
         </label>
       ))}
 

@@ -30,6 +30,7 @@ export async function updateClientProfileDetails(
   const { error } = await supabase.from("client_profile_details").upsert({
     profile_id: clientId,
     hair_type: readOptionalText(formData, "hair_type"),
+    hair_density: readOptionalText(formData, "hair_density"),
     hair_colour: readOptionalText(formData, "hair_colour"),
     scalp_condition: readOptionalText(formData, "scalp_condition"),
     skin_sensitivity: readOptionalText(formData, "skin_sensitivity"),

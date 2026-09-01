@@ -15,6 +15,7 @@ export type CustomFieldType =
 
 export interface ClientProfileDetails {
   hair_type: string | null;
+  hair_density: string | null;
   hair_colour: string | null;
   scalp_condition: string | null;
   skin_sensitivity: string | null;
