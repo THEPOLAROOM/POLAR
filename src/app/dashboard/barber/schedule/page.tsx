@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireRole } from "@/lib/auth/require-role";
 import { getBarberBookingsForDate } from "@/lib/queries/barber-schedule";
+import { CancelBookingButton } from "./cancel-booking-button";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -10,20 +11,10 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 // schedule — via the existing "bookings: barber reads own" RLS
 // policy, no new access.
 //
-// TASK 2 BLOCKER (barber booking management), recorded rather than
-// worked around: the existing architecture gives a barber no safe way
-// to cancel or reschedule a booking from here.
-//   - cancel_booking() hard-checks client_profile_id = auth.uid(), so
-//     a barber calling it can never match a row — it always returns
-//     false for them, by design.
-//   - create_or_reschedule_booking() hard-rejects any caller who
-//     isn't has_role('client') before doing anything else.
-//   - bookings has no UPDATE/DELETE RLS policy for the barber role at
-//     all — only the two barber SELECT policies exist.
-// Adding barber-side cancel/reschedule would need a new RPC (or a new
-// RLS policy) — a genuine schema/RLS decision, not something to
-// improvise here. The only control added below is a link to the
-// client's existing Profile Card, which needs no new access.
+// Cancel/reschedule use the dedicated barber-only RPCs
+// (cancel_booking_as_barber / reschedule_booking_as_barber) — the
+// client-facing cancel_booking()/create_or_reschedule_booking() are
+// untouched and remain client-only, exactly as before.
 export default async function BarberSchedulePage({
   searchParams,
 }: {
@@ -79,12 +70,21 @@ export default async function BarberSchedulePage({
                   {booking.recurrence === "weekly" ? "Weekly" : "One-off"}
                 </span>
               </div>
-              <Link
-                href={`/dashboard/barber/clients/${booking.clientProfileId}`}
-                className="rounded border border-polar-border px-3 py-1 text-xs text-polar-text"
-              >
-                View client
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link
+                  href={`/dashboard/barber/clients/${booking.clientProfileId}`}
+                  className="rounded border border-polar-border px-3 py-1 text-xs text-polar-text"
+                >
+                  View client
+                </Link>
+                <Link
+                  href={`/dashboard/barber/schedule/${booking.id}/reschedule`}
+                  className="rounded border border-polar-border px-3 py-1 text-xs text-polar-text"
+                >
+                  Reschedule
+                </Link>
+                <CancelBookingButton bookingId={booking.id} />
+              </div>
             </li>
           ))}
         </ul>
