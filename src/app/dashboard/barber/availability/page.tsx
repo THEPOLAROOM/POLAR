@@ -1,4 +1,5 @@
 import { requireRole } from "@/lib/auth/require-role";
+import { getShopToday, formatTime12h } from "@/lib/dates";
 import { AddSlotForm } from "./add-slot-form";
 import { ToggleSlotButton } from "./toggle-slot-button";
 
@@ -27,6 +28,7 @@ export default async function BarberAvailabilityPage() {
     .order("start_time", { ascending: true });
 
   const availability = slots ?? [];
+  const today = getShopToday();
 
   return (
     <main className="mx-auto max-w-xl px-6 py-16">
@@ -34,7 +36,7 @@ export default async function BarberAvailabilityPage() {
 
       <section className="mt-8">
         <h2 className="text-sm font-semibold text-polar-text">Add a slot</h2>
-        <AddSlotForm />
+        <AddSlotForm today={today} />
       </section>
 
       <section className="mt-8">
@@ -50,7 +52,8 @@ export default async function BarberAvailabilityPage() {
               >
                 <div className="text-sm text-polar-text">
                   {DAY_LABELS[slot.day_of_week]}{" "}
-                  {slot.start_time.slice(0, 5)}–{slot.end_time.slice(0, 5)}
+                  {formatTime12h(slot.start_time)}–
+                  {formatTime12h(slot.end_time)}
                   <span className="ml-2 text-xs text-polar-muted">
                     {slot.is_active ? "Active" : "Inactive"}
                   </span>

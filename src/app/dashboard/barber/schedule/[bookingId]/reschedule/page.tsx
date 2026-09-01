@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/auth/require-role";
 import { getBarberBookingsForDate } from "@/lib/queries/barber-schedule";
-import { getShopToday } from "@/lib/dates";
+import { getShopToday, formatTime12h } from "@/lib/dates";
 import { RescheduleSlotForm } from "./reschedule-slot-form";
 
 const UUID_RE =
@@ -120,7 +120,7 @@ export default async function BarberRescheduleBookingPage({
                 className="flex items-center justify-between gap-4 rounded border border-polar-border px-3 py-2"
               >
                 <span className="text-sm text-polar-text">
-                  {slot.start_time.slice(0, 5)}–{slot.end_time.slice(0, 5)}
+                  {formatTime12h(slot.start_time)}–{formatTime12h(slot.end_time)}
                 </span>
                 {occupiedBy ? (
                   <span className="text-xs font-medium text-polar-muted">

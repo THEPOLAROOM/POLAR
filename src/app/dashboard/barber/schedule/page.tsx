@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireRole } from "@/lib/auth/require-role";
 import { getBarberBookingsForDate } from "@/lib/queries/barber-schedule";
-import { getShopToday } from "@/lib/dates";
+import { getShopToday, formatTime12h } from "@/lib/dates";
 import { CancelBookingButton } from "./cancel-booking-button";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -65,7 +65,8 @@ export default async function BarberSchedulePage({
               className="flex items-center justify-between gap-4 rounded border border-polar-border px-3 py-2"
             >
               <div className="text-sm text-polar-text">
-                {booking.startTime.slice(0, 5)}–{booking.endTime.slice(0, 5)}{" "}
+                {formatTime12h(booking.startTime)}–
+                {formatTime12h(booking.endTime)}{" "}
                 — {booking.clientName}
                 <span className="ml-2 text-xs text-polar-muted">
                   {booking.recurrence === "weekly" ? "Weekly" : "One-off"}

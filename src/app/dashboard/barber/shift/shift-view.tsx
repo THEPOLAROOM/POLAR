@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { ScheduledBooking } from "@/lib/queries/barber-schedule";
+import { formatTime12h } from "@/lib/dates";
 
 const DELAY_OPTIONS_MINUTES = [5, 10, 15, 30];
 
@@ -60,7 +61,8 @@ export function ShiftView({ bookings }: { bookings: ScheduledBooking[] }) {
     <div className="mt-6 space-y-4">
       <div className="rounded border border-polar-border px-3 py-2">
         <p className="text-sm text-polar-text">
-          {current.startTime.slice(0, 5)}–{current.endTime.slice(0, 5)} —{" "}
+          {formatTime12h(current.startTime)}–{formatTime12h(current.endTime)}{" "}
+          —{" "}
           {current.clientName}
         </p>
         <p className="text-xs text-polar-muted">

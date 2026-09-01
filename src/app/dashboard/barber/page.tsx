@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { requireRole } from "@/lib/auth/require-role";
 import { getBarberBookingsForDate } from "@/lib/queries/barber-schedule";
-import { getShopToday } from "@/lib/dates";
+import { getShopToday, formatTime12h } from "@/lib/dates";
 
 const QUICK_LINKS = [
   { href: "/dashboard/barber/schedule", label: "Schedule" },
@@ -49,8 +49,8 @@ export default async function BarberDashboardPage() {
                   className="flex items-center justify-between text-sm text-polar-text"
                 >
                   <span>
-                    {booking.startTime.slice(0, 5)}–
-                    {booking.endTime.slice(0, 5)} — {booking.clientName}
+                    {formatTime12h(booking.startTime)}–
+                    {formatTime12h(booking.endTime)} — {booking.clientName}
                   </span>
                   <span className="text-xs text-polar-muted">
                     {booking.recurrence === "weekly" ? "Weekly" : "One-off"}

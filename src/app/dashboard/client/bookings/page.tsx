@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireRole } from "@/lib/auth/require-role";
 import { POLAR_BARBER_PROFILE_ID } from "@/lib/config";
+import { formatTime12h } from "@/lib/dates";
 import { CancelBookingButton } from "./cancel-booking-button";
 
 const DAY_LABELS = [
@@ -92,7 +93,8 @@ export default async function MyBookingsPage() {
                   ) : (
                     <>{booking.start_date}</>
                   )}{" "}
-                  {booking.start_time.slice(0, 5)}–{booking.end_time.slice(0, 5)}
+                  {formatTime12h(booking.start_time)}–
+                  {formatTime12h(booking.end_time)}
                 </div>
                 <div className="mt-1 text-xs text-polar-muted">
                   {booking.status === "confirmed" ? "Confirmed" : "Cancelled"}
