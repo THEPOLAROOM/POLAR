@@ -1,14 +1,13 @@
 import { requireRole } from "@/lib/auth/require-role";
+import { POLAR_BARBER_PROFILE_ID } from "@/lib/config";
 import { BookSlotForm } from "./book-slot-form";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 // Server-side ROLE check happens FIRST, same as every other protected
-// dashboard page. Solo-barber V1: the barber to book with is resolved
-// from any active barber_availability row, since a client is already
-// permitted to read those under the existing "any client reads
-// active" RLS policy — no barber directory/search, and no new
-// schema/RLS/function was needed for this.
+// dashboard page. Solo-barber V1: the barber to book with is the
+// fixed POLAR_BARBER_PROFILE_ID — no barber directory/search, and no
+// implicit resolution from readable data.
 export default async function ClientBookingPage({
   searchParams,
 }: {
@@ -21,41 +20,27 @@ export default async function ClientBookingPage({
   const date = rawDate && DATE_RE.test(rawDate) ? rawDate : today;
   const dayOfWeek = new Date(`${date}T00:00:00Z`).getUTCDay();
 
-  const { data: barberRow } = await supabase
-    .from("barber_availability")
-    .select("barber_profile_id")
-    .eq("is_active", true)
-    .limit(1)
-    .maybeSingle();
+  const [{ data: slotRows }, { data: bookedRows }] = await Promise.all([
+    supabase
+      .from("barber_availability")
+      .select("start_time, end_time")
+      .eq("barber_profile_id", POLAR_BARBER_PROFILE_ID)
+      .eq("day_of_week", dayOfWeek)
+      .eq("is_active", true)
+      .order("start_time", { ascending: true }),
+    supabase.rpc("get_barber_booked_slots", {
+      target_barber_id: POLAR_BARBER_PROFILE_ID,
+      from_date: date,
+      to_date: date,
+    }),
+  ]);
 
-  const barberId = barberRow?.barber_profile_id as string | undefined;
-
-  let slots: { start_time: string; end_time: string }[] = [];
-  let bookedStartTimes = new Set<string>();
-
-  if (barberId) {
-    const [{ data: slotRows }, { data: bookedRows }] = await Promise.all([
-      supabase
-        .from("barber_availability")
-        .select("start_time, end_time")
-        .eq("barber_profile_id", barberId)
-        .eq("day_of_week", dayOfWeek)
-        .eq("is_active", true)
-        .order("start_time", { ascending: true }),
-      supabase.rpc("get_barber_booked_slots", {
-        target_barber_id: barberId,
-        from_date: date,
-        to_date: date,
-      }),
-    ]);
-
-    slots = slotRows ?? [];
-    bookedStartTimes = new Set(
-      ((bookedRows ?? []) as { start_time: string }[]).map(
-        (row) => row.start_time
-      )
-    );
-  }
+  const slots = slotRows ?? [];
+  const bookedStartTimes = new Set(
+    ((bookedRows ?? []) as { start_time: string }[]).map(
+      (row) => row.start_time
+    )
+  );
 
   return (
     <main className="mx-auto max-w-xl px-6 py-16">
@@ -84,11 +69,7 @@ export default async function ClientBookingPage({
         </button>
       </form>
 
-      {!barberId ? (
-        <p className="mt-6 text-sm text-polar-muted">
-          No availability has been set up yet.
-        </p>
-      ) : slots.length === 0 ? (
+      {slots.length === 0 ? (
         <p className="mt-6 text-sm text-polar-muted">
           No availability on this day.
         </p>
@@ -110,7 +91,6 @@ export default async function ClientBookingPage({
                   </span>
                 ) : (
                   <BookSlotForm
-                    barberId={barberId}
                     date={date}
                     startTime={slot.start_time}
                     endTime={slot.end_time}

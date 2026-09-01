@@ -4,12 +4,10 @@ import { useState, useTransition } from "react";
 import { bookSlot } from "@/lib/actions/bookings";
 
 export function BookSlotForm({
-  barberId,
   date,
   startTime,
   endTime,
 }: {
-  barberId: string;
   date: string;
   startTime: string;
   endTime: string;
@@ -20,7 +18,6 @@ export function BookSlotForm({
 
   function submit(recurrence: "one_off" | "weekly") {
     const formData = new FormData();
-    formData.set("barber_profile_id", barberId);
     formData.set("recurrence", recurrence);
     formData.set("date", date);
     formData.set("start_time", startTime);
