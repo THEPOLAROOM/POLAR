@@ -1,28 +1,36 @@
+import Link from "next/link";
 import { requireRole } from "@/lib/auth/require-role";
-import { logout } from "@/lib/actions/auth";
 
 export default async function ClientDashboardPage() {
   const { user } = await requireRole("client");
 
   return (
     <main className="mx-auto max-w-xl px-6 py-16">
-      <h1 className="text-xl font-semibold">
-        Client Dashboard — Stage 3
+      <h1 className="text-xl font-semibold text-polar-text">
+        Client Dashboard
       </h1>
-
-      <p className="mt-2 text-sm">
+      <p className="mt-2 text-sm text-polar-muted">
         Signed in as {user.email}.
       </p>
 
-      <p className="mt-4 text-sm">
-        Client role confirmed server-side.
-      </p>
-
-      <form action={logout} className="mt-6">
-        <button type="submit">
-          Log out
-        </button>
-      </form>
+      <ul className="mt-6 flex flex-wrap gap-2">
+        <li>
+          <Link
+            href="/dashboard/client/book"
+            className="rounded border border-polar-border px-3 py-1 text-xs text-polar-text"
+          >
+            Book Appointment
+          </Link>
+        </li>
+        <li>
+          <Link
+            href="/dashboard/client/bookings"
+            className="rounded border border-polar-border px-3 py-1 text-xs text-polar-text"
+          >
+            My Bookings
+          </Link>
+        </li>
+      </ul>
     </main>
   );
 }

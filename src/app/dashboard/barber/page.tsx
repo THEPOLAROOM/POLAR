@@ -1,35 +1,87 @@
+import Link from "next/link";
 import { requireRole } from "@/lib/auth/require-role";
-import { logout } from "@/lib/actions/auth";
+import { getBarberBookingsForDate } from "@/lib/queries/barber-schedule";
+
+const QUICK_LINKS = [
+  { href: "/dashboard/barber/schedule", label: "Schedule" },
+  { href: "/dashboard/barber/availability", label: "Availability" },
+  { href: "/dashboard/barber/clients", label: "Clients" },
+  { href: "/dashboard/barber/shift", label: "Active Shift" },
+  { href: "/dashboard/barber/custom-fields", label: "Custom Fields" },
+];
 
 // Server-side ROLE check happens FIRST — this is the actual
-// authorization enforcement point. A Client account (or anyone
-// unauthenticated) navigating directly to this URL is redirected to
-// /login before any barber-specific content is computed or sent to
-// the browser. UI hiding is never relied on for this.
+// authorization enforcement point, same as every other protected
+// barber page; the nav bar around this page is navigation only.
 export default async function BarberDashboardPage() {
-  const { user } = await requireRole("barber");
+  const { supabase, user } = await requireRole("barber");
+
+  const today = new Date().toISOString().slice(0, 10);
+  const todaysBookings = await getBarberBookingsForDate(
+    supabase,
+    user.id,
+    today
+  );
 
   return (
     <main className="mx-auto max-w-xl px-6 py-16">
       <h1 className="text-xl font-semibold text-polar-text">
-        Barber Dashboard — Stage 3
+        Barber Dashboard
       </h1>
       <p className="mt-2 text-sm text-polar-muted">
-        Signed in as {user.email}. Barber role confirmed server-side.
-      </p>
-      <p className="mt-4 text-xs text-polar-muted">
-        Functional placeholder only. Calendar, client directory, Workflow
-        Mode and other barber features are built in later stages.
+        Signed in as {user.email}.
       </p>
 
-      <form action={logout} className="mt-6">
-        <button
-          type="submit"
-          className="rounded border border-polar-border px-4 py-2 text-sm text-polar-text"
-        >
-          Log out
-        </button>
-      </form>
+      <section className="mt-8">
+        <h2 className="text-sm font-semibold text-polar-text">
+          Today&apos;s Schedule
+        </h2>
+        {todaysBookings.length > 0 ? (
+          <ul className="mt-2 space-y-2">
+            {todaysBookings.map((booking) => (
+              <li
+                key={booking.id}
+                className="rounded border border-polar-border px-3 py-2"
+              >
+                <Link
+                  href={`/dashboard/barber/clients/${booking.clientProfileId}`}
+                  className="flex items-center justify-between text-sm text-polar-text"
+                >
+                  <span>
+                    {booking.startTime.slice(0, 5)}–
+                    {booking.endTime.slice(0, 5)} — {booking.clientName}
+                  </span>
+                  <span className="text-xs text-polar-muted">
+                    {booking.recurrence === "weekly" ? "Weekly" : "One-off"}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-2 text-sm text-polar-muted">
+            No appointments today.
+          </p>
+        )}
+      </section>
+
+      <section className="mt-8">
+        <h2 className="text-sm font-semibold text-polar-text">
+          Quick links
+        </h2>
+        <ul className="mt-2 flex flex-wrap gap-2">
+          {QUICK_LINKS.map((link) => (
+            <li key={link.href}>
+              <Link
+                href={link.href}
+                className="rounded border border-polar-border px-3 py-1 text-xs text-polar-text"
+              >
+                {link.label}
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
     </main>
   );
 }
