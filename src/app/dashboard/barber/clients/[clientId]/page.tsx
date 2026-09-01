@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/auth/require-role";
 import type { ClientProfileDetails, CustomFieldDefinition } from "@/lib/types";
 import { ClientDetailsForm } from "./client-details-form";
+import { ClientBalanceForm } from "./client-balance-form";
 import { updateClientCustomFieldValues } from "@/lib/actions/custom-field-values";
 
 const UUID_RE =
@@ -33,6 +34,7 @@ export default async function ClientProfileCardPage({
     { data: details },
     { data: definitions },
     { data: values },
+    { data: balance },
   ] = await Promise.all([
     supabase
       .from("profiles")
@@ -56,6 +58,15 @@ export default async function ClientProfileCardPage({
       .from("custom_field_values")
       .select("field_id, value")
       .eq("client_profile_id", clientId),
+    // client_balances: awaiting migration approval (see 0010) — this
+    // resolves with { data: null, error } rather than throwing if the
+    // table doesn't exist yet live, so the section below just renders
+    // its zero-balance default until the migration is applied.
+    supabase
+      .from("client_balances")
+      .select("amount, note")
+      .eq("profile_id", clientId)
+      .maybeSingle(),
   ]);
 
   if (!profile) {
@@ -67,6 +78,7 @@ export default async function ClientProfileCardPage({
   const valueByFieldId = new Map(
     (values ?? []).map((row) => [row.field_id as string, row.value as unknown])
   );
+  const clientBalance = balance as { amount: number; note: string | null } | null;
 
   return (
     <main className="mx-auto max-w-xl px-6 py-16">
@@ -74,6 +86,15 @@ export default async function ClientProfileCardPage({
         {profile.full_name}
       </h1>
       <p className="mt-1 text-sm text-polar-muted">{profile.phone}</p>
+
+      <section className="mt-8">
+        <h2 className="text-sm font-semibold text-polar-text">Balance</h2>
+        <ClientBalanceForm
+          clientId={clientId}
+          amount={clientBalance?.amount ?? 0}
+          note={clientBalance?.note ?? null}
+        />
+      </section>
 
       <section className="mt-8">
         <h2 className="text-sm font-semibold text-polar-text">
