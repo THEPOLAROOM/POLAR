@@ -1,6 +1,6 @@
 import { requireRole } from "@/lib/auth/require-role";
-import { setAvailabilityActive } from "@/lib/actions/barber-availability";
 import { AddSlotForm } from "./add-slot-form";
+import { ToggleSlotButton } from "./toggle-slot-button";
 
 const DAY_LABELS = [
   "Sunday",
@@ -55,20 +55,7 @@ export default async function BarberAvailabilityPage() {
                     {slot.is_active ? "Active" : "Inactive"}
                   </span>
                 </div>
-                <form action={setAvailabilityActive}>
-                  <input type="hidden" name="slot_id" value={slot.id} />
-                  <input
-                    type="hidden"
-                    name="is_active"
-                    value={slot.is_active ? "false" : "true"}
-                  />
-                  <button
-                    type="submit"
-                    className="rounded border border-polar-border px-3 py-1 text-xs text-polar-text"
-                  >
-                    {slot.is_active ? "Deactivate" : "Activate"}
-                  </button>
-                </form>
+                <ToggleSlotButton slotId={slot.id} isActive={slot.is_active} />
               </li>
             ))}
           </ul>

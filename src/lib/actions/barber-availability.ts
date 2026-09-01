@@ -59,26 +59,36 @@ export async function createAvailabilitySlot(
 
 /**
  * Activates or deactivates one of the calling barber's own slots.
- * Bound directly via a <form action={...}> prop (no client
- * component), so this returns void. Deactivating can never violate
- * the overlap constraint (it only applies to active slots); a
- * reactivation that would violate it is silently not applied — this
- * path has no client-side error display, unlike createAvailabilitySlot.
+ * Deactivating can never violate the overlap constraint (it only
+ * applies to active slots); a reactivation can, and the live
+ * barber_availability_no_overlap exclusion constraint is the actual
+ * enforcement — this just translates that 23P01 into a plain message,
+ * the same way createAvailabilitySlot does. No overlap logic is
+ * duplicated here.
  */
-export async function setAvailabilityActive(formData: FormData): Promise<void> {
+export async function setAvailabilityActive(
+  formData: FormData
+): Promise<ActionResult> {
   const slotId = String(formData.get("slot_id") ?? "").trim();
   const isActive = String(formData.get("is_active") ?? "") === "true";
 
   if (!slotId) {
-    return;
+    return { error: "Missing slot." };
   }
 
   const { supabase } = await requireRole("barber");
 
-  await supabase
+  const { error } = await supabase
     .from("barber_availability")
     .update({ is_active: isActive })
     .eq("id", slotId);
+
+  if (error) {
+    if (error.code === EXCLUSION_VIOLATION) {
+      return { error: "This slot overlaps another active slot on that day." };
+    }
+    return { error: "Could not update that slot." };
+  }
 
   revalidatePath(AVAILABILITY_PATH);
 }
