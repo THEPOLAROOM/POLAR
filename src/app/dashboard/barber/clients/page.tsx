@@ -31,7 +31,9 @@ export default async function BarberClientsPage() {
 
   return (
     <main className="mx-auto max-w-xl px-6 py-16">
-      <h1 className="text-xl font-semibold text-polar-text">Clients</h1>
+      <h1 className="text-xl font-semibold text-polar-text">
+        Client Phone Book
+      </h1>
 
       <form action={linkClientByEmail} className="mt-4 flex gap-2">
         <label className="flex-1 text-sm">

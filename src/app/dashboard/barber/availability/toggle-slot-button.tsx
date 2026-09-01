@@ -45,7 +45,7 @@ export function ToggleSlotButton({
           disabled={pending}
           className="rounded border border-polar-border px-3 py-1 text-xs text-polar-text disabled:opacity-50"
         >
-          {pending ? "…" : isActive ? "Deactivate" : "Activate"}
+          {pending ? "…" : isActive ? "Make Unavailable" : "Make Available"}
         </button>
       </form>
       {error && <p className="mt-1 text-xs text-polar-danger">{error}</p>}

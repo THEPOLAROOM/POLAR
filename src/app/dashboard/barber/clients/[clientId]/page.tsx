@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { requireRole } from "@/lib/auth/require-role";
 import type { ClientProfileDetails, CustomFieldDefinition } from "@/lib/types";
 import { ClientDetailsForm } from "./client-details-form";
@@ -104,9 +105,19 @@ export default async function ClientProfileCardPage({
       </section>
 
       <section className="mt-8">
-        <h2 className="text-sm font-semibold text-polar-text">
-          Custom Fields
-        </h2>
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-polar-text">
+            Custom Fields
+          </h2>
+          <Link
+            href="/dashboard/barber/custom-fields"
+            aria-label="Manage custom fields"
+            title="Manage custom fields"
+            className="text-xs text-polar-muted"
+          >
+            ✏️
+          </Link>
+        </div>
         {customFields.length > 0 ? (
           <form
             action={updateClientCustomFieldValues}

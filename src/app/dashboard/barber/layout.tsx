@@ -1,12 +1,15 @@
 import { DashboardNav } from "@/components/dashboard-nav";
 
+// Consolidated primary barber navigation — four distinct areas, no
+// duplicate-purpose main pages. Schedule/Availability/Active Shift/
+// Custom Fields still exist as routes (reused internally, e.g. linked
+// from within Calendar or the Client Profile Card) — they're just no
+// longer separate primary tabs.
 const LINKS = [
-  { href: "/dashboard/barber", label: "Dashboard" },
-  { href: "/dashboard/barber/schedule", label: "Schedule" },
-  { href: "/dashboard/barber/availability", label: "Availability" },
-  { href: "/dashboard/barber/clients", label: "Clients" },
-  { href: "/dashboard/barber/shift", label: "Active Shift" },
-  { href: "/dashboard/barber/custom-fields", label: "Custom Fields" },
+  { href: "/dashboard/barber", label: "Home" },
+  { href: "/dashboard/barber/services", label: "My Services" },
+  { href: "/dashboard/barber/calendar", label: "Calendar" },
+  { href: "/dashboard/barber/clients", label: "Client Phone Book" },
 ];
 
 // Applies to every route under /dashboard/barber. Each page still

@@ -4,11 +4,9 @@ import { getBarberBookingsForDate } from "@/lib/queries/barber-schedule";
 import { getShopToday, formatTime12h } from "@/lib/dates";
 
 const QUICK_LINKS = [
-  { href: "/dashboard/barber/schedule", label: "Schedule" },
-  { href: "/dashboard/barber/availability", label: "Availability" },
-  { href: "/dashboard/barber/clients", label: "Clients" },
-  { href: "/dashboard/barber/shift", label: "Active Shift" },
-  { href: "/dashboard/barber/custom-fields", label: "Custom Fields" },
+  { href: "/dashboard/barber/calendar", label: "Calendar" },
+  { href: "/dashboard/barber/services", label: "My Services" },
+  { href: "/dashboard/barber/clients", label: "Client Phone Book" },
 ];
 
 // Server-side ROLE check happens FIRST — this is the actual
@@ -26,9 +24,7 @@ export default async function BarberDashboardPage() {
 
   return (
     <main className="mx-auto max-w-xl px-6 py-16">
-      <h1 className="text-xl font-semibold text-polar-text">
-        Barber Dashboard
-      </h1>
+      <h1 className="text-xl font-semibold text-polar-text">Home</h1>
       <p className="mt-2 text-sm text-polar-muted">
         Signed in as {user.email}.
       </p>
