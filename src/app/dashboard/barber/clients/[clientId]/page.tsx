@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/auth/require-role";
 import type { ClientProfileDetails, CustomFieldDefinition } from "@/lib/types";
 import { ClientDetailsForm } from "./client-details-form";
+import { updateClientCustomFieldValues } from "@/lib/actions/custom-field-values";
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -86,14 +87,89 @@ export default async function ClientProfileCardPage({
           Custom Fields
         </h2>
         {customFields.length > 0 ? (
-          <dl className="mt-2 space-y-1 text-sm text-polar-muted">
-            {customFields.map((field) => (
-              <div key={field.id} className="flex justify-between gap-4">
-                <dt>{field.label}</dt>
-                <dd>{formatCustomFieldValue(valueByFieldId.get(field.id))}</dd>
-              </div>
-            ))}
-          </dl>
+          <form
+            action={updateClientCustomFieldValues}
+            className="mt-2 space-y-4"
+          >
+            <input type="hidden" name="client_id" value={clientId} />
+            {customFields.map((field) => {
+              const value = valueByFieldId.get(field.id);
+              const inputName = `field_${field.id}`;
+              return (
+                <label key={field.id} className="block text-sm">
+                  <span className="mb-1 block font-medium text-polar-text">
+                    {field.label}
+                  </span>
+                  {field.field_type === "boolean" ? (
+                    <select
+                      name={inputName}
+                      defaultValue={
+                        value === true ? "true" : value === false ? "false" : ""
+                      }
+                      className="w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm outline-none focus:border-polar-text"
+                    >
+                      <option value="">—</option>
+                      <option value="true">Yes</option>
+                      <option value="false">No</option>
+                    </select>
+                  ) : field.field_type === "single_select" ? (
+                    <select
+                      name={inputName}
+                      defaultValue={typeof value === "string" ? value : ""}
+                      className="w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm outline-none focus:border-polar-text"
+                    >
+                      <option value="">—</option>
+                      {(field.options ?? []).map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  ) : field.field_type === "multi_select" ? (
+                    <select
+                      name={inputName}
+                      multiple
+                      defaultValue={Array.isArray(value) ? (value as string[]) : []}
+                      className="w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm outline-none focus:border-polar-text"
+                    >
+                      {(field.options ?? []).map((option) => (
+                        <option key={option} value={option}>
+                          {option}
+                        </option>
+                      ))}
+                    </select>
+                  ) : field.field_type === "number" ? (
+                    <input
+                      name={inputName}
+                      type="number"
+                      defaultValue={typeof value === "number" ? value : ""}
+                      className="w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm outline-none focus:border-polar-text"
+                    />
+                  ) : field.field_type === "date" ? (
+                    <input
+                      name={inputName}
+                      type="date"
+                      defaultValue={typeof value === "string" ? value : ""}
+                      className="w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm outline-none focus:border-polar-text"
+                    />
+                  ) : (
+                    <input
+                      name={inputName}
+                      type="text"
+                      defaultValue={typeof value === "string" ? value : ""}
+                      className="w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm outline-none focus:border-polar-text"
+                    />
+                  )}
+                </label>
+              );
+            })}
+            <button
+              type="submit"
+              className="rounded border border-polar-border px-4 py-2 text-sm text-polar-text"
+            >
+              Save
+            </button>
+          </form>
         ) : (
           <p className="mt-2 text-sm text-polar-muted">
             No custom fields set up yet.
@@ -104,9 +180,3 @@ export default async function ClientProfileCardPage({
   );
 }
 
-function formatCustomFieldValue(value: unknown): string {
-  if (value === undefined || value === null || value === "") return "—";
-  if (Array.isArray(value)) return value.length ? value.join(", ") : "—";
-  if (typeof value === "boolean") return value ? "Yes" : "No";
-  return String(value);
-}
