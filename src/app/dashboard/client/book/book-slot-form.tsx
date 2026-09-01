@@ -5,23 +5,28 @@ import { bookSlot } from "@/lib/actions/bookings";
 
 export function BookSlotForm({
   date,
+  serviceId,
   startTime,
-  endTime,
 }: {
   date: string;
+  serviceId: string | null;
   startTime: string;
-  endTime: string;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [, startTransition] = useTransition();
 
   function submit(recurrence: "one_off" | "weekly") {
+    if (!serviceId) {
+      setError("Choose a service first.");
+      return;
+    }
+
     const formData = new FormData();
     formData.set("recurrence", recurrence);
     formData.set("date", date);
+    formData.set("service_id", serviceId);
     formData.set("start_time", startTime);
-    formData.set("end_time", endTime);
 
     setError(null);
     setPending(true);
@@ -42,7 +47,7 @@ export function BookSlotForm({
       <div className="flex gap-2">
         <button
           type="button"
-          disabled={pending}
+          disabled={pending || !serviceId}
           onClick={() => submit("one_off")}
           className="rounded border border-polar-border px-3 py-1 text-xs text-polar-text disabled:opacity-50"
         >
@@ -50,7 +55,7 @@ export function BookSlotForm({
         </button>
         <button
           type="button"
-          disabled={pending}
+          disabled={pending || !serviceId}
           onClick={() => submit("weekly")}
           className="rounded border border-polar-border px-3 py-1 text-xs text-polar-text disabled:opacity-50"
         >

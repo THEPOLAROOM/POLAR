@@ -7,12 +7,10 @@ export function RescheduleSlotForm({
   bookingId,
   date,
   startTime,
-  endTime,
 }: {
   bookingId: string;
   date: string;
   startTime: string;
-  endTime: string;
 }) {
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -23,7 +21,6 @@ export function RescheduleSlotForm({
     formData.set("booking_id", bookingId);
     formData.set("date", date);
     formData.set("start_time", startTime);
-    formData.set("end_time", endTime);
 
     setError(null);
     setPending(true);

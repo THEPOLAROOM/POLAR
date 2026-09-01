@@ -131,7 +131,6 @@ export default async function BarberRescheduleBookingPage({
                     bookingId={bookingId}
                     date={date}
                     startTime={slot.start_time}
-                    endTime={slot.end_time}
                   />
                 )}
               </li>

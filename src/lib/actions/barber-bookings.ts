@@ -42,10 +42,15 @@ export async function cancelBookingAsBarber(
 /**
  * Reschedules one of the calling barber's own confirmed bookings via
  * reschedule_booking_as_barber() — that function itself preserves the
- * existing client identity and recurrence type (it doesn't accept
- * them as parameters and never writes to those columns), so this
- * action has nothing extra to enforce on that front. Applies to the
- * whole row for weekly bookings, same as cancel.
+ * existing client identity, recurrence type, AND service/duration (it
+ * doesn't accept any of them as parameters and never writes to those
+ * columns), so this action has nothing extra to enforce on that
+ * front. The finish time is always computed by the database from the
+ * booking's existing service, never accepted here — the function also
+ * keeps using that service even if it's since been deactivated, so a
+ * deactivated service never blocks rescheduling an appointment that
+ * already used it. Applies to the whole row for weekly bookings, same
+ * as cancel.
  */
 export async function rescheduleBookingAsBarber(
   formData: FormData
@@ -53,9 +58,8 @@ export async function rescheduleBookingAsBarber(
   const bookingId = String(formData.get("booking_id") ?? "").trim();
   const date = String(formData.get("date") ?? "").trim();
   const startTime = String(formData.get("start_time") ?? "").trim();
-  const endTime = String(formData.get("end_time") ?? "").trim();
 
-  if (!bookingId || !date || !startTime || !endTime) {
+  if (!bookingId || !date || !startTime) {
     return { error: "Missing reschedule details." };
   }
 
@@ -65,7 +69,6 @@ export async function rescheduleBookingAsBarber(
     p_booking_id: bookingId,
     p_start_date: date,
     p_start_time: startTime,
-    p_end_time: endTime,
   });
 
   if (error) {

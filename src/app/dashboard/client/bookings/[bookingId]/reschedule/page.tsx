@@ -124,7 +124,6 @@ export default async function RescheduleBookingPage({
                     bookingId={bookingId}
                     date={date}
                     startTime={slot.start_time}
-                    endTime={slot.end_time}
                   />
                 )}
               </li>

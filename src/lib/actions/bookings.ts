@@ -18,6 +18,10 @@ type ActionResult = { error: string } | void;
  * function (e.g. "Slot already booked" if it was taken between page
  * load and submission) is passed straight through as a plain message.
  *
+ * The client chooses a service and a start time only — the finish
+ * time is always computed by the database from that service's
+ * duration, never accepted from the client here.
+ *
  * The barber is always POLAR_BARBER_PROFILE_ID, decided server-side —
  * never taken from the submitted form, so a client cannot direct a
  * booking at any other account.
@@ -25,11 +29,11 @@ type ActionResult = { error: string } | void;
 export async function bookSlot(formData: FormData): Promise<ActionResult> {
   const recurrence = String(formData.get("recurrence") ?? "").trim();
   const date = String(formData.get("date") ?? "").trim();
+  const serviceId = String(formData.get("service_id") ?? "").trim();
   const startTime = String(formData.get("start_time") ?? "").trim();
-  const endTime = String(formData.get("end_time") ?? "").trim();
 
-  if (!date || !startTime || !endTime) {
-    return { error: "Missing booking details." };
+  if (!date || !serviceId || !startTime) {
+    return { error: "Choose a service and a start time." };
   }
   if (recurrence !== "one_off" && recurrence !== "weekly") {
     return { error: "Choose a booking type." };
@@ -43,8 +47,8 @@ export async function bookSlot(formData: FormData): Promise<ActionResult> {
     p_recurrence: recurrence,
     p_start_date: date,
     p_end_date: null, // weekly stays open-ended until cancelled — no end-date input in this minimal UI
+    p_service_id: serviceId,
     p_start_time: startTime,
-    p_end_time: endTime,
   });
 
   if (error) {
@@ -85,12 +89,16 @@ export async function cancelBooking(formData: FormData): Promise<ActionResult> {
 /**
  * Reschedules one of the calling client's own confirmed bookings to a
  * new date/time via create_or_reschedule_booking() — the barber stays
- * POLAR_BARBER_PROFILE_ID, and the booking's own existing recurrence
- * (and end_date, for weekly) is read back from the database and
- * reused as-is rather than trusted from the submitted form, so this
- * can never change a booking's recurrence type or hand it to a
- * different barber. Applies to the whole row — a weekly booking's
- * entire series moves, there is no per-occurrence exception.
+ * POLAR_BARBER_PROFILE_ID, and the booking's own existing recurrence,
+ * end_date (for weekly), and service are all read back from the
+ * database and reused as-is rather than trusted from the submitted
+ * form, so this can never change a booking's recurrence type, service,
+ * or hand it to a different barber — only the date/time move. The
+ * service is also re-verified/preserved inside the function itself
+ * even if it's since been deactivated, so rescheduling never breaks
+ * just because a service was made inactive. Applies to the whole row
+ * — a weekly booking's entire series moves, there is no
+ * per-occurrence exception.
  */
 export async function rescheduleBooking(
   formData: FormData
@@ -98,9 +106,8 @@ export async function rescheduleBooking(
   const bookingId = String(formData.get("booking_id") ?? "").trim();
   const date = String(formData.get("date") ?? "").trim();
   const startTime = String(formData.get("start_time") ?? "").trim();
-  const endTime = String(formData.get("end_time") ?? "").trim();
 
-  if (!bookingId || !date || !startTime || !endTime) {
+  if (!bookingId || !date || !startTime) {
     return { error: "Missing reschedule details." };
   }
 
@@ -108,7 +115,7 @@ export async function rescheduleBooking(
 
   const { data: existing } = await supabase
     .from("bookings")
-    .select("recurrence, end_date")
+    .select("recurrence, end_date, service_id")
     .eq("id", bookingId)
     .eq("client_profile_id", user.id)
     .eq("status", "confirmed")
@@ -123,9 +130,9 @@ export async function rescheduleBooking(
     p_barber_profile_id: POLAR_BARBER_PROFILE_ID,
     p_recurrence: existing.recurrence,
     p_end_date: existing.recurrence === "weekly" ? existing.end_date : null,
+    p_service_id: existing.service_id,
     p_start_date: date,
     p_start_time: startTime,
-    p_end_time: endTime,
   });
 
   if (error) {
