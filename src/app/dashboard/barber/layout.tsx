@@ -12,6 +12,11 @@ const LINKS = [
   { href: "/dashboard/barber/clients", label: "Client Phone Book" },
 ];
 
+// Secondary — reachable but not a primary workflow tab.
+const SECONDARY_LINKS = [
+  { href: "/dashboard/barber/account", label: "My Profile" },
+];
+
 // Applies to every route under /dashboard/barber. Each page still
 // independently calls requireRole("barber") as the actual
 // authorization check — this layout is navigation only.
@@ -22,7 +27,7 @@ export default function BarberDashboardLayout({
 }) {
   return (
     <div>
-      <DashboardNav links={LINKS} />
+      <DashboardNav links={LINKS} secondaryLinks={SECONDARY_LINKS} />
       {children}
     </div>
   );

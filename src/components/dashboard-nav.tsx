@@ -8,8 +8,10 @@ import { logout } from "@/lib/actions/auth";
 // placeholder dashboards.
 export function DashboardNav({
   links,
+  secondaryLinks,
 }: {
   links: { href: string; label: string }[];
+  secondaryLinks?: { href: string; label: string }[];
 }) {
   return (
     <nav className="flex flex-wrap items-center gap-4 border-b border-polar-border px-6 py-3 text-sm">
@@ -18,11 +20,22 @@ export function DashboardNav({
           {link.label}
         </Link>
       ))}
-      <form action={logout} className="ml-auto">
-        <button type="submit" className="text-polar-text underline">
-          Log out
-        </button>
-      </form>
+      <div className="ml-auto flex items-center gap-4">
+        {(secondaryLinks ?? []).map((link) => (
+          <Link
+            key={link.href}
+            href={link.href}
+            className="text-polar-text underline"
+          >
+            {link.label}
+          </Link>
+        ))}
+        <form action={logout}>
+          <button type="submit" className="text-polar-text underline">
+            Log out
+          </button>
+        </form>
+      </div>
     </nav>
   );
 }
