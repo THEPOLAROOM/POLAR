@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { requireRole } from "@/lib/auth/require-role";
+import { linkClientByEmail } from "@/lib/actions/barber-client-links";
 
 // Server-side ROLE check happens FIRST, same as every other protected
 // barber page. The list is scoped to this barber's own clients by
@@ -31,6 +32,25 @@ export default async function BarberClientsPage() {
   return (
     <main className="mx-auto max-w-xl px-6 py-16">
       <h1 className="text-xl font-semibold text-polar-text">Clients</h1>
+
+      <form action={linkClientByEmail} className="mt-4 flex gap-2">
+        <label className="flex-1 text-sm">
+          <span className="sr-only">Client email</span>
+          <input
+            name="client_email"
+            type="email"
+            required
+            placeholder="Client's email"
+            className="w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm outline-none focus:border-polar-text"
+          />
+        </label>
+        <button
+          type="submit"
+          className="rounded border border-polar-border px-4 py-2 text-sm text-polar-text"
+        >
+          Link client
+        </button>
+      </form>
 
       {clients && clients.length > 0 ? (
         <ul className="mt-4 space-y-2">
