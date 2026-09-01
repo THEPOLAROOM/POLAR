@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/auth/require-role";
 import { getBarberBookingsForDate } from "@/lib/queries/barber-schedule";
+import { getShopToday } from "@/lib/dates";
 import { RescheduleSlotForm } from "./reschedule-slot-form";
 
 const UUID_RE =
@@ -47,7 +48,7 @@ export default async function BarberRescheduleBookingPage({
     .eq("id", booking.client_profile_id)
     .maybeSingle();
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getShopToday();
   const date = rawDate && DATE_RE.test(rawDate) ? rawDate : today;
   const dayOfWeek = new Date(`${date}T00:00:00Z`).getUTCDay();
 

@@ -1,5 +1,6 @@
 import { requireRole } from "@/lib/auth/require-role";
 import { POLAR_BARBER_PROFILE_ID } from "@/lib/config";
+import { getShopToday } from "@/lib/dates";
 import { BookSlotForm } from "./book-slot-form";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -16,7 +17,7 @@ export default async function ClientBookingPage({
   const { supabase } = await requireRole("client");
   const { date: rawDate } = await searchParams;
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getShopToday();
   const date = rawDate && DATE_RE.test(rawDate) ? rawDate : today;
   const dayOfWeek = new Date(`${date}T00:00:00Z`).getUTCDay();
 

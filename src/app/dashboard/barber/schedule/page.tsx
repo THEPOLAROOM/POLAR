@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireRole } from "@/lib/auth/require-role";
 import { getBarberBookingsForDate } from "@/lib/queries/barber-schedule";
+import { getShopToday } from "@/lib/dates";
 import { CancelBookingButton } from "./cancel-booking-button";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -23,7 +24,7 @@ export default async function BarberSchedulePage({
   const { supabase, user } = await requireRole("barber");
   const { date: rawDate } = await searchParams;
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getShopToday();
   const date = rawDate && DATE_RE.test(rawDate) ? rawDate : today;
 
   const bookings = await getBarberBookingsForDate(supabase, user.id, date);

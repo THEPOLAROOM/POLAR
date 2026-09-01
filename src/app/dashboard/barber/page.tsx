@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireRole } from "@/lib/auth/require-role";
 import { getBarberBookingsForDate } from "@/lib/queries/barber-schedule";
+import { getShopToday } from "@/lib/dates";
 
 const QUICK_LINKS = [
   { href: "/dashboard/barber/schedule", label: "Schedule" },
@@ -16,7 +17,7 @@ const QUICK_LINKS = [
 export default async function BarberDashboardPage() {
   const { supabase, user } = await requireRole("barber");
 
-  const today = new Date().toISOString().slice(0, 10);
+  const today = getShopToday();
   const todaysBookings = await getBarberBookingsForDate(
     supabase,
     user.id,
