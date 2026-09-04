@@ -19,6 +19,39 @@ const config: Config = {
           danger: "#B3261E",
           success: "#1E6B3B",
         },
+        // Landing page / marketing brand system only — deliberately
+        // separate from the `polar.*` tokens above, which the existing
+        // barber/client dashboards rely on. Nothing under `polar.*` was
+        // changed, so dashboard styling is unaffected by this palette.
+        ice: {
+          50: "#F3FAFF",
+          100: "#E4F2FF",
+          200: "#CCE7FF",
+          glow: "#7FD1FF",
+        },
+        royal: {
+          DEFAULT: "#0B5FFF",
+          dark: "#0A3FCC",
+          light: "#5B9BFF",
+        },
+        navy: {
+          DEFAULT: "#0A1128",
+          light: "#111B3A",
+        },
+        magenta: "#FF3D9A",
+      },
+      fontFamily: {
+        display: ["var(--font-anton)", "sans-serif"],
+        body: [
+          "var(--font-geist)",
+          "ui-sans-serif",
+          "system-ui",
+          "sans-serif",
+        ],
+      },
+      boxShadow: {
+        ice: "0 10px 30px -10px rgba(11, 95, 255, 0.35)",
+        "ice-lg": "0 25px 60px -15px rgba(10, 17, 40, 0.45)",
       },
     },
   },
