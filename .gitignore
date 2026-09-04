@@ -6,3 +6,9 @@ npm-debug.log*
 .DS_Store
 *.tsbuildinfo
 next-env.d.ts
+
+# Local-only AI design-skill tooling (Taste, UI/UX Pro Max) — not part
+# of the POLAR app; never committed, pushed, or deployed.
+.agents/
+.claude/
+skills-lock.json
