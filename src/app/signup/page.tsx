@@ -1,39 +1,85 @@
+import Image from "next/image";
 import Link from "next/link";
 
-// Minimal account-type chooser — reached from the landing header's
-// single "Sign Up" link. Purely a routing hub to the two existing,
-// unchanged signup flows; no new form fields or backend logic.
-export default function SignupChoicePage() {
+// POLAR 2-way signup portal. The artwork (public/signup/portal-*.png)
+// is approved, final creative — rendered as-is, never recreated in
+// CSS. Only two things are added on top: transparent, fully clickable
+// <Link> regions positioned over the Client/Barber doors (and, on
+// desktop only, the "Back to Home" text baked into that artwork —
+// the mobile artwork has no equivalent element, so none is added
+// there), plus a hover/press-only glow on each door region. Routes to
+// the existing, unchanged /signup/client and /signup/barber flows.
+const GLOW =
+  "transition rounded-2xl hover:shadow-[0_0_45px_12px_rgba(11,95,255,0.35),0_0_80px_24px_rgba(255,61,154,0.15)] active:shadow-[0_0_35px_10px_rgba(11,95,255,0.45),0_0_60px_18px_rgba(255,61,154,0.2)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white";
+
+export default function SignupPortalPage() {
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center gap-6 px-6 py-16">
-      <div>
-        <h1 className="text-xl font-semibold text-polar-text">
-          Create your POLAR account
-        </h1>
-        <p className="mt-1 text-sm text-polar-muted">
-          Choose the type of account to create.
-        </p>
+    <main className="min-h-screen bg-navy sm:h-screen sm:overflow-hidden">
+      {/* Desktop / tablet artwork — fit to viewport height, no scroll.
+          Container is wider than the source image's native ratio, so
+          object-cover + object-top crops only the bottom (floor mark /
+          caption / feature strip) to fill that width — POLAR branding,
+          JOIN THE ROOM, and both full doors are always fully visible.
+          Overlay percentages below are recalculated against the
+          visible (cropped) window, not the full source image. */}
+      <div className="hidden h-full w-full items-center justify-center sm:flex">
+        <div className="relative h-full max-w-full aspect-[1.22/1]">
+          <Image
+            src="/signup/portal-desktop.png"
+            alt="POLAR — Join the Room. Two doors: I'm a Client, I'm a Barber."
+            fill
+            sizes="100vh"
+            className="object-cover object-top"
+            priority
+          />
+
+          <Link
+            href="/"
+            aria-label="Back to home"
+            className={GLOW}
+            style={{ position: "absolute", left: "1.23%", top: "3.5%", width: "17.18%", height: "4.49%" }}
+          />
+          <Link
+            href="/signup/client"
+            aria-label="I'm a Client — book, be seen, feel sharper"
+            className={GLOW}
+            style={{ position: "absolute", left: "20.46%", top: "32.95%", width: "27.82%", height: "61.41%" }}
+          />
+          <Link
+            href="/signup/barber"
+            aria-label="I'm a Barber — build, grow, be recognised"
+            className={GLOW}
+            style={{ position: "absolute", left: "52.78%", top: "32.95%", width: "28.23%", height: "61.41%" }}
+          />
+        </div>
       </div>
-      <div className="flex flex-col gap-3">
-        <Link
-          href="/signup/client"
-          className="rounded border border-polar-border px-4 py-3 text-center text-sm text-polar-text"
-        >
-          I&rsquo;m a client — Create Client Account
-        </Link>
-        <Link
-          href="/signup/barber"
-          className="rounded border border-polar-border px-4 py-3 text-center text-sm text-polar-text"
-        >
-          I&rsquo;m a barber — Create Barber Account
-        </Link>
+
+      {/* Mobile artwork */}
+      <div className="relative mx-auto block w-full max-w-md sm:hidden">
+        <div className="relative aspect-[1024/1536] w-full">
+          <Image
+            src="/signup/portal-mobile.png"
+            alt="POLAR — Join the Room. Two doors: I'm a Client, I'm a Barber."
+            fill
+            sizes="100vw"
+            className="object-contain"
+            priority
+          />
+
+          <Link
+            href="/signup/client"
+            aria-label="I'm a Client — book, be seen, feel sharper"
+            className={GLOW}
+            style={{ position: "absolute", left: "20.51%", top: "19.53%", width: "59.57%", height: "27.99%" }}
+          />
+          <Link
+            href="/signup/barber"
+            aria-label="I'm a Barber — build, grow, be recognised"
+            className={GLOW}
+            style={{ position: "absolute", left: "20.51%", top: "51.43%", width: "59.57%", height: "27.99%" }}
+          />
+        </div>
       </div>
-      <p className="text-sm text-polar-muted">
-        Already have an account?{" "}
-        <Link className="underline" href="/login">
-          Log in
-        </Link>
-      </p>
     </main>
   );
 }
