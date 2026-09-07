@@ -5,6 +5,7 @@ import Link from "next/link";
 // being provided. Privacy Policy / Terms & Conditions reuse the
 // existing, already-built /legal routes.
 const FOOTER_LINKS = [
+  { href: "/#about", label: "About POLAR" },
   { href: "/legal/privacy", label: "Privacy Policy" },
   { href: "/legal/terms", label: "Terms & Conditions" },
   { href: "#", label: "Contact" },

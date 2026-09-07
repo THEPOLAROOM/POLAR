@@ -23,7 +23,6 @@ const SLIDES = [
   { id: "card", label: "POLAR Card", content: <PanelCard /> },
   { id: "workflow", label: "Workflow Mode", content: <PanelWorkflow /> },
   { id: "how", label: "How POLAR Works", content: <PanelHow /> },
-  { id: "about", label: "About POLAR", content: <PanelAbout /> },
   { id: "ready", label: "You're Ready", content: <PanelReady /> },
 ];
 
@@ -35,6 +34,14 @@ export function LandingPage() {
       <Header />
       <Carousel slides={SLIDES} />
       <LowerSection />
+      {/* About POLAR — moved out of the carousel (was slide 6 of 7)
+          and into its own section here so it has a single, stable
+          location instead of existing in two places. Same artwork/
+          component as before, unchanged. scroll-mt accounts for the
+          sticky header when jumped to via the footer's #about link. */}
+      <div id="about" className="scroll-mt-16">
+        <PanelAbout />
+      </div>
       <Footer />
     </div>
   );
