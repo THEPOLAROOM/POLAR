@@ -85,7 +85,7 @@ export default function ClientSignupPage() {
         alt=""
         fill
         priority
-        className="hidden object-cover sm:block"
+        className="hidden object-contain sm:block"
         aria-hidden="true"
       />
       <Image
