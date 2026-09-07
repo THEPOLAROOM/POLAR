@@ -56,7 +56,7 @@ import {
 // never changes copy, fields, or input usability (touch targets stay
 // comfortable, just less surrounding whitespace).
 const INPUT_CLASS =
-  "w-full rounded-lg border border-white/15 bg-white/5 py-2.5 sm:py-2 pl-10 pr-3 text-sm text-white outline-none placeholder:text-white/40 focus:border-royal-light";
+  "w-full rounded-lg border border-white/15 bg-white/5 py-2.5 sm:py-1.5 pl-10 pr-3 text-sm text-white outline-none placeholder:text-white/40 focus:border-royal-light";
 
 export default function ClientSignupPage() {
   const [error, setError] = useState<string | null>(null);
@@ -121,7 +121,7 @@ export default function ClientSignupPage() {
       <div className="relative flex min-h-screen items-center justify-center px-5 py-16 sm:h-[100dvh] sm:min-h-0 sm:px-12 sm:py-4">
         <form
           onSubmit={handleSubmit}
-          className="w-full max-w-md rounded-2xl border border-white/15 bg-navy/70 p-6 text-white shadow-ice-lg backdrop-blur-xl sm:p-6"
+          className="w-full max-w-md rounded-2xl border border-white/15 bg-navy/70 p-6 text-white shadow-ice-lg backdrop-blur-xl sm:max-w-sm sm:p-5"
         >
           <p className="font-display text-xs tracking-[0.25em] text-royal-light">CLIENT PORTAL</p>
           <h1 className="mt-2 font-display text-3xl tracking-wide sm:mt-1 sm:text-2xl">
@@ -129,7 +129,7 @@ export default function ClientSignupPage() {
           </h1>
           <p className="mt-1 text-sm text-white/60">Quick and easy. Get started in seconds.</p>
 
-          <div className="mt-6 space-y-4 sm:mt-4 sm:space-y-2.5">
+          <div className="mt-6 space-y-4 sm:mt-3 sm:space-y-2">
             <label className="block">
               <span className="mb-1 block text-sm text-white/80">Full Name</span>
               <div className="relative">
@@ -145,7 +145,7 @@ export default function ClientSignupPage() {
               <div className="flex gap-2">
                 <div
                   aria-hidden="true"
-                  className="flex shrink-0 items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-3 py-2.5 text-sm text-white/80 sm:py-2"
+                  className="flex shrink-0 items-center gap-1.5 rounded-lg border border-white/15 bg-white/5 px-3 py-2.5 text-sm text-white/80 sm:py-1.5"
                 >
                   <span>🇬🇧</span>
                   <span>+44</span>
@@ -156,7 +156,7 @@ export default function ClientSignupPage() {
                   type="tel"
                   required
                   placeholder="e.g. 7700 900123"
-                  className="w-full flex-1 rounded-lg border border-white/15 bg-white/5 px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/40 focus:border-royal-light sm:py-2"
+                  className="w-full flex-1 rounded-lg border border-white/15 bg-white/5 px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/40 focus:border-royal-light sm:py-1.5"
                 />
               </div>
             </div>
@@ -196,7 +196,7 @@ export default function ClientSignupPage() {
               </div>
             </div>
 
-            <div className="border-t border-white/10 pt-4 sm:pt-3">
+            <div className="border-t border-white/10 pt-4 sm:pt-2">
               <span className="mb-1 block text-xs uppercase tracking-wide text-white/40">Optional</span>
               <span className="mb-1 hidden text-sm text-white/80 sm:block">Find your address (optional)</span>
               <span className="mb-1 block text-sm text-white/80 sm:hidden">Address (optional)</span>
@@ -225,12 +225,12 @@ export default function ClientSignupPage() {
           <button
             type="submit"
             disabled={pending}
-            className="mt-6 w-full rounded-lg bg-royal py-3 text-center font-display text-sm tracking-wide text-white shadow-ice transition hover:bg-royal-dark disabled:opacity-60 sm:mt-4 sm:py-2.5"
+            className="mt-6 w-full rounded-lg bg-royal py-3 text-center font-display text-sm tracking-wide text-white shadow-ice transition hover:bg-royal-dark disabled:opacity-60 sm:mt-3 sm:py-2"
           >
             {pending ? "Creating account…" : "Create Account"}
           </button>
 
-          <label className="mt-4 flex items-start gap-2 text-xs text-white/70 sm:mt-3">
+          <label className="mt-4 flex items-start gap-2 text-xs text-white/70 sm:mt-2">
             <input
               type="checkbox"
               required
@@ -256,7 +256,7 @@ export default function ClientSignupPage() {
           <input type="checkbox" name="privacy_accepted" className="hidden" />
           <input type="checkbox" name="age_confirmed" className="hidden" />
 
-          <p className="mt-4 text-center text-xs text-white/50 sm:mt-3">
+          <p className="mt-4 text-center text-xs text-white/50 sm:mt-2">
             Already have an account?{" "}
             <Link href="/login" className="text-royal-light underline">
               Log in
