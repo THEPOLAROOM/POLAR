@@ -98,7 +98,7 @@ export default function ClientSignupPage() {
       />
       <div className="absolute inset-0 bg-navy/25" aria-hidden="true" />
 
-      <div className="relative flex min-h-screen items-center justify-center px-5 py-16 sm:justify-end sm:px-12 lg:px-20">
+      <div className="relative flex min-h-screen items-center justify-center px-5 py-16 sm:px-12">
         <form
           onSubmit={handleSubmit}
           className="w-full max-w-md rounded-2xl border border-white/15 bg-navy/70 p-6 text-white shadow-ice-lg backdrop-blur-xl sm:p-8"
