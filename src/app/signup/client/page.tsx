@@ -15,12 +15,19 @@ import {
   ChevronDownIcon,
 } from "./icons";
 
-// Approved artwork (public/signup/create-account-*.png) is used as
-// the page background only. Everything on top of it — inputs,
-// password toggle, checkbox, links, button — is real, functional
-// markup, not a click-overlay on a flat image, per the requirement
-// that these be genuine interactive elements. The glass card is
-// rebuilt in CSS to match the artwork's look, not cropped from it.
+// The approved mockups (create-account-desktop.png / -mobile.png)
+// bake the entire form INTO the artwork itself. They are used here
+// only as visual reference for layout/room styling — never rendered
+// on the page, since doing so would show a second, fake form behind
+// the real one. The actual backgrounds
+// (create-account-desktop-bg.png / -mobile-bg.png) are derived,
+// non-destructive copies with only the card region replaced by a
+// solid fill sampled from that same region's own ambient colour
+// (feathered at the edges to blend into the surrounding photo) — the
+// POLAR Room environment (logo, walls, plants, chair, floor, neon)
+// is otherwise pixel-identical to the approved artwork. Everything on
+// top — inputs, password toggle, checkbox, links, button — is real,
+// functional markup, not a click-overlay on a flat image.
 //
 // Consent: the artwork shows a single checkbox ("Terms & Conditions
 // and Privacy Policy"). The live signup trigger independently
@@ -74,7 +81,7 @@ export default function ClientSignupPage() {
   return (
     <main className="relative min-h-screen overflow-hidden bg-navy">
       <Image
-        src="/signup/create-account-desktop.png"
+        src="/signup/create-account-desktop-bg.png"
         alt=""
         fill
         priority
@@ -82,7 +89,7 @@ export default function ClientSignupPage() {
         aria-hidden="true"
       />
       <Image
-        src="/signup/create-account-mobile.png"
+        src="/signup/create-account-mobile-bg.png"
         alt=""
         fill
         priority
