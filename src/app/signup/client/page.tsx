@@ -80,14 +80,27 @@ export default function ClientSignupPage() {
 
   return (
     <main className="relative min-h-screen overflow-hidden bg-navy">
-      <Image
-        src="/signup/create-account-desktop-bg.png"
-        alt=""
-        fill
-        priority
-        className="hidden object-contain sm:block"
-        aria-hidden="true"
-      />
+      {/* Desktop background: width-driven (100% of viewport width, so
+          the POLAR logo on the left and chair on the right are never
+          cropped), height derived from the image's own aspect ratio
+          (1672x941) rather than stretched or force-fit to the
+          viewport height. On the rare viewport wider-than-16:9 than
+          the source image, overflow-hidden clips symmetrically
+          top/bottom (ceiling/floor) only — never the sides. No
+          object-fit crop/letterbox is needed inside, since this
+          wrapper's aspect ratio always matches the image exactly. */}
+      <div className="absolute inset-0 hidden sm:flex sm:items-center sm:justify-center sm:overflow-hidden">
+        <div className="relative w-full aspect-[1672/941]">
+          <Image
+            src="/signup/create-account-desktop-bg.png"
+            alt=""
+            fill
+            priority
+            className="object-cover"
+            aria-hidden="true"
+          />
+        </div>
+      </div>
       <Image
         src="/signup/create-account-mobile-bg.png"
         alt=""
