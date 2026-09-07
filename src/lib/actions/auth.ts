@@ -34,18 +34,22 @@ export async function signUpClient(formData: FormData): Promise<ActionResult> {
   const privacyAccepted = readChecked(formData, "privacy_accepted");
   const ageConfirmed = readChecked(formData, "age_confirmed");
 
-  const addressLine1 = readRequiredText(formData, "address_line_1");
-  const addressLine2 = readRequiredText(formData, "address_line_2");
-  const townCity = readRequiredText(formData, "town_city");
-  const countyRegion = readRequiredText(formData, "county_region");
-  const postcode = readRequiredText(formData, "postcode");
-  const country = readRequiredText(formData, "country");
+  // Address is a single optional free-text field for now (V1: no
+  // autocomplete/geocoding provider configured yet — see
+  // AddressField). The signup trigger requires a *complete* structured
+  // address (line 1, town, postcode, country) if any address data is
+  // sent at all, and a single free-text line can't safely be split
+  // into those fields without a real provider. Rather than weaken
+  // that validation or invent structured data, this value is simply
+  // not sent to Supabase yet — no client_addresses row is created
+  // from it. Once real address lookup exists, selecting a suggestion
+  // will populate the structured fields properly and this can be
+  // wired through.
+  const address = readRequiredText(formData, "address");
+  void address; // intentionally not transmitted yet — see comment above
 
   if (!fullName || !phone || !email || !password) {
     return { error: "Please fill in every field." };
-  }
-  if (!addressLine1 || !townCity || !postcode || !country) {
-    return { error: "Please fill in your address (Address Line 2 and County/Region are optional)." };
   }
   if (password.length < MIN_PASSWORD_LENGTH) {
     return { error: `Password must be at least ${MIN_PASSWORD_LENGTH} characters.` };
@@ -77,14 +81,9 @@ export async function signUpClient(formData: FormData): Promise<ActionResult> {
         terms_accepted: "true",
         privacy_accepted: "true",
         age_16_confirmed: "true",
-        // Private client address — validated again, server-side, by
-        // the database trigger before any account is created.
-        client_address_line_1: addressLine1,
-        client_address_line_2: addressLine2 || undefined,
-        client_town_city: townCity,
-        client_county_region: countyRegion || undefined,
-        client_postcode: postcode,
-        client_country: country,
+        // No client_address_* keys are sent — see the comment above
+        // on `address`. The trigger treats a fully-absent address as
+        // valid and simply skips creating a client_addresses row.
       },
     },
   });
