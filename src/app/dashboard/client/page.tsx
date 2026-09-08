@@ -3,9 +3,9 @@ import Image from "next/image";
 import { requireRole } from "@/lib/auth/require-role";
 import { CalendarIcon, HistoryIcon, UserIcon, ScissorsIcon, ChevronCircleIcon, CrownIcon } from "./icons";
 
-// V1 placeholder: no polar_id column exists in the schema yet, and
-// this pass does not add one (per instruction). Once a real POLAR ID
-// assignment system exists, swap this constant for the real value.
+// UI fallback only — shown when profiles.polar_id is genuinely null
+// (not yet assigned; assignment happens on email verification for
+// client accounts, per the polar_client_id_seq migration).
 const POLAR_ID_PLACEHOLDER = "P-000000";
 
 // DashboardNav (in the shared client layout) is a fixed ~45px-tall
@@ -15,7 +15,15 @@ const POLAR_ID_PLACEHOLDER = "P-000000";
 const NAV_HEIGHT = "45px";
 
 export default async function ClientDashboardPage() {
-  const { user } = await requireRole("client");
+  const { supabase, user } = await requireRole("client");
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("polar_id")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  const polarId = profile?.polar_id ?? POLAR_ID_PLACEHOLDER;
 
   return (
     <>
@@ -62,7 +70,7 @@ export default async function ClientDashboardPage() {
           />
 
           <div className="col-start-2 row-span-2 flex items-center justify-center">
-            <PolarIdCard polarId={POLAR_ID_PLACEHOLDER} />
+            <PolarIdCard polarId={polarId} />
           </div>
 
           <Tile

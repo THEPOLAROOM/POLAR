@@ -3,12 +3,9 @@ import { createClient } from "@/lib/supabase/server";
 
 /**
  * Hit when the user clicks the email verification link. Exchanges the
- * confirmation code for a session, then — per the approved Decision B
- * — always sends the user to /login rather than any dashboard. This
- * applies to both Client and Barber sign-ups: nobody lands directly
- * on a dashboard from email confirmation. The subsequent login is
- * what performs the role-aware redirect (and every dashboard
- * independently re-checks role server-side regardless).
+ * confirmation code for a session and preserves it — verifying email
+ * now lands the user directly in their authenticated dashboard,
+ * role-aware, using the same has_role() check login() already uses.
  */
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
@@ -16,13 +13,15 @@ export async function GET(request: NextRequest) {
 
   if (code) {
     const supabase = await createClient();
-    await supabase.auth.exchangeCodeForSession(code);
-    // Immediately sign out again: confirming email should not itself
-    // leave the browser in an authenticated session. This keeps
-    // "verify email" and "log in" as two distinct, explicit steps,
-    // matching Decision B's intent that nothing is skipped straight
-    // into a dashboard.
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error) {
+      const { data: isBarber } = await supabase.rpc("has_role", {
+        check_role: "barber",
+      });
+      return NextResponse.redirect(
+        `${origin}${isBarber ? "/dashboard/barber" : "/dashboard/client"}`
+      );
+    }
   }
 
   return NextResponse.redirect(`${origin}/login`);
