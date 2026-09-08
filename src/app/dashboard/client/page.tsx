@@ -68,7 +68,7 @@ export default async function ClientDashboardPage() {
               <div className="grid flex-[64] grid-cols-[1fr_2fr_1fr] grid-rows-[1fr] gap-[1.2%]">
                 <Tile
                   href="/dashboard/client/book"
-                  icon={<CalendarIcon className="h-10 w-10" />}
+                  icon={<CalendarIcon className="h-12 w-12 drop-shadow-[0_0_8px_rgba(255,255,255,0.55)]" />}
                   label="BOOK APPOINTMENT"
                 />
 
@@ -78,7 +78,7 @@ export default async function ClientDashboardPage() {
 
                 <Tile
                   href="/dashboard/client/bookings"
-                  icon={<HistoryIcon className="h-10 w-10" />}
+                  icon={<HistoryIcon className="h-12 w-12 drop-shadow-[0_0_8px_rgba(255,255,255,0.55)]" />}
                   label="APPOINTMENT HISTORY"
                 />
               </div>
@@ -87,8 +87,8 @@ export default async function ClientDashboardPage() {
                   the panel is visually complete but never navigates to
                   a broken/non-existent route. */}
               <div className="grid flex-[33] grid-cols-2 grid-rows-[1fr] gap-[1.2%]">
-                <WideTile icon={<UserIcon className="h-9 w-9" />} label="YOUR BARBER" />
-                <WideTile icon={<ScissorsIcon className="h-9 w-9" />} label="SERVICES" />
+                <WideTile icon={<UserIcon className="h-11 w-11 drop-shadow-[0_0_8px_rgba(255,255,255,0.55)]" />} label="YOUR BARBER" />
+                <WideTile icon={<ScissorsIcon className="h-11 w-11 drop-shadow-[0_0_8px_rgba(255,255,255,0.55)]" />} label="SERVICES" />
               </div>
             </div>
           </div>
@@ -100,23 +100,25 @@ export default async function ClientDashboardPage() {
 
 // Shared corner-paint-splash accent for the dark navy panels — CSS
 // only (radial gradients using the existing royal/magenta tokens),
-// approximating the mastered reference's abstract blue/pink corner
-// detailing without baking any new artwork.
+// approximating the mastered reference's abstract blue/pink mural
+// detailing, which sits along the BOTTOM edge/corners of each panel
+// while the top stays clean dark navy — without baking any new
+// artwork.
 function PanelAccent() {
   return (
     <div
       aria-hidden="true"
-      className="pointer-events-none absolute inset-0 rounded-2xl opacity-60"
+      className="pointer-events-none absolute inset-0 rounded-2xl"
       style={{
         background:
-          "radial-gradient(circle at 100% 100%, rgba(255,61,154,0.25), transparent 55%), radial-gradient(circle at 0% 0%, rgba(11,95,255,0.35), transparent 60%)",
+          "radial-gradient(ellipse 70% 55% at 0% 100%, rgba(11,95,255,0.5), transparent 60%), radial-gradient(ellipse 65% 50% at 100% 100%, rgba(255,61,154,0.32), transparent 60%), linear-gradient(0deg, rgba(91,155,255,0.22), transparent 45%)",
       }}
     />
   );
 }
 
 const PANEL_CLASS =
-  "relative overflow-hidden rounded-2xl border-2 border-royal-light/80 bg-navy text-white shadow-[0_0_0_1px_rgba(91,155,255,0.25),0_0_30px_-6px_rgba(91,155,255,0.7),0_20px_45px_-20px_rgba(0,0,0,0.85)] backdrop-blur-md transition hover:border-royal-light hover:shadow-[0_0_0_1px_rgba(91,155,255,0.45),0_0_40px_-4px_rgba(91,155,255,0.9),0_20px_45px_-20px_rgba(0,0,0,0.85)]";
+  "relative overflow-hidden rounded-2xl border-2 border-royal-light bg-gradient-to-b from-navy-light to-navy text-white shadow-[0_0_0_1px_rgba(91,155,255,0.35),0_0_18px_2px_rgba(91,155,255,0.55),0_0_45px_-4px_rgba(91,155,255,0.85),0_20px_45px_-20px_rgba(0,0,0,0.9)] backdrop-blur-md transition hover:shadow-[0_0_0_1px_rgba(91,155,255,0.55),0_0_22px_2px_rgba(91,155,255,0.7),0_0_55px_-2px_rgba(91,155,255,1),0_20px_45px_-20px_rgba(0,0,0,0.9)]";
 
 function Tile({
   href,
@@ -184,38 +186,41 @@ function WideTile({
 
 function PolarIdCard({ polarId }: { polarId: string }) {
   return (
-    <div className="relative flex h-full w-full items-stretch gap-4 overflow-hidden rounded-2xl border-2 border-royal-light bg-gradient-to-br from-ice-50 via-white to-ice-100 p-4 text-navy shadow-[0_0_0_1px_rgba(91,155,255,0.3),0_0_35px_-6px_rgba(91,155,255,0.8),0_20px_45px_-20px_rgba(0,0,0,0.6)]">
+    <div className="relative flex h-full w-full items-stretch gap-3.5 overflow-hidden rounded-2xl border-[3px] border-royal-light bg-gradient-to-br from-ice-50 via-white to-ice-100 p-3.5 text-navy shadow-[0_0_0_1px_rgba(91,155,255,0.4),0_0_18px_2px_rgba(91,155,255,0.5),0_0_45px_-4px_rgba(91,155,255,0.9),0_20px_45px_-20px_rgba(0,0,0,0.6)]">
+      {/* Icy/crystalline texture + POLAR mural corner detailing — CSS
+          only, layered background (no baked artwork). */}
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 opacity-70"
+        className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(circle at 100% 100%, rgba(255,61,154,0.18), transparent 45%), radial-gradient(circle at 0% 0%, rgba(11,95,255,0.22), transparent 45%)",
+            "radial-gradient(ellipse 55% 60% at 0% 0%, rgba(11,95,255,0.28), transparent 55%), radial-gradient(ellipse 50% 55% at 100% 0%, rgba(11,95,255,0.16), transparent 50%), radial-gradient(ellipse 60% 60% at 0% 100%, rgba(255,61,154,0.28), transparent 55%), radial-gradient(ellipse 55% 55% at 100% 100%, rgba(255,61,154,0.2), transparent 55%), repeating-linear-gradient(115deg, rgba(255,255,255,0.5) 0px, rgba(255,255,255,0.5) 1px, transparent 1px, transparent 34px)",
+          opacity: 0.8,
         }}
       />
 
       <div
-        className="relative z-10 my-auto aspect-square h-[65%] shrink-0 rounded-xl border-2 border-royal/40 bg-white/70"
+        className="relative z-10 my-auto aspect-square h-[62%] shrink-0 rounded-xl border-2 border-royal/40 bg-white/70"
         aria-hidden="true"
       />
 
-      <div className="relative z-10 flex min-w-0 flex-1 flex-col justify-between py-0.5">
+      <div className="relative z-10 flex min-w-0 flex-1 flex-col justify-between">
         <div className="self-end text-right">
-          <p className="flex items-center justify-end gap-1 font-display text-2xl leading-none tracking-wide text-navy">
-            <CrownIcon className="h-5 w-5 text-royal" />
+          <p className="flex items-center justify-end gap-1.5 font-display text-3xl leading-none tracking-wide text-navy">
+            <CrownIcon className="h-6 w-6 text-royal" />
             POLAR
           </p>
-          <p className="mt-1 text-[10px] tracking-[0.3em] text-navy/70">LONDON</p>
+          <p className="mt-1 text-[10px] tracking-[0.35em] text-navy/70">LONDON</p>
         </div>
 
         <div className="flex items-center justify-between gap-3">
           <div className="min-w-0">
             <p className="text-[10px] uppercase tracking-widest text-navy/60">POLAR ID</p>
-            <p className="whitespace-nowrap font-display text-3xl tracking-wide text-navy">{polarId}</p>
+            <p className="whitespace-nowrap font-display text-4xl tracking-wide text-navy">{polarId}</p>
           </div>
           <div
             aria-hidden="true"
-            className="h-8 w-11 shrink-0 rounded-sm border border-navy/30 bg-gradient-to-br from-navy/30 via-navy/10 to-navy/30"
+            className="h-9 w-12 shrink-0 rounded-sm border border-navy/30 bg-gradient-to-br from-navy/30 via-navy/10 to-navy/30"
           />
         </div>
 
@@ -223,7 +228,7 @@ function PolarIdCard({ polarId }: { polarId: string }) {
           <p className="text-[10px] uppercase tracking-widest text-navy/60">Client</p>
           <div
             aria-hidden="true"
-            className="h-3 w-28 shrink-0 bg-[repeating-linear-gradient(90deg,#0A1128_0_2px,transparent_2px_5px)] opacity-70"
+            className="h-3.5 w-32 shrink-0 bg-[repeating-linear-gradient(90deg,#0A1128_0_2px,transparent_2px_5px)] opacity-70"
           />
         </div>
       </div>
