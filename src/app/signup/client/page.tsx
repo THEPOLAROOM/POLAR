@@ -96,7 +96,7 @@ export default function ClientSignupPage() {
           (1672x941) rather than stretched or force-fit to the
           viewport height. Unchanged from the previous approved fix. */}
       <div className="absolute inset-0 hidden sm:flex sm:items-center sm:justify-center sm:overflow-hidden">
-        <div className="relative w-full aspect-[1672/941]">
+        <div className="relative w-full aspect-[1112/941]">
           <Image
             src="/signup/create-account-desktop-bg.png"
             alt=""
