@@ -2,7 +2,14 @@ import Link from "next/link";
 import { requireRole } from "@/lib/auth/require-role";
 import { POLAR_BARBER_PROFILE_ID } from "@/lib/config";
 import { formatTime12h } from "@/lib/dates";
+import { DashboardNav } from "@/components/dashboard-nav";
 import { CancelBookingButton } from "./cancel-booking-button";
+
+const NAV_LINKS = [
+  { href: "/dashboard/client", label: "Dashboard" },
+  { href: "/dashboard/client/book", label: "Book Appointment" },
+  { href: "/dashboard/client/bookings", label: "My Bookings" },
+];
 
 const DAY_LABELS = [
   "Sunday",
@@ -71,7 +78,9 @@ export default async function MyBookingsPage() {
   );
 
   return (
-    <main className="mx-auto max-w-xl px-6 py-16">
+    <>
+      <DashboardNav links={NAV_LINKS} />
+      <main className="mx-auto max-w-xl px-6 py-16">
       <h1 className="text-xl font-semibold text-polar-text">My Bookings</h1>
 
       {myBookings.length > 0 ? (
@@ -122,6 +131,7 @@ export default async function MyBookingsPage() {
       ) : (
         <p className="mt-4 text-sm text-polar-muted">No bookings yet.</p>
       )}
-    </main>
+      </main>
+    </>
   );
 }

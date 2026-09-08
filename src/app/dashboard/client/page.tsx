@@ -8,12 +8,6 @@ import { CalendarIcon, HistoryIcon, UserIcon, ScissorsIcon, ChevronCircleIcon, C
 // client accounts, per the polar_client_id_seq migration).
 const POLAR_ID_PLACEHOLDER = "P-000000";
 
-// DashboardNav (in the shared client layout) is a fixed ~45px-tall
-// bar (py-3 + text-sm content + 1px border). Sized to fill exactly
-// the remaining viewport height beneath it so desktop never scrolls,
-// without touching the shared layout used by every other client page.
-const NAV_HEIGHT = "45px";
-
 export default async function ClientDashboardPage() {
   const { supabase, user } = await requireRole("client");
 
@@ -46,8 +40,11 @@ export default async function ClientDashboardPage() {
         </ul>
       </main>
 
-      {/* Desktop — matches the approved mastered reference. */}
-      <main className="relative hidden overflow-hidden bg-navy sm:block" style={{ height: `calc(100dvh - ${NAV_HEIGHT})` }}>
+      {/* Desktop — matches the approved mastered reference
+          (polar-client-dashboard-mastered.png). No top nav on this
+          page: the dashboard begins directly with the full-screen
+          POLAR Room. */}
+      <main className="relative hidden overflow-hidden bg-navy sm:block" style={{ height: "100dvh" }}>
         <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
           <div className="relative w-full aspect-[1672/941]">
             <Image
@@ -61,30 +58,32 @@ export default async function ClientDashboardPage() {
           </div>
         </div>
 
-        <div className="relative mx-auto grid h-full max-w-5xl grid-cols-3 grid-rows-2 gap-4 px-8 py-8">
-          <Tile
-            href="/dashboard/client/book"
-            icon={<CalendarIcon />}
-            label="BOOK APPOINTMENT"
-            className="col-start-1 row-start-1"
-          />
+        <div className="relative mx-auto flex h-full max-w-5xl flex-col gap-4 px-8 py-8">
+          <div className="grid flex-[2] grid-cols-[1fr_1.6fr_1fr] grid-rows-[1fr] gap-4">
+            <Tile
+              href="/dashboard/client/book"
+              icon={<CalendarIcon />}
+              label="BOOK APPOINTMENT"
+            />
 
-          <div className="col-start-2 row-span-2 flex items-center justify-center">
-            <PolarIdCard polarId={polarId} />
+            <div className="h-full">
+              <PolarIdCard polarId={polarId} />
+            </div>
+
+            <Tile
+              href="/dashboard/client/bookings"
+              icon={<HistoryIcon />}
+              label="APPOINTMENT HISTORY"
+            />
           </div>
-
-          <Tile
-            href="/dashboard/client/bookings"
-            icon={<HistoryIcon />}
-            label="APPOINTMENT HISTORY"
-            className="col-start-3 row-start-1"
-          />
 
           {/* Destination pages not built yet — inert (no href) so the
               panel is visually complete but never navigates to a
               broken/non-existent route. */}
-          <Tile icon={<UserIcon />} label="YOUR BARBER" className="col-start-1 row-start-2" />
-          <Tile icon={<ScissorsIcon />} label="SERVICES" className="col-start-3 row-start-2" />
+          <div className="grid flex-1 grid-cols-2 grid-rows-[1fr] gap-4">
+            <WideTile icon={<UserIcon />} label="YOUR BARBER" />
+            <WideTile icon={<ScissorsIcon />} label="SERVICES" />
+          </div>
         </div>
       </main>
     </>
@@ -95,12 +94,10 @@ function Tile({
   href,
   icon,
   label,
-  className = "",
 }: {
   href?: string;
   icon: React.ReactNode;
   label: string;
-  className?: string;
 }) {
   const inner = (
     <div className="flex h-full flex-col items-center justify-center gap-4 rounded-2xl border border-royal/30 bg-navy/70 text-white shadow-ice-lg backdrop-blur-md transition hover:border-royal-light hover:bg-navy/80">
@@ -114,41 +111,73 @@ function Tile({
     return (
       <Link
         href={href}
-        className={`block rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-light ${className}`}
+        className="block h-full rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-light"
       >
         {inner}
       </Link>
     );
   }
 
-  return <div className={className}>{inner}</div>;
+  return <div className="h-full">{inner}</div>;
+}
+
+function WideTile({
+  href,
+  icon,
+  label,
+}: {
+  href?: string;
+  icon: React.ReactNode;
+  label: string;
+}) {
+  const inner = (
+    <div className="flex h-full items-center gap-4 rounded-2xl border border-royal/30 bg-navy/70 px-6 text-white shadow-ice-lg backdrop-blur-md transition hover:border-royal-light hover:bg-navy/80">
+      <div className="text-white">{icon}</div>
+      <p className="font-display text-sm tracking-wide">{label}</p>
+      <ChevronCircleIcon className="ml-auto h-7 w-7 shrink-0 text-royal-light" />
+    </div>
+  );
+
+  if (href) {
+    return (
+      <Link
+        href={href}
+        className="block h-full rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-light"
+      >
+        {inner}
+      </Link>
+    );
+  }
+
+  return <div className="h-full">{inner}</div>;
 }
 
 function PolarIdCard({ polarId }: { polarId: string }) {
   return (
-    <div className="relative flex h-[85%] w-full max-w-[280px] flex-col justify-between rounded-2xl border-2 border-royal-light bg-gradient-to-br from-ice-50 via-white to-ice-100 p-5 text-navy shadow-ice-lg">
-      <div className="flex items-start justify-between">
-        <div
-          className="h-16 w-16 shrink-0 rounded-xl border-2 border-royal/40 bg-white/70"
-          aria-hidden="true"
-        />
-        <div className="text-right">
-          <p className="flex items-center justify-end gap-1 font-display text-2xl leading-none tracking-wide text-navy">
+    <div className="flex h-full w-full items-stretch gap-5 rounded-2xl border-2 border-royal-light bg-gradient-to-br from-ice-50 via-white to-ice-100 p-5 text-navy shadow-ice-lg">
+      <div
+        className="my-auto aspect-square h-[70%] shrink-0 rounded-xl border-2 border-royal/40 bg-white/70"
+        aria-hidden="true"
+      />
+
+      <div className="flex min-w-0 flex-1 flex-col justify-between py-1">
+        <div className="self-end text-right">
+          <p className="flex items-center justify-end gap-1 font-display text-xl leading-none tracking-wide text-navy">
             <CrownIcon className="h-4 w-4 text-royal" />
             POLAR
           </p>
-          <p className="mt-1 text-[10px] tracking-[0.3em] text-navy/70">LONDON</p>
+          <p className="mt-1 text-[9px] tracking-[0.3em] text-navy/70">LONDON</p>
         </div>
-      </div>
 
-      <div className="mt-4">
-        <p className="text-[10px] uppercase tracking-widest text-navy/60">POLAR ID</p>
-        <p className="font-display text-lg tracking-wide text-navy">{polarId}</p>
-      </div>
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-[10px] uppercase tracking-widest text-navy/60">POLAR ID</p>
+            <p className="font-display text-2xl tracking-wide text-navy">{polarId}</p>
+          </div>
+          <div className="h-7 w-11 shrink-0 rounded bg-navy/20" aria-hidden="true" />
+        </div>
 
-      <div className="mt-4 flex items-center justify-between">
         <p className="text-[10px] uppercase tracking-widest text-navy/60">Client</p>
-        <div className="h-6 w-10 rounded bg-navy/20" aria-hidden="true" />
       </div>
     </div>
   );

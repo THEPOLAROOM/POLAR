@@ -2,7 +2,14 @@ import { notFound } from "next/navigation";
 import { requireRole } from "@/lib/auth/require-role";
 import { POLAR_BARBER_PROFILE_ID } from "@/lib/config";
 import { getShopToday, formatTime12h } from "@/lib/dates";
+import { DashboardNav } from "@/components/dashboard-nav";
 import { RescheduleSlotForm } from "./reschedule-slot-form";
+
+const NAV_LINKS = [
+  { href: "/dashboard/client", label: "Dashboard" },
+  { href: "/dashboard/client/book", label: "Book Appointment" },
+  { href: "/dashboard/client/bookings", label: "My Bookings" },
+];
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -68,7 +75,9 @@ export default async function RescheduleBookingPage({
   );
 
   return (
-    <main className="mx-auto max-w-xl px-6 py-16">
+    <>
+      <DashboardNav links={NAV_LINKS} />
+      <main className="mx-auto max-w-xl px-6 py-16">
       <h1 className="text-xl font-semibold text-polar-text">
         Reschedule appointment
       </h1>
@@ -131,6 +140,7 @@ export default async function RescheduleBookingPage({
           })}
         </ul>
       )}
-    </main>
+      </main>
+    </>
   );
 }

@@ -1,7 +1,14 @@
 import { requireRole } from "@/lib/auth/require-role";
 import { POLAR_BARBER_PROFILE_ID } from "@/lib/config";
 import { getShopToday, formatTime12h } from "@/lib/dates";
+import { DashboardNav } from "@/components/dashboard-nav";
 import { BookSlotForm } from "./book-slot-form";
+
+const NAV_LINKS = [
+  { href: "/dashboard/client", label: "Dashboard" },
+  { href: "/dashboard/client/book", label: "Book Appointment" },
+  { href: "/dashboard/client/bookings", label: "My Bookings" },
+];
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -62,7 +69,9 @@ export default async function ClientBookingPage({
       : null;
 
   return (
-    <main className="mx-auto max-w-xl px-6 py-16">
+    <>
+      <DashboardNav links={NAV_LINKS} />
+      <main className="mx-auto max-w-xl px-6 py-16">
       <h1 className="text-xl font-semibold text-polar-text">
         Book an appointment
       </h1>
@@ -147,6 +156,7 @@ export default async function ClientBookingPage({
           })}
         </ul>
       )}
-    </main>
+      </main>
+    </>
   );
 }
