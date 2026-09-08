@@ -43,7 +43,12 @@ export default async function ClientDashboardPage() {
       {/* Desktop — matches the approved mastered reference
           (polar-client-dashboard-mastered.png). No top nav on this
           page: the dashboard begins directly with the full-screen
-          POLAR Room. */}
+          POLAR Room. The panel composition lives INSIDE the same
+          aspect-ratio box as the background image (not the raw
+          viewport) so its position/size stays locked to the artwork
+          — sized and inset to match the reference's proportions
+          (~76% wide, ~57% tall, centred, more room revealed above/
+          below/around it than the previous full-height layout). */}
       <main className="relative hidden overflow-hidden bg-navy sm:block" style={{ height: "100dvh" }}>
         <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
           <div className="relative w-full aspect-[1672/941]">
@@ -55,40 +60,63 @@ export default async function ClientDashboardPage() {
               className="object-cover"
               aria-hidden="true"
             />
-          </div>
-        </div>
 
-        <div className="relative mx-auto flex h-full max-w-5xl flex-col gap-4 px-8 py-8">
-          <div className="grid flex-[2] grid-cols-[1fr_1.6fr_1fr] grid-rows-[1fr] gap-4">
-            <Tile
-              href="/dashboard/client/book"
-              icon={<CalendarIcon />}
-              label="BOOK APPOINTMENT"
-            />
+            <div
+              className="absolute flex flex-col gap-[1.5%]"
+              style={{ left: "12%", right: "12%", top: "27%", bottom: "15.5%" }}
+            >
+              <div className="grid flex-[64] grid-cols-[1fr_2fr_1fr] grid-rows-[1fr] gap-[1.2%]">
+                <Tile
+                  href="/dashboard/client/book"
+                  icon={<CalendarIcon className="h-10 w-10" />}
+                  label="BOOK APPOINTMENT"
+                />
 
-            <div className="h-full">
-              <PolarIdCard polarId={polarId} />
+                <div className="h-full">
+                  <PolarIdCard polarId={polarId} />
+                </div>
+
+                <Tile
+                  href="/dashboard/client/bookings"
+                  icon={<HistoryIcon className="h-10 w-10" />}
+                  label="APPOINTMENT HISTORY"
+                />
+              </div>
+
+              {/* Destination pages not built yet — inert (no href) so
+                  the panel is visually complete but never navigates to
+                  a broken/non-existent route. */}
+              <div className="grid flex-[33] grid-cols-2 grid-rows-[1fr] gap-[1.2%]">
+                <WideTile icon={<UserIcon className="h-9 w-9" />} label="YOUR BARBER" />
+                <WideTile icon={<ScissorsIcon className="h-9 w-9" />} label="SERVICES" />
+              </div>
             </div>
-
-            <Tile
-              href="/dashboard/client/bookings"
-              icon={<HistoryIcon />}
-              label="APPOINTMENT HISTORY"
-            />
-          </div>
-
-          {/* Destination pages not built yet — inert (no href) so the
-              panel is visually complete but never navigates to a
-              broken/non-existent route. */}
-          <div className="grid flex-1 grid-cols-2 grid-rows-[1fr] gap-4">
-            <WideTile icon={<UserIcon />} label="YOUR BARBER" />
-            <WideTile icon={<ScissorsIcon />} label="SERVICES" />
           </div>
         </div>
       </main>
     </>
   );
 }
+
+// Shared corner-paint-splash accent for the dark navy panels — CSS
+// only (radial gradients using the existing royal/magenta tokens),
+// approximating the mastered reference's abstract blue/pink corner
+// detailing without baking any new artwork.
+function PanelAccent() {
+  return (
+    <div
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-0 rounded-2xl opacity-60"
+      style={{
+        background:
+          "radial-gradient(circle at 100% 100%, rgba(255,61,154,0.25), transparent 55%), radial-gradient(circle at 0% 0%, rgba(11,95,255,0.35), transparent 60%)",
+      }}
+    />
+  );
+}
+
+const PANEL_CLASS =
+  "relative overflow-hidden rounded-2xl border-2 border-royal-light/80 bg-navy text-white shadow-[0_0_0_1px_rgba(91,155,255,0.25),0_0_30px_-6px_rgba(91,155,255,0.7),0_20px_45px_-20px_rgba(0,0,0,0.85)] backdrop-blur-md transition hover:border-royal-light hover:shadow-[0_0_0_1px_rgba(91,155,255,0.45),0_0_40px_-4px_rgba(91,155,255,0.9),0_20px_45px_-20px_rgba(0,0,0,0.85)]";
 
 function Tile({
   href,
@@ -100,10 +128,11 @@ function Tile({
   label: string;
 }) {
   const inner = (
-    <div className="flex h-full flex-col items-center justify-center gap-4 rounded-2xl border border-royal/30 bg-navy/70 text-white shadow-ice-lg backdrop-blur-md transition hover:border-royal-light hover:bg-navy/80">
-      <div className="text-white">{icon}</div>
-      <p className="font-display text-sm tracking-wide">{label}</p>
-      <ChevronCircleIcon className="h-7 w-7 text-royal-light" />
+    <div className={`flex h-full flex-col items-center justify-center gap-3 ${PANEL_CLASS}`}>
+      <PanelAccent />
+      <div className="relative z-10 text-white">{icon}</div>
+      <p className="relative z-10 font-display text-sm tracking-wide">{label}</p>
+      <ChevronCircleIcon className="relative z-10 h-8 w-8 text-royal-light" />
     </div>
   );
 
@@ -131,10 +160,11 @@ function WideTile({
   label: string;
 }) {
   const inner = (
-    <div className="flex h-full items-center gap-4 rounded-2xl border border-royal/30 bg-navy/70 px-6 text-white shadow-ice-lg backdrop-blur-md transition hover:border-royal-light hover:bg-navy/80">
-      <div className="text-white">{icon}</div>
-      <p className="font-display text-sm tracking-wide">{label}</p>
-      <ChevronCircleIcon className="ml-auto h-7 w-7 shrink-0 text-royal-light" />
+    <div className={`flex h-full items-center gap-4 px-6 ${PANEL_CLASS}`}>
+      <PanelAccent />
+      <div className="relative z-10 text-white">{icon}</div>
+      <p className="relative z-10 font-display text-sm tracking-wide">{label}</p>
+      <ChevronCircleIcon className="relative z-10 ml-auto h-8 w-8 shrink-0 text-royal-light" />
     </div>
   );
 
@@ -154,30 +184,48 @@ function WideTile({
 
 function PolarIdCard({ polarId }: { polarId: string }) {
   return (
-    <div className="flex h-full w-full items-stretch gap-5 rounded-2xl border-2 border-royal-light bg-gradient-to-br from-ice-50 via-white to-ice-100 p-5 text-navy shadow-ice-lg">
+    <div className="relative flex h-full w-full items-stretch gap-4 overflow-hidden rounded-2xl border-2 border-royal-light bg-gradient-to-br from-ice-50 via-white to-ice-100 p-4 text-navy shadow-[0_0_0_1px_rgba(91,155,255,0.3),0_0_35px_-6px_rgba(91,155,255,0.8),0_20px_45px_-20px_rgba(0,0,0,0.6)]">
       <div
-        className="my-auto aspect-square h-[70%] shrink-0 rounded-xl border-2 border-royal/40 bg-white/70"
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 opacity-70"
+        style={{
+          background:
+            "radial-gradient(circle at 100% 100%, rgba(255,61,154,0.18), transparent 45%), radial-gradient(circle at 0% 0%, rgba(11,95,255,0.22), transparent 45%)",
+        }}
+      />
+
+      <div
+        className="relative z-10 my-auto aspect-square h-[65%] shrink-0 rounded-xl border-2 border-royal/40 bg-white/70"
         aria-hidden="true"
       />
 
-      <div className="flex min-w-0 flex-1 flex-col justify-between py-1">
+      <div className="relative z-10 flex min-w-0 flex-1 flex-col justify-between py-0.5">
         <div className="self-end text-right">
-          <p className="flex items-center justify-end gap-1 font-display text-xl leading-none tracking-wide text-navy">
-            <CrownIcon className="h-4 w-4 text-royal" />
+          <p className="flex items-center justify-end gap-1 font-display text-2xl leading-none tracking-wide text-navy">
+            <CrownIcon className="h-5 w-5 text-royal" />
             POLAR
           </p>
-          <p className="mt-1 text-[9px] tracking-[0.3em] text-navy/70">LONDON</p>
+          <p className="mt-1 text-[10px] tracking-[0.3em] text-navy/70">LONDON</p>
         </div>
 
-        <div className="flex items-center justify-between gap-4">
-          <div>
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0">
             <p className="text-[10px] uppercase tracking-widest text-navy/60">POLAR ID</p>
-            <p className="font-display text-2xl tracking-wide text-navy">{polarId}</p>
+            <p className="whitespace-nowrap font-display text-3xl tracking-wide text-navy">{polarId}</p>
           </div>
-          <div className="h-7 w-11 shrink-0 rounded bg-navy/20" aria-hidden="true" />
+          <div
+            aria-hidden="true"
+            className="h-8 w-11 shrink-0 rounded-sm border border-navy/30 bg-gradient-to-br from-navy/30 via-navy/10 to-navy/30"
+          />
         </div>
 
-        <p className="text-[10px] uppercase tracking-widest text-navy/60">Client</p>
+        <div className="flex items-end justify-between gap-3">
+          <p className="text-[10px] uppercase tracking-widest text-navy/60">Client</p>
+          <div
+            aria-hidden="true"
+            className="h-3 w-28 shrink-0 bg-[repeating-linear-gradient(90deg,#0A1128_0_2px,transparent_2px_5px)] opacity-70"
+          />
+        </div>
       </div>
     </div>
   );
