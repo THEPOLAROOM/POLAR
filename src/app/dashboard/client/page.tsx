@@ -186,16 +186,25 @@ function WideTile({
 
 function PolarIdCard({ polarId }: { polarId: string }) {
   return (
-    <div className="relative flex h-full w-full items-stretch gap-3.5 overflow-hidden rounded-2xl border-[3px] border-royal-light bg-gradient-to-br from-ice-50 via-white to-ice-100 p-3.5 text-navy shadow-[0_0_0_1px_rgba(91,155,255,0.45),0_0_18px_3px_rgba(91,155,255,0.6),0_0_50px_-4px_rgba(91,155,255,1),0_0_90px_-10px_rgba(91,155,255,0.7),0_20px_45px_-20px_rgba(0,0,0,0.6)]">
+    <div className="relative flex h-full w-full items-stretch gap-3.5 overflow-hidden rounded-2xl border-4 border-royal-light bg-gradient-to-br from-ice-50 via-white to-ice-100 p-3.5 text-navy shadow-[0_0_0_1px_rgba(91,155,255,0.55),0_0_20px_4px_rgba(91,155,255,0.75),0_0_60px_-4px_rgba(91,155,255,1),0_0_110px_-8px_rgba(91,155,255,0.85),0_20px_45px_-20px_rgba(0,0,0,0.6)]">
       {/* Icy/crystalline texture + POLAR mural corner detailing — CSS
-          only, layered background (no baked artwork). */}
+          only, layered background (no baked artwork). Concentrated at
+          the edges/corners (and top/bottom centre) so the middle band
+          holding the wordmark and POLAR ID stays clean and readable. */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse 55% 60% at 0% 0%, rgba(11,95,255,0.36), transparent 55%), radial-gradient(ellipse 50% 55% at 100% 0%, rgba(11,95,255,0.22), transparent 50%), radial-gradient(ellipse 60% 60% at 0% 100%, rgba(255,61,154,0.36), transparent 55%), radial-gradient(ellipse 55% 55% at 100% 100%, rgba(255,61,154,0.26), transparent 55%), repeating-linear-gradient(115deg, rgba(255,255,255,0.55) 0px, rgba(255,255,255,0.55) 1px, transparent 1px, transparent 30px)",
-          opacity: 0.9,
+            "radial-gradient(ellipse 62% 68% at 0% 0%, rgba(11,95,255,0.65), transparent 60%), radial-gradient(ellipse 58% 62% at 100% 0%, rgba(11,95,255,0.45), transparent 58%), radial-gradient(ellipse 68% 70% at 0% 100%, rgba(255,61,154,0.6), transparent 62%), radial-gradient(ellipse 62% 65% at 100% 100%, rgba(255,61,154,0.48), transparent 60%), radial-gradient(ellipse 45% 32% at 50% 0%, rgba(11,95,255,0.4), transparent 68%), radial-gradient(ellipse 45% 32% at 50% 100%, rgba(255,61,154,0.4), transparent 68%), repeating-linear-gradient(115deg, rgba(255,255,255,0.7) 0px, rgba(255,255,255,0.7) 2px, transparent 2px, transparent 20px), repeating-linear-gradient(25deg, rgba(11,95,255,0.16) 0px, rgba(11,95,255,0.16) 1px, transparent 1px, transparent 24px)",
+        }}
+      />
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "radial-gradient(ellipse 42% 60% at 50% 50%, rgba(255,255,255,0.85), transparent 75%)",
         }}
       />
 
