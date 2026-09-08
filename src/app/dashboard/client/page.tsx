@@ -186,7 +186,7 @@ function WideTile({
 
 function PolarIdCard({ polarId }: { polarId: string }) {
   return (
-    <div className="relative flex h-full w-full items-stretch gap-3.5 overflow-hidden rounded-2xl border-[3px] border-royal-light bg-gradient-to-br from-ice-50 via-white to-ice-100 p-3.5 text-navy shadow-[0_0_0_1px_rgba(91,155,255,0.4),0_0_18px_2px_rgba(91,155,255,0.5),0_0_45px_-4px_rgba(91,155,255,0.9),0_20px_45px_-20px_rgba(0,0,0,0.6)]">
+    <div className="relative flex h-full w-full items-stretch gap-3.5 overflow-hidden rounded-2xl border-[3px] border-royal-light bg-gradient-to-br from-ice-50 via-white to-ice-100 p-3.5 text-navy shadow-[0_0_0_1px_rgba(91,155,255,0.45),0_0_18px_3px_rgba(91,155,255,0.6),0_0_50px_-4px_rgba(91,155,255,1),0_0_90px_-10px_rgba(91,155,255,0.7),0_20px_45px_-20px_rgba(0,0,0,0.6)]">
       {/* Icy/crystalline texture + POLAR mural corner detailing — CSS
           only, layered background (no baked artwork). */}
       <div
@@ -194,8 +194,8 @@ function PolarIdCard({ polarId }: { polarId: string }) {
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            "radial-gradient(ellipse 55% 60% at 0% 0%, rgba(11,95,255,0.28), transparent 55%), radial-gradient(ellipse 50% 55% at 100% 0%, rgba(11,95,255,0.16), transparent 50%), radial-gradient(ellipse 60% 60% at 0% 100%, rgba(255,61,154,0.28), transparent 55%), radial-gradient(ellipse 55% 55% at 100% 100%, rgba(255,61,154,0.2), transparent 55%), repeating-linear-gradient(115deg, rgba(255,255,255,0.5) 0px, rgba(255,255,255,0.5) 1px, transparent 1px, transparent 34px)",
-          opacity: 0.8,
+            "radial-gradient(ellipse 55% 60% at 0% 0%, rgba(11,95,255,0.36), transparent 55%), radial-gradient(ellipse 50% 55% at 100% 0%, rgba(11,95,255,0.22), transparent 50%), radial-gradient(ellipse 60% 60% at 0% 100%, rgba(255,61,154,0.36), transparent 55%), radial-gradient(ellipse 55% 55% at 100% 100%, rgba(255,61,154,0.26), transparent 55%), repeating-linear-gradient(115deg, rgba(255,255,255,0.55) 0px, rgba(255,255,255,0.55) 1px, transparent 1px, transparent 30px)",
+          opacity: 0.9,
         }}
       />
 
@@ -205,9 +205,9 @@ function PolarIdCard({ polarId }: { polarId: string }) {
       />
 
       <div className="relative z-10 flex min-w-0 flex-1 flex-col justify-between">
-        <div className="self-end text-right">
-          <p className="flex items-center justify-end gap-1.5 font-display text-3xl leading-none tracking-wide text-navy">
-            <CrownIcon className="h-6 w-6 text-royal" />
+        <div className="mx-auto flex flex-col items-center text-center">
+          <CrownIcon className="h-5 w-5 text-royal" />
+          <p className="mt-0.5 font-display text-3xl font-black leading-none tracking-wide text-black">
             POLAR
           </p>
           <p className="mt-1 text-[10px] tracking-[0.35em] text-navy/70">LONDON</p>
@@ -220,7 +220,11 @@ function PolarIdCard({ polarId }: { polarId: string }) {
           </div>
           <div
             aria-hidden="true"
-            className="h-9 w-12 shrink-0 rounded-sm border border-navy/30 bg-gradient-to-br from-navy/30 via-navy/10 to-navy/30"
+            className="h-9 w-12 shrink-0 rounded-sm border border-navy/40 shadow-inner"
+            style={{
+              backgroundImage:
+                "repeating-linear-gradient(0deg, rgba(10,17,40,0.3) 0px, rgba(10,17,40,0.3) 1px, transparent 1px, transparent 4px), linear-gradient(135deg, #e2e7ee, #9aa4b2 50%, #c7ccd4)",
+            }}
           />
         </div>
 
