@@ -17,7 +17,7 @@ const GLOW =
 
 export default function SignupPortalPage() {
   return (
-    <main className="min-h-screen bg-navy sm:h-screen sm:overflow-hidden">
+    <main className="min-h-screen overflow-hidden bg-navy sm:h-screen">
       {/* Desktop / tablet artwork — new artwork is ~16:9 (1672x941),
           near-identical to the most common laptop screen ratio, so it
           is sized by WIDTH (fills the viewport edge-to-edge on true
@@ -53,17 +53,21 @@ export default function SignupPortalPage() {
         </div>
       </div>
 
-      {/* Mobile artwork — sized to fill as much of the viewport
-          height as possible (min() of the width- and height-
-          constrained sizes, same logic object-fit: contain uses)
-          instead of a fixed max-width, so the composition extends
-          further down the screen rather than leaving a large empty
-          navy gap beneath it. Still never exceeds 100% width, and
-          the aspect ratio is always preserved since both dimensions
-          come from the same formula. */}
+      {/* Mobile artwork — the artwork (1024:1536, ~0.667 w/h) is
+          proportionally wider-relative-to-height than a real phone
+          viewport (~0.46-0.56 w/h), so fitting it by WIDTH (the
+          previous min() approach) always left it short of the full
+          viewport height — that's the large navy gap. Instead size
+          it by HEIGHT (fill 100dvh), letting the resulting width
+          exceed the viewport; the parent's overflow-hidden (above)
+          clips the excess symmetrically since this element stays
+          centred, so only the artwork's outer side margins are
+          cropped — the doors themselves sit well within the centre
+          60% width and are never touched. Aspect ratio is always
+          preserved since both dimensions come from one formula. */}
       <div
         className="relative mx-auto block sm:hidden"
-        style={{ width: "min(100%, calc(100dvh * 1024 / 1536))" }}
+        style={{ width: "max(100%, calc(100dvh * 1024 / 1536))" }}
       >
         <div className="relative aspect-[1024/1536] w-full">
           <Image

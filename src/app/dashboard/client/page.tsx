@@ -92,7 +92,7 @@ export default async function ClientDashboardPage() {
           Appointment, My Appointments) and the live POLAR ID patch;
           Services/Your Barber stay purely visual, matching their
           current desktop (inert) treatment. */}
-      <main className="relative w-full overflow-hidden bg-navy sm:hidden">
+      <main className="relative min-h-[100dvh] w-full overflow-hidden bg-navy sm:hidden">
         <div className="relative w-full aspect-[941/1672]">
           <Image
             src="/dashboard/polar-client-dashboard-app-background.png"

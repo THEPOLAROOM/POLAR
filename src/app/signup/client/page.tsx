@@ -121,8 +121,14 @@ export default function ClientSignupPage() {
           extra top padding (rather than vertically centred) so the
           card begins lower, giving the POLAR wordmark/branding at
           the top of the mobile background room to breathe instead
-          of being covered; desktop centring is unchanged. */}
-      <div className="relative flex min-h-screen items-start justify-center px-5 pb-16 pt-40 sm:h-[100dvh] sm:min-h-0 sm:items-center sm:px-12 sm:py-4">
+          of being covered; desktop centring is unchanged. The
+          padding is a dvh (viewport-height) value rather than a
+          fixed rem amount — measured directly against where the
+          wordmark actually ends in create-account-mobile-bg.png
+          (~23% down its 941x1672 canvas) plus clearance — because a
+          fixed padding doesn't scale with the background image,
+          which is height-driven (object-cover) on this page. */}
+      <div className="relative flex min-h-screen items-start justify-center px-5 pb-16 pt-[28dvh] sm:h-[100dvh] sm:min-h-0 sm:items-center sm:px-12 sm:py-4">
         <form
           onSubmit={handleSubmit}
           className="w-full max-w-md rounded-2xl border border-white/15 bg-navy/70 p-6 text-white shadow-ice-lg backdrop-blur-xl sm:max-w-[300px] sm:p-4"
