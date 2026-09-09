@@ -23,7 +23,7 @@ const MONTH_LABELS_SHORT = [
 // renders at this fraction of the background's width, centred via
 // equal insets on every side — same "breathing room" treatment as
 // the Client Dashboard desktop composition.
-const OVERLAY_SCALE = 0.68;
+const OVERLAY_SCALE = 0.6;
 const OVERLAY_INSET_PCT = `${((1 - OVERLAY_SCALE) / 2) * 100}%`;
 const OVERLAY_INSET = {
   left: OVERLAY_INSET_PCT,
