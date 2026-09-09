@@ -10,8 +10,9 @@ const POLAR_ID_PLACEHOLDER = "P-000000";
 // The overlay renders at this fraction of the background's width
 // (height follows automatically since both share the exact same
 // 1672:941 aspect ratio), centred via equal insets on every side —
-// per the "roughly 82-86%" target, leaving more room visible.
-const OVERLAY_SCALE = 0.84;
+// shrunk from 84% to 76% to expose the full POLAR LONDON wall logo
+// and give the panels more breathing room.
+const OVERLAY_SCALE = 0.76;
 const OVERLAY_INSET_PCT = `${((1 - OVERLAY_SCALE) / 2) * 100}%`;
 const OVERLAY_INSET = {
   left: OVERLAY_INSET_PCT,
