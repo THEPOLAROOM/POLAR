@@ -19,10 +19,24 @@ const MONTH_LABELS_SHORT = [
   "JUL", "AUG", "SEP", "OCT", "NOV", "DEC",
 ];
 
+// The overlay (plus every real-HTML piece positioned against it)
+// renders at this fraction of the background's width, centred via
+// equal insets on every side — same "breathing room" treatment as
+// the Client Dashboard desktop composition.
+const OVERLAY_SCALE = 0.76;
+const OVERLAY_INSET_PCT = `${((1 - OVERLAY_SCALE) / 2) * 100}%`;
+const OVERLAY_INSET = {
+  left: OVERLAY_INSET_PCT,
+  right: OVERLAY_INSET_PCT,
+  top: OVERLAY_INSET_PCT,
+  bottom: OVERLAY_INSET_PCT,
+};
+
 // Boxes below are measured directly against the mastered UI asset's
 // native 1672x941 canvas (polar-client-appointments-ui-mastered.png),
-// same technique as the client dashboard. Do not adjust without
-// re-measuring the asset.
+// same technique as the client dashboard — now relative to the
+// scaled-down OVERLAY_INSET wrapper rather than the full background.
+// Do not adjust without re-measuring the asset.
 const EDIT_BOX = { left: "66.21%", top: "45.70%", width: "24.40%", height: "11.16%" };
 const CANCEL_BOX = { left: "66.21%", top: "58.45%", width: "24.40%", height: "7.97%" };
 const PREV_BAR_BOX = { left: "14.35%", top: "76.94%", width: "76.26%", height: "13.50%" };
@@ -210,13 +224,20 @@ export default async function MyAppointmentsPage() {
       {/* Desktop — two-asset architecture: the same POLAR Room
           background as the client dashboard, plus the mastered,
           transparent My Appointments UI overlay
-          (polar-client-appointments-ui-mastered.png), stacked 1:1 (no
-          inset/scale — the overlay's own canvas already positions the
-          card off-centre so the POLAR LONDON branding on the wall
-          stays visible, matching the supplied reference). No CSS
-          draws the panels/card — that design lives entirely in the
-          overlay PNG. Real HTML on top: the date/time/field values
-          and the two action buttons/toggle. */}
+          (polar-client-appointments-ui-mastered.png). No CSS draws
+          the panels/card — that design lives entirely in the overlay
+          PNG. Real HTML on top: the date/time/field values and the
+          two action buttons/toggle.
+
+          The overlay (plus everything positioned against it) is
+          scaled down to OVERLAY_SCALE of the background's width and
+          centred within it via equal insets on all four sides —
+          same breathing-room treatment as the Client Dashboard.
+          Since the background box already holds the artwork's exact
+          1672:941 aspect ratio, shrinking every side by the same
+          percentage preserves that ratio automatically without
+          stretching, and every box below stays aligned since it's
+          positioned relative to this same scaled wrapper. */}
       <main className="relative hidden overflow-hidden bg-navy sm:block" style={{ height: "100dvh" }}>
         <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
           <div className="relative w-full aspect-[1672/941]">
@@ -229,6 +250,7 @@ export default async function MyAppointmentsPage() {
               aria-hidden="true"
             />
 
+            <div className="absolute" style={OVERLAY_INSET}>
             <Image
               src="/dashboard/polar-client-appointments-ui-mastered.png"
               alt=""
@@ -241,16 +263,16 @@ export default async function MyAppointmentsPage() {
             {upcoming ? (
               <>
                 <div className="absolute flex items-center justify-center" style={{ ...WEEKDAY_BOX, backgroundColor: DATE_BG }}>
-                  <p className="font-display text-white" style={{ fontSize: "1.4vw" }}>{weekdayLabel}</p>
+                  <p className="font-display text-white" style={{ fontSize: `${1.4 * OVERLAY_SCALE}vw` }}>{weekdayLabel}</p>
                 </div>
                 <div className="absolute flex items-center justify-center" style={{ ...DAY_BOX, backgroundColor: DATE_BG }}>
-                  <p className="font-display font-bold text-white" style={{ fontSize: "4.8vw", lineHeight: 1 }}>{dayNumberLabel}</p>
+                  <p className="font-display font-bold text-white" style={{ fontSize: `${4.8 * OVERLAY_SCALE}vw`, lineHeight: 1 }}>{dayNumberLabel}</p>
                 </div>
                 <div className="absolute flex items-center justify-center" style={{ ...MONTHYEAR_BOX, backgroundColor: DATE_BG }}>
-                  <p className="font-display text-white" style={{ fontSize: "3.1vw" }}>{monthYearLabel}</p>
+                  <p className="font-display text-white" style={{ fontSize: `${3.1 * OVERLAY_SCALE}vw` }}>{monthYearLabel}</p>
                 </div>
                 <div className="absolute flex items-center justify-center rounded-full" style={{ ...TIME_PILL_BOX, backgroundColor: TIME_PILL_BG }}>
-                  <p className="font-display font-bold text-white" style={{ fontSize: "2vw" }}>{timeLabel}</p>
+                  <p className="font-display font-bold text-white" style={{ fontSize: `${2 * OVERLAY_SCALE}vw` }}>{timeLabel}</p>
                 </div>
 
                 {(
@@ -267,7 +289,7 @@ export default async function MyAppointmentsPage() {
                     className="absolute flex items-center overflow-hidden px-4"
                     style={{ ...FIELD_ROW_COMMON, top: FIELD_ROWS_TOP[key], backgroundColor: FIELD_RECT_BG }}
                   >
-                    <p className="truncate font-body text-white/90" style={{ fontSize: "1.35vw" }}>
+                    <p className="truncate font-body text-white/90" style={{ fontSize: `${1.35 * OVERLAY_SCALE}vw` }}>
                       {value ?? "—"}
                     </p>
                   </div>
@@ -301,6 +323,7 @@ export default async function MyAppointmentsPage() {
               listBox={PREV_LIST_BOX}
               appointments={previousAppointments}
             />
+            </div>
           </div>
         </div>
       </main>
