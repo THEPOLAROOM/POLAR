@@ -283,13 +283,13 @@ export default async function MyAppointmentsPage() {
               </>
             ) : (
               <div
-                className="absolute flex flex-col items-center justify-center gap-3 rounded-2xl text-center"
-                style={{ ...NO_UPCOMING_BOX, backgroundColor: DATE_BG }}
+                className="absolute flex flex-col items-center justify-center gap-3 text-center"
+                style={NO_UPCOMING_BOX}
               >
                 <p className="font-display text-xl text-white">No upcoming appointment</p>
                 <Link
                   href="/dashboard/client/book"
-                  className="rounded-lg border border-royal-light px-4 py-2 text-sm text-royal-light transition hover:bg-royal-light/10"
+                  className="rounded-lg border border-royal-light bg-navy/70 px-4 py-2 text-sm text-royal-light shadow-ice-lg backdrop-blur-sm transition hover:bg-royal-light/10"
                 >
                   Book an appointment
                 </Link>
