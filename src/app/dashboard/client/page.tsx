@@ -1,12 +1,27 @@
 import Link from "next/link";
 import Image from "next/image";
 import { requireRole } from "@/lib/auth/require-role";
-import { CalendarIcon, HistoryIcon, UserIcon, ScissorsIcon, ChevronCircleIcon, CrownIcon } from "./icons";
 
 // UI fallback only — shown when profiles.polar_id is genuinely null
 // (not yet assigned; assignment happens on email verification for
 // client accounts, per the polar_client_id_seq migration).
 const POLAR_ID_PLACEHOLDER = "P-000000";
+
+// Percentage boxes below are measured directly against the mastered
+// UI asset's native 1672x941 canvas (same canvas as the background),
+// so they stay locked to the artwork at any render size. Do not
+// adjust without re-measuring the asset.
+const CLICK_TARGETS = [
+  { href: "/dashboard/client/book", label: "Book appointment", box: { left: "2.5%", top: "15.5%", width: "22.9%", height: "46.7%" } },
+  { href: "/dashboard/client/bookings", label: "Appointment history", box: { left: "73.3%", top: "15.5%", width: "22.9%", height: "46.7%" } },
+] as const;
+
+// Covers the baked placeholder ID text ("P-000002") on the mastered
+// UI asset with a patch matching the card's sampled background
+// colour, then renders the real, dynamic profiles.polar_id in its
+// place — the asset supplies 100% of the visual design, this is the
+// one exception since the ID must never be baked into production.
+const POLAR_ID_PATCH_BOX = { left: "43.66%", top: "43.04%", width: "16.15%", height: "7.97%" };
 
 export default async function ClientDashboardPage() {
   const { supabase, user } = await requireRole("client");
@@ -40,15 +55,16 @@ export default async function ClientDashboardPage() {
         </ul>
       </main>
 
-      {/* Desktop — matches the approved mastered reference
-          (polar-client-dashboard-mastered.png). No top nav on this
-          page: the dashboard begins directly with the full-screen
-          POLAR Room. The panel composition lives INSIDE the same
-          aspect-ratio box as the background image (not the raw
-          viewport) so its position/size stays locked to the artwork
-          — sized and inset to match the reference's proportions
-          (~76% wide, ~57% tall, centred, more room revealed above/
-          below/around it than the previous full-height layout). */}
+      {/* Desktop — two-asset architecture: the room background plus
+          the mastered, fully-designed transparent UI overlay
+          (polar-client-dashboard-ui-asset-mastered.png) stacked on
+          top at identical size/aspect. No CSS is used to draw the
+          panels/card — that visual design lives entirely in the
+          overlay PNG. The only real HTML on top is (a) invisible
+          click targets positioned over the baked Book Appointment /
+          Appointment History panels, and (b) a small patch over the
+          overlay's baked placeholder ID so the real, live
+          profiles.polar_id can render there instead. */}
       <main className="relative hidden overflow-hidden bg-navy sm:block" style={{ height: "100dvh" }}>
         <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
           <div className="relative w-full aspect-[1672/941]">
@@ -61,190 +77,39 @@ export default async function ClientDashboardPage() {
               aria-hidden="true"
             />
 
-            <div
-              className="absolute flex flex-col gap-[1.5%]"
-              style={{ left: "12%", right: "12%", top: "27%", bottom: "15.5%" }}
-            >
-              <div className="grid flex-[64] grid-cols-[1fr_2fr_1fr] grid-rows-[1fr] gap-[1.2%]">
-                <Tile
-                  href="/dashboard/client/book"
-                  icon={<CalendarIcon className="h-12 w-12 drop-shadow-[0_0_8px_rgba(255,255,255,0.55)]" />}
-                  label="BOOK APPOINTMENT"
-                />
+            <Image
+              src="/dashboard/polar-client-dashboard-ui-asset-mastered.png"
+              alt=""
+              fill
+              priority
+              className="object-cover"
+              aria-hidden="true"
+            />
 
-                <div className="h-full">
-                  <PolarIdCard polarId={polarId} />
-                </div>
-
-                <Tile
-                  href="/dashboard/client/bookings"
-                  icon={<HistoryIcon className="h-12 w-12 drop-shadow-[0_0_8px_rgba(255,255,255,0.55)]" />}
-                  label="APPOINTMENT HISTORY"
-                />
-              </div>
-
-              {/* Destination pages not built yet — inert (no href) so
-                  the panel is visually complete but never navigates to
-                  a broken/non-existent route. */}
-              <div className="grid flex-[33] grid-cols-2 grid-rows-[1fr] gap-[1.2%]">
-                <WideTile icon={<UserIcon className="h-11 w-11 drop-shadow-[0_0_8px_rgba(255,255,255,0.55)]" />} label="YOUR BARBER" />
-                <WideTile icon={<ScissorsIcon className="h-11 w-11 drop-shadow-[0_0_8px_rgba(255,255,255,0.55)]" />} label="SERVICES" />
-              </div>
+            {/* Real, dynamic POLAR ID patched over the baked
+                placeholder — never baked into production. */}
+            <div className="absolute" style={POLAR_ID_PATCH_BOX}>
+              <div className="absolute inset-0" style={{ backgroundColor: "#E2F1FB" }} aria-hidden="true" />
+              <p
+                className="relative flex h-full w-full items-center whitespace-nowrap font-body font-extrabold text-black"
+                style={{ fontSize: "3.4vw", lineHeight: 1 }}
+              >
+                {polarId}
+              </p>
             </div>
+
+            {CLICK_TARGETS.map(({ href, label, box }) => (
+              <Link
+                key={href}
+                href={href}
+                aria-label={label}
+                className="absolute rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-light"
+                style={box}
+              />
+            ))}
           </div>
         </div>
       </main>
     </>
-  );
-}
-
-// Shared corner-paint-splash accent for the dark navy panels — CSS
-// only (radial gradients using the existing royal/magenta tokens),
-// approximating the mastered reference's abstract blue/pink mural
-// detailing, which sits along the BOTTOM edge/corners of each panel
-// while the top stays clean dark navy — without baking any new
-// artwork.
-function PanelAccent() {
-  return (
-    <div
-      aria-hidden="true"
-      className="pointer-events-none absolute inset-0 rounded-2xl"
-      style={{
-        background:
-          "radial-gradient(ellipse 70% 55% at 0% 100%, rgba(11,95,255,0.5), transparent 60%), radial-gradient(ellipse 65% 50% at 100% 100%, rgba(255,61,154,0.32), transparent 60%), linear-gradient(0deg, rgba(91,155,255,0.22), transparent 45%)",
-      }}
-    />
-  );
-}
-
-const PANEL_CLASS =
-  "relative overflow-hidden rounded-2xl border-2 border-royal-light bg-gradient-to-b from-navy-light to-navy text-white shadow-[0_0_0_1px_rgba(91,155,255,0.35),0_0_18px_2px_rgba(91,155,255,0.55),0_0_45px_-4px_rgba(91,155,255,0.85),0_20px_45px_-20px_rgba(0,0,0,0.9)] backdrop-blur-md transition hover:shadow-[0_0_0_1px_rgba(91,155,255,0.55),0_0_22px_2px_rgba(91,155,255,0.7),0_0_55px_-2px_rgba(91,155,255,1),0_20px_45px_-20px_rgba(0,0,0,0.9)]";
-
-function Tile({
-  href,
-  icon,
-  label,
-}: {
-  href?: string;
-  icon: React.ReactNode;
-  label: string;
-}) {
-  const inner = (
-    <div className={`flex h-full flex-col items-center justify-center gap-3 ${PANEL_CLASS}`}>
-      <PanelAccent />
-      <div className="relative z-10 text-white">{icon}</div>
-      <p className="relative z-10 font-display text-sm tracking-wide">{label}</p>
-      <ChevronCircleIcon className="relative z-10 h-8 w-8 text-royal-light" />
-    </div>
-  );
-
-  if (href) {
-    return (
-      <Link
-        href={href}
-        className="block h-full rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-light"
-      >
-        {inner}
-      </Link>
-    );
-  }
-
-  return <div className="h-full">{inner}</div>;
-}
-
-function WideTile({
-  href,
-  icon,
-  label,
-}: {
-  href?: string;
-  icon: React.ReactNode;
-  label: string;
-}) {
-  const inner = (
-    <div className={`flex h-full items-center gap-4 px-6 ${PANEL_CLASS}`}>
-      <PanelAccent />
-      <div className="relative z-10 text-white">{icon}</div>
-      <p className="relative z-10 font-display text-sm tracking-wide">{label}</p>
-      <ChevronCircleIcon className="relative z-10 ml-auto h-8 w-8 shrink-0 text-royal-light" />
-    </div>
-  );
-
-  if (href) {
-    return (
-      <Link
-        href={href}
-        className="block h-full rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-light"
-      >
-        {inner}
-      </Link>
-    );
-  }
-
-  return <div className="h-full">{inner}</div>;
-}
-
-function PolarIdCard({ polarId }: { polarId: string }) {
-  return (
-    <div className="relative flex h-full w-full items-stretch gap-3.5 overflow-hidden rounded-2xl border-4 border-royal-light bg-gradient-to-br from-ice-50 via-white to-ice-100 p-3.5 text-navy shadow-[0_0_0_1px_rgba(91,155,255,0.55),0_0_20px_4px_rgba(91,155,255,0.75),0_0_60px_-4px_rgba(91,155,255,1),0_0_110px_-8px_rgba(91,155,255,0.85),0_20px_45px_-20px_rgba(0,0,0,0.6)]">
-      {/* Icy/crystalline texture + POLAR mural corner detailing — CSS
-          only, layered background (no baked artwork). Concentrated at
-          the edges/corners (and top/bottom centre) so the middle band
-          holding the wordmark and POLAR ID stays clean and readable. */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(ellipse 62% 68% at 0% 0%, rgba(11,95,255,0.65), transparent 60%), radial-gradient(ellipse 58% 62% at 100% 0%, rgba(11,95,255,0.45), transparent 58%), radial-gradient(ellipse 68% 70% at 0% 100%, rgba(255,61,154,0.6), transparent 62%), radial-gradient(ellipse 62% 65% at 100% 100%, rgba(255,61,154,0.48), transparent 60%), radial-gradient(ellipse 45% 32% at 50% 0%, rgba(11,95,255,0.4), transparent 68%), radial-gradient(ellipse 45% 32% at 50% 100%, rgba(255,61,154,0.4), transparent 68%), repeating-linear-gradient(115deg, rgba(255,255,255,0.7) 0px, rgba(255,255,255,0.7) 2px, transparent 2px, transparent 20px), repeating-linear-gradient(25deg, rgba(11,95,255,0.16) 0px, rgba(11,95,255,0.16) 1px, transparent 1px, transparent 24px)",
-        }}
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0"
-        style={{
-          background:
-            "radial-gradient(ellipse 42% 60% at 50% 50%, rgba(255,255,255,0.85), transparent 75%)",
-        }}
-      />
-
-      <div
-        className="relative z-10 my-auto aspect-square h-[62%] shrink-0 rounded-xl border-2 border-royal/40 bg-white/70"
-        aria-hidden="true"
-      />
-
-      <div className="relative z-10 flex min-w-0 flex-1 flex-col justify-between">
-        <div className="mx-auto flex flex-col items-center text-center">
-          <CrownIcon className="h-5 w-5 text-royal" />
-          <p className="mt-0.5 font-display text-3xl font-black leading-none tracking-wide text-black">
-            POLAR
-          </p>
-          <p className="mt-1 text-[10px] tracking-[0.35em] text-navy/70">LONDON</p>
-        </div>
-
-        <div className="flex items-center justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-[10px] uppercase tracking-widest text-navy/60">POLAR ID</p>
-            <p className="whitespace-nowrap font-display text-4xl tracking-wide text-navy">{polarId}</p>
-          </div>
-          <div
-            aria-hidden="true"
-            className="h-9 w-12 shrink-0 rounded-sm border border-navy/40 shadow-inner"
-            style={{
-              backgroundImage:
-                "repeating-linear-gradient(0deg, rgba(10,17,40,0.3) 0px, rgba(10,17,40,0.3) 1px, transparent 1px, transparent 4px), linear-gradient(135deg, #e2e7ee, #9aa4b2 50%, #c7ccd4)",
-            }}
-          />
-        </div>
-
-        <div className="flex items-end justify-between gap-3">
-          <p className="text-[10px] uppercase tracking-widest text-navy/60">Client</p>
-          <div
-            aria-hidden="true"
-            className="h-3.5 w-32 shrink-0 bg-[repeating-linear-gradient(90deg,#0A1128_0_2px,transparent_2px_5px)] opacity-70"
-          />
-        </div>
-      </div>
-    </div>
   );
 }
