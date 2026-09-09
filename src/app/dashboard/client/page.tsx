@@ -25,18 +25,21 @@ const OVERLAY_INSET = {
 // UI asset's native 1672x941 canvas (same canvas as the background),
 // so they stay locked to the artwork — now within the scaled-down
 // OVERLAY_INSET wrapper above rather than the full background box.
-// Do not adjust without re-measuring the asset.
+// Re-measured against each panel's own visible neon border line
+// (pixel-level brightness-peak scan, not a rough eyeball crop) so
+// the hover glow sits exactly on the border instead of spilling
+// outside it. Do not adjust without re-measuring the asset.
 const CLICK_TARGETS = [
-  { href: "/dashboard/client/book", label: "Book appointment", box: { left: "2.5%", top: "15.5%", width: "22.9%", height: "46.7%" } },
-  { href: "/dashboard/client/bookings", label: "Appointment history", box: { left: "73.3%", top: "15.5%", width: "22.9%", height: "46.7%" } },
+  { href: "/dashboard/client/book", label: "Book appointment", box: { left: "3.47%", top: "17.75%", width: "22.73%", height: "46.65%" } },
+  { href: "/dashboard/client/bookings", label: "Appointment history", box: { left: "73.80%", top: "17.75%", width: "22.73%", height: "46.65%" } },
 ] as const;
 
 // Your Barber / Services stay inert (no route yet) but still get the
 // same hover brighten/glow as the two clickable panels — a plain,
 // non-navigating box positioned over their baked artwork.
 const INERT_HOVER_PANELS = [
-  { label: "Your barber", box: { left: "2.1%", top: "66.6%", width: "47.1%", height: "25.9%" } },
-  { label: "Services", box: { left: "50.8%", top: "66.6%", width: "47.1%", height: "25.9%" } },
+  { label: "Your barber", box: { left: "3.59%", top: "67.16%", width: "45.69%", height: "21.89%" } },
+  { label: "Services", box: { left: "50.72%", top: "67.16%", width: "45.69%", height: "21.89%" } },
 ] as const;
 
 // Subtle premium brighten + electric-blue glow on hover — no
