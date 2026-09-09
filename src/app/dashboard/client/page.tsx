@@ -55,6 +55,20 @@ const PANEL_HOVER_CLASS =
 // one exception since the ID must never be baked into production.
 const POLAR_ID_PATCH_BOX = { left: "43.66%", top: "43.04%", width: "16.15%", height: "7.97%" };
 
+// Mobile ("app") two-asset pair — same technique as desktop, but
+// these mastered assets are meant to fill the frame directly (no
+// 76%-style inset/shrink). Percentages measured directly against
+// the assets' native 941x1672 canvas via the same pixel-level
+// brightness-peak scan used for the desktop overlay.
+const MOBILE_CLICK_TARGETS = [
+  { href: "/dashboard/client/book", label: "Book appointment", box: { left: "3.19%", top: "51.20%", width: "46.76%", height: "11.60%" } },
+  { href: "/dashboard/client/bookings", label: "My appointments", box: { left: "49.95%", top: "51.20%", width: "46.86%", height: "11.60%" } },
+] as const;
+
+// Services / Your Barber stay purely visual on mobile too — no
+// route to invent, matching desktop's current inert treatment.
+const MOBILE_POLAR_ID_PATCH_BOX = { left: "39.74%", top: "38.40%", width: "27.10%", height: "3.05%" };
+
 export default async function ClientDashboardPage() {
   const { supabase, user } = await requireRole("client");
 
@@ -68,23 +82,58 @@ export default async function ClientDashboardPage() {
 
   return (
     <>
-      {/* Mobile/tablet — simple functional placeholder. The approved
-          mobile dashboard design is separate, upcoming work. */}
-      <main className="mx-auto max-w-xl px-6 py-16 sm:hidden">
-        <h1 className="text-xl font-semibold text-polar-text">Client Dashboard</h1>
-        <p className="mt-2 text-sm text-polar-muted">Signed in as {user.email}.</p>
-        <ul className="mt-6 flex flex-wrap gap-2">
-          <li>
-            <Link href="/dashboard/client/book" className="rounded border border-polar-border px-3 py-1 text-xs text-polar-text">
-              Book Appointment
-            </Link>
-          </li>
-          <li>
-            <Link href="/dashboard/client/bookings" className="rounded border border-polar-border px-3 py-1 text-xs text-polar-text">
-              My Bookings
-            </Link>
-          </li>
-        </ul>
+      {/* Mobile — two-asset architecture mirroring desktop: mastered
+          portrait background + transparent UI overlay, stacked and
+          scaled together 1:1 within a container that holds the
+          assets' own 941:1672 aspect ratio (no inset/shrink here —
+          unlike desktop's 76% composition, these mobile assets are
+          meant to fill the frame directly). Real HTML on top is
+          limited to the two functional click targets (Book
+          Appointment, My Appointments) and the live POLAR ID patch;
+          Services/Your Barber stay purely visual, matching their
+          current desktop (inert) treatment. */}
+      <main className="relative w-full overflow-hidden bg-navy sm:hidden">
+        <div className="relative w-full aspect-[941/1672]">
+          <Image
+            src="/dashboard/polar-client-dashboard-app-background.png"
+            alt=""
+            fill
+            priority
+            className="object-cover"
+            aria-hidden="true"
+          />
+
+          <Image
+            src="/dashboard/polar-client-dashboard-app-ui.png"
+            alt=""
+            fill
+            priority
+            className="object-cover"
+            aria-hidden="true"
+          />
+
+          {/* Real, dynamic POLAR ID patched over the baked
+              placeholder — never baked into production. */}
+          <div className="absolute" style={MOBILE_POLAR_ID_PATCH_BOX}>
+            <div className="absolute inset-0" style={{ backgroundColor: "#E2F1FB" }} aria-hidden="true" />
+            <p
+              className="relative flex h-full w-full items-center justify-center whitespace-nowrap font-body font-extrabold text-black"
+              style={{ fontSize: "5.6vw", lineHeight: 1 }}
+            >
+              {polarId}
+            </p>
+          </div>
+
+          {MOBILE_CLICK_TARGETS.map(({ href, label, box }) => (
+            <Link
+              key={href}
+              href={href}
+              aria-label={label}
+              className="absolute focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-light"
+              style={box}
+            />
+          ))}
+        </div>
       </main>
 
       {/* Desktop — two-asset architecture: the room background plus

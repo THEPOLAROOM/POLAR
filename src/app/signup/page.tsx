@@ -53,8 +53,18 @@ export default function SignupPortalPage() {
         </div>
       </div>
 
-      {/* Mobile artwork */}
-      <div className="relative mx-auto block w-full max-w-md sm:hidden">
+      {/* Mobile artwork — sized to fill as much of the viewport
+          height as possible (min() of the width- and height-
+          constrained sizes, same logic object-fit: contain uses)
+          instead of a fixed max-width, so the composition extends
+          further down the screen rather than leaving a large empty
+          navy gap beneath it. Still never exceeds 100% width, and
+          the aspect ratio is always preserved since both dimensions
+          come from the same formula. */}
+      <div
+        className="relative mx-auto block sm:hidden"
+        style={{ width: "min(100%, calc(100dvh * 1024 / 1536))" }}
+      >
         <div className="relative aspect-[1024/1536] w-full">
           <Image
             src="/signup/portal-mobile.png"

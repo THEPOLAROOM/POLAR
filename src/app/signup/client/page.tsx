@@ -117,8 +117,12 @@ export default function ClientSignupPage() {
       />
 
       {/* Layer 2 — the one floating card. Nothing else sits between
-          this and the background above. */}
-      <div className="relative flex min-h-screen items-center justify-center px-5 py-16 sm:h-[100dvh] sm:min-h-0 sm:px-12 sm:py-4">
+          this and the background above. Mobile is top-aligned with
+          extra top padding (rather than vertically centred) so the
+          card begins lower, giving the POLAR wordmark/branding at
+          the top of the mobile background room to breathe instead
+          of being covered; desktop centring is unchanged. */}
+      <div className="relative flex min-h-screen items-start justify-center px-5 pb-16 pt-40 sm:h-[100dvh] sm:min-h-0 sm:items-center sm:px-12 sm:py-4">
         <form
           onSubmit={handleSubmit}
           className="w-full max-w-md rounded-2xl border border-white/15 bg-navy/70 p-6 text-white shadow-ice-lg backdrop-blur-xl sm:max-w-[300px] sm:p-4"
