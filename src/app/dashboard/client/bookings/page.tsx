@@ -3,15 +3,8 @@ import Image from "next/image";
 import { requireRole } from "@/lib/auth/require-role";
 import { POLAR_BARBER_PROFILE_ID } from "@/lib/config";
 import { getShopToday, formatTime12h } from "@/lib/dates";
-import { DashboardNav } from "@/components/dashboard-nav";
 import { CancelBookingButton } from "./cancel-booking-button";
 import { PreviousAppointmentsToggle, type PreviousAppointment } from "./previous-appointments";
-
-const NAV_LINKS = [
-  { href: "/dashboard/client", label: "Dashboard" },
-  { href: "/dashboard/client/book", label: "Book Appointment" },
-  { href: "/dashboard/client/bookings", label: "My Bookings" },
-];
 
 const DAY_LABELS_SHORT = ["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"];
 const MONTH_LABELS_SHORT = [
@@ -76,6 +69,38 @@ const FIELD_ROWS_TOP = {
 const DATE_BG = "#061527";
 const FIELD_RECT_BG = "#162539";
 const TIME_PILL_BG = "#007FFB";
+
+// Mobile ("app") two-asset pair. Unlike the Client Dashboard's mobile
+// assets, this UI overlay (1024x1536) does NOT share the background's
+// aspect ratio (941x1672), so it can't be stacked 1:1 in one matched
+// box — the background fills the viewport on its own, and the UI is
+// a smaller, independently-sized inset box (its own 1024:1536 ratio,
+// ~84% of the viewport width) positioned lower on the screen so the
+// crown/POLAR/LONDON wall branding stays visible above it. Boxes
+// below are measured directly against the UI asset's native
+// 1024x1536 canvas, same technique as desktop. Do not adjust without
+// re-measuring the asset.
+const MOBILE_UI_WIDTH_PCT = "84%";
+const MOBILE_UI_TOP_OFFSET = "27dvh";
+
+const MOBILE_WEEKDAY_BOX = { left: "21.48%", top: "31.38%", width: "8.79%", height: "2.60%" };
+const MOBILE_DAY_BOX = { left: "11.91%", top: "35.03%", width: "21.19%", height: "6.12%" };
+const MOBILE_MONTHYEAR_BOX = { left: "16.70%", top: "42.19%", width: "18.36%", height: "2.47%" };
+const MOBILE_TIME_PILL_BOX = { left: "12.21%", top: "46.22%", width: "26.37%", height: "6.51%" };
+
+const MOBILE_FIELD_ROW_COMMON = { left: "50.20%", width: "36.72%", height: "3.52%" };
+const MOBILE_FIELD_ROWS_TOP = {
+  service: "29.17%",
+  duration: "34.31%",
+  shop: "39.58%",
+  barber: "44.40%",
+  style: "49.61%",
+} as const;
+
+const MOBILE_EDIT_BOX = { left: "12.89%", top: "62.50%", width: "74.32%", height: "5.92%" };
+const MOBILE_CANCEL_BOX = { left: "12.89%", top: "70.31%", width: "74.32%", height: "5.86%" };
+const MOBILE_PREV_BAR_BOX = { left: "8.98%", top: "80.60%", width: "82.13%", height: "9.96%" };
+const MOBILE_PREV_LIST_BOX = { left: "8.98%", top: "91%", width: "82.13%", maxHeight: "16dvh" };
 
 type ServiceInfo = { name: string; duration_minutes: number } | null;
 
@@ -202,33 +227,86 @@ export default async function MyAppointmentsPage() {
 
   return (
     <>
-      <div className="sm:hidden">
-        <DashboardNav links={NAV_LINKS} />
-      </div>
+      {/* Mobile — two-asset architecture: the same Client Dashboard
+          mobile background, full-bleed, plus the mastered, transparent
+          My Appointments mobile UI overlay
+          (polar-client-appointments-app-ui.png) as a smaller inset
+          box (not stacked 1:1 — see constants above). No CSS draws
+          the panels/card — that design lives entirely in the overlay
+          PNG. Real HTML on top mirrors the desktop implementation. */}
+      <main className="relative min-h-[100dvh] w-full overflow-hidden bg-navy sm:hidden">
+        <Image
+          src="/dashboard/polar-client-dashboard-app-background.png"
+          alt=""
+          fill
+          priority
+          className="object-cover"
+          aria-hidden="true"
+        />
 
-      {/* Mobile/tablet — simple functional placeholder. Desktop-only
-          pass per instruction; the mastered mobile design is separate,
-          upcoming work. */}
-      <main className="mx-auto max-w-xl px-6 py-16 sm:hidden">
-        <h1 className="text-xl font-semibold text-polar-text">My Appointments</h1>
-        {upcoming ? (
-          <div className="mt-4 rounded border border-polar-border px-3 py-2">
-            <p className="text-sm text-polar-text">
-              {formatDateLabel(upcoming.occurrenceDate)} · {timeLabel}
-            </p>
-            <p className="text-xs text-polar-muted">{serviceLabel ?? "—"}</p>
-            <div className="mt-2 flex items-center gap-2">
-              <Link
-                href={`/dashboard/client/bookings/${upcoming.booking.id}/reschedule`}
-                className="rounded border border-polar-border px-3 py-1 text-xs text-polar-text"
-              >
-                Edit
-              </Link>
-            </div>
+        <div className="absolute inset-0 flex justify-center" style={{ paddingTop: MOBILE_UI_TOP_OFFSET }}>
+          <div className="relative" style={{ width: MOBILE_UI_WIDTH_PCT, aspectRatio: "1024 / 1536" }}>
+            <Image
+              src="/dashboard/polar-client-appointments-app-ui.png"
+              alt=""
+              fill
+              priority
+              className="object-cover"
+              aria-hidden="true"
+            />
+
+            {upcoming ? (
+              <>
+                <div className="absolute flex items-center justify-center" style={{ ...MOBILE_WEEKDAY_BOX, backgroundColor: DATE_BG }}>
+                  <p className="font-display text-white" style={{ fontSize: "3.3vw" }}>{weekdayLabel}</p>
+                </div>
+                <div className="absolute flex items-center justify-center" style={{ ...MOBILE_DAY_BOX, backgroundColor: DATE_BG }}>
+                  <p className="font-display font-bold text-white" style={{ fontSize: "9.6vw", lineHeight: 1 }}>{dayNumberLabel}</p>
+                </div>
+                <div className="absolute flex items-center justify-center" style={{ ...MOBILE_MONTHYEAR_BOX, backgroundColor: DATE_BG }}>
+                  <p className="font-display text-white" style={{ fontSize: "3vw" }}>{monthYearLabel}</p>
+                </div>
+                <div className="absolute flex items-center justify-center rounded-full" style={{ ...MOBILE_TIME_PILL_BOX, backgroundColor: TIME_PILL_BG }}>
+                  <p className="font-display font-bold text-white" style={{ fontSize: "4.2vw" }}>{timeLabel}</p>
+                </div>
+
+                {(
+                  [
+                    ["service", serviceLabel],
+                    ["duration", durationLabel],
+                    ["shop", shopLabel],
+                    ["barber", barberLabel],
+                    ["style", null],
+                  ] as const
+                ).map(([key, value]) => (
+                  <div
+                    key={key}
+                    className="absolute flex items-center overflow-hidden px-3"
+                    style={{ ...MOBILE_FIELD_ROW_COMMON, top: MOBILE_FIELD_ROWS_TOP[key], backgroundColor: FIELD_RECT_BG }}
+                  >
+                    <p className="truncate font-body text-white/90" style={{ fontSize: "2.2vw" }}>
+                      {value ?? "—"}
+                    </p>
+                  </div>
+                ))}
+
+                <Link
+                  href={`/dashboard/client/bookings/${upcoming.booking.id}/reschedule`}
+                  aria-label="Edit appointment"
+                  className="absolute rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-light"
+                  style={MOBILE_EDIT_BOX}
+                />
+                <CancelBookingButton bookingId={upcoming.booking.id} box={MOBILE_CANCEL_BOX} />
+              </>
+            ) : null}
+
+            <PreviousAppointmentsToggle
+              box={MOBILE_PREV_BAR_BOX}
+              listBox={MOBILE_PREV_LIST_BOX}
+              appointments={previousAppointments}
+            />
           </div>
-        ) : (
-          <p className="mt-4 text-sm text-polar-muted">No upcoming appointment.</p>
-        )}
+        </div>
       </main>
 
       {/* Desktop — two-asset architecture: the same POLAR Room
