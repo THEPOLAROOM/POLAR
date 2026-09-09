@@ -20,16 +20,20 @@ const MONTH_LABELS_SHORT = [
 ];
 
 // The overlay (plus every real-HTML piece positioned against it)
-// renders at this fraction of the background's width, centred via
-// equal insets on every side — same "breathing room" treatment as
-// the Client Dashboard desktop composition.
+// renders at this fraction of the background's width, horizontally
+// centred via equal left/right insets — same "breathing room"
+// treatment as the Client Dashboard desktop composition. Vertically
+// it's shifted down (top inset > bottom inset, by the same amount
+// each, so the size — top+bottom — stays exactly 1-OVERLAY_SCALE)
+// so the panel stops covering "LONDON" in the wall branding above it.
 const OVERLAY_SCALE = 0.6;
 const OVERLAY_INSET_PCT = `${((1 - OVERLAY_SCALE) / 2) * 100}%`;
+const VERTICAL_SHIFT_PCT = 6;
 const OVERLAY_INSET = {
   left: OVERLAY_INSET_PCT,
   right: OVERLAY_INSET_PCT,
-  top: OVERLAY_INSET_PCT,
-  bottom: OVERLAY_INSET_PCT,
+  top: `${((1 - OVERLAY_SCALE) / 2) * 100 + VERTICAL_SHIFT_PCT}%`,
+  bottom: `${((1 - OVERLAY_SCALE) / 2) * 100 - VERTICAL_SHIFT_PCT}%`,
 };
 
 // Boxes below are measured directly against the mastered UI asset's
