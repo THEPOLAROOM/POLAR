@@ -17,7 +17,7 @@ const GLOW =
 
 export default function SignupPortalPage() {
   return (
-    <main className="min-h-screen overflow-hidden bg-navy sm:h-screen">
+    <main className="relative min-h-screen overflow-hidden bg-navy sm:h-screen">
       {/* Desktop / tablet artwork — new artwork is ~16:9 (1672x941),
           near-identical to the most common laptop screen ratio, so it
           is sized by WIDTH (fills the viewport edge-to-edge on true
@@ -55,18 +55,18 @@ export default function SignupPortalPage() {
 
       {/* Mobile artwork — the artwork (1024:1536, ~0.667 w/h) is
           proportionally wider-relative-to-height than a real phone
-          viewport (~0.46-0.56 w/h), so fitting it by WIDTH (the
-          previous min() approach) always left it short of the full
-          viewport height — that's the large navy gap. Instead size
-          it by HEIGHT (fill 100dvh), letting the resulting width
-          exceed the viewport; the parent's overflow-hidden (above)
-          clips the excess symmetrically since this element stays
-          centred, so only the artwork's outer side margins are
-          cropped — the doors themselves sit well within the centre
-          60% width and are never touched. Aspect ratio is always
-          preserved since both dimensions come from one formula. */}
+          viewport (~0.46-0.56 w/h), so fitting it by WIDTH always
+          left it short of the full viewport height (the earlier
+          navy-gap bug). Sized by HEIGHT instead (fills 100dvh),
+          letting the resulting width exceed the viewport — cropped
+          symmetrically by the parent's overflow-hidden. Centring
+          uses an explicit left:50% + translate(-50%) (rather than
+          margin:auto on an overflowing box) since that's the
+          unambiguous way to guarantee a perfectly symmetric crop
+          regardless of mobile browser quirks with auto-margins on
+          elements wider than their container. */}
       <div
-        className="relative mx-auto block sm:hidden"
+        className="absolute left-1/2 top-0 block -translate-x-1/2 sm:hidden"
         style={{ width: "max(100%, calc(100dvh * 1024 / 1536))" }}
       >
         <div className="relative aspect-[1024/1536] w-full">
