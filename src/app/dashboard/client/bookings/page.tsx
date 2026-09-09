@@ -20,20 +20,28 @@ const MONTH_LABELS_SHORT = [
 ];
 
 // The overlay (plus every real-HTML piece positioned against it)
-// renders at this fraction of the background's width, horizontally
-// centred via equal left/right insets — same "breathing room"
-// treatment as the Client Dashboard desktop composition. Vertically
-// it's shifted down (top inset > bottom inset, by the same amount
-// each, so the size — top+bottom — stays exactly 1-OVERLAY_SCALE)
-// so the panel stops covering "LONDON" in the wall branding above it.
+// renders at this fraction of the background's width, centred via
+// equal insets on every side — same "breathing room" treatment as
+// the Client Dashboard desktop composition.
+//
+// The previous attempt at a downward shift used asymmetric top/
+// bottom insets (top inset > bottom inset) computed as percentages
+// of this element's own containing block — a block sized only via
+// `aspect-[1672/941]` (no explicit height). That containing block's
+// height IS spec-definite, but percentage-vs-transform is a genuinely
+// different mechanism, so the shift now uses `transform: translateY`
+// with a `dvh` (real viewport-height) value instead: it moves the
+// already-centred box down by an absolute, viewport-relative amount
+// that cannot be cancelled or reinterpreted by this element's own
+// containing-block sizing the way an inset percentage could be.
 const OVERLAY_SCALE = 0.6;
 const OVERLAY_INSET_PCT = `${((1 - OVERLAY_SCALE) / 2) * 100}%`;
-const VERTICAL_SHIFT_PCT = 6;
 const OVERLAY_INSET = {
   left: OVERLAY_INSET_PCT,
   right: OVERLAY_INSET_PCT,
-  top: `${((1 - OVERLAY_SCALE) / 2) * 100 + VERTICAL_SHIFT_PCT}%`,
-  bottom: `${((1 - OVERLAY_SCALE) / 2) * 100 - VERTICAL_SHIFT_PCT}%`,
+  top: OVERLAY_INSET_PCT,
+  bottom: OVERLAY_INSET_PCT,
+  transform: "translateY(6dvh)",
 };
 
 // Boxes below are measured directly against the mastered UI asset's
