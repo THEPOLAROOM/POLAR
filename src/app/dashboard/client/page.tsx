@@ -31,7 +31,7 @@ const OVERLAY_INSET = {
 // outside it. Do not adjust without re-measuring the asset.
 const CLICK_TARGETS = [
   { href: "/dashboard/client/book", label: "Book appointment", box: { left: "3.47%", top: "17.75%", width: "22.73%", height: "46.65%" } },
-  { href: "/dashboard/client/bookings", label: "Appointment history", box: { left: "73.80%", top: "17.75%", width: "22.73%", height: "46.65%" } },
+  { href: "/dashboard/client/bookings", label: "My appointments", box: { left: "73.80%", top: "17.75%", width: "22.73%", height: "46.65%" } },
 ] as const;
 
 // Your Barber / Services stay inert (no route yet) but still get the
