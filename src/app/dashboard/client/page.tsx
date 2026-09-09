@@ -31,6 +31,20 @@ const CLICK_TARGETS = [
   { href: "/dashboard/client/bookings", label: "Appointment history", box: { left: "73.3%", top: "15.5%", width: "22.9%", height: "46.7%" } },
 ] as const;
 
+// Your Barber / Services stay inert (no route yet) but still get the
+// same hover brighten/glow as the two clickable panels — a plain,
+// non-navigating box positioned over their baked artwork.
+const INERT_HOVER_PANELS = [
+  { label: "Your barber", box: { left: "2.1%", top: "66.6%", width: "47.1%", height: "25.9%" } },
+  { label: "Services", box: { left: "50.8%", top: "66.6%", width: "47.1%", height: "25.9%" } },
+] as const;
+
+// Subtle premium brighten + electric-blue glow on hover — no
+// movement/resizing, artwork itself is never touched, just a
+// translucent highlight layered on top of it.
+const PANEL_HOVER_CLASS =
+  "absolute rounded-2xl bg-transparent transition duration-200 ease-out hover:bg-white/[0.06] hover:shadow-[0_0_0_2px_rgba(91,155,255,0.55),0_0_28px_6px_rgba(91,155,255,0.5)]";
+
 // Covers the baked placeholder ID text ("P-000002") on the mastered
 // UI asset with a patch matching the card's sampled background
 // colour, then renders the real, dynamic profiles.polar_id in its
@@ -125,9 +139,13 @@ export default async function ClientDashboardPage() {
                   key={href}
                   href={href}
                   aria-label={label}
-                  className="absolute rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-light"
+                  className={`${PANEL_HOVER_CLASS} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-light`}
                   style={box}
                 />
+              ))}
+
+              {INERT_HOVER_PANELS.map(({ label, box }) => (
+                <div key={label} aria-hidden="true" className={PANEL_HOVER_CLASS} style={box} />
               ))}
             </div>
           </div>
