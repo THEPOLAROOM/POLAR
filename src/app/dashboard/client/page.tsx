@@ -7,10 +7,24 @@ import { requireRole } from "@/lib/auth/require-role";
 // client accounts, per the polar_client_id_seq migration).
 const POLAR_ID_PLACEHOLDER = "P-000000";
 
+// The overlay renders at this fraction of the background's width
+// (height follows automatically since both share the exact same
+// 1672:941 aspect ratio), centred via equal insets on every side —
+// per the "roughly 82-86%" target, leaving more room visible.
+const OVERLAY_SCALE = 0.84;
+const OVERLAY_INSET_PCT = `${((1 - OVERLAY_SCALE) / 2) * 100}%`;
+const OVERLAY_INSET = {
+  left: OVERLAY_INSET_PCT,
+  right: OVERLAY_INSET_PCT,
+  top: OVERLAY_INSET_PCT,
+  bottom: OVERLAY_INSET_PCT,
+};
+
 // Percentage boxes below are measured directly against the mastered
 // UI asset's native 1672x941 canvas (same canvas as the background),
-// so they stay locked to the artwork at any render size. Do not
-// adjust without re-measuring the asset.
+// so they stay locked to the artwork — now within the scaled-down
+// OVERLAY_INSET wrapper above rather than the full background box.
+// Do not adjust without re-measuring the asset.
 const CLICK_TARGETS = [
   { href: "/dashboard/client/book", label: "Book appointment", box: { left: "2.5%", top: "15.5%", width: "22.9%", height: "46.7%" } },
   { href: "/dashboard/client/bookings", label: "Appointment history", box: { left: "73.3%", top: "15.5%", width: "22.9%", height: "46.7%" } },
@@ -57,14 +71,20 @@ export default async function ClientDashboardPage() {
 
       {/* Desktop — two-asset architecture: the room background plus
           the mastered, fully-designed transparent UI overlay
-          (polar-client-dashboard-ui-asset-mastered.png) stacked on
-          top at identical size/aspect. No CSS is used to draw the
-          panels/card — that visual design lives entirely in the
-          overlay PNG. The only real HTML on top is (a) invisible
-          click targets positioned over the baked Book Appointment /
-          Appointment History panels, and (b) a small patch over the
-          overlay's baked placeholder ID so the real, live
-          profiles.polar_id can render there instead. */}
+          (polar-client-dashboard-ui-asset-mastered.png). No CSS is
+          used to draw the panels/card — that visual design lives
+          entirely in the overlay PNG. The only real HTML on top is
+          (a) invisible click targets positioned over the baked Book
+          Appointment / Appointment History panels, and (b) a small
+          patch over the overlay's baked placeholder ID so the real,
+          live profiles.polar_id can render there instead.
+
+          The overlay (plus its click targets/patch) is scaled down
+          to OVERLAY_SCALE of the background's width and centred
+          within it via equal insets on all four sides — since the
+          background box already holds the artwork's exact 1672:941
+          aspect ratio, shrinking every side by the same percentage
+          preserves that ratio automatically without stretching. */}
       <main className="relative hidden overflow-hidden bg-navy sm:block" style={{ height: "100dvh" }}>
         <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
           <div className="relative w-full aspect-[1672/941]">
@@ -77,36 +97,38 @@ export default async function ClientDashboardPage() {
               aria-hidden="true"
             />
 
-            <Image
-              src="/dashboard/polar-client-dashboard-ui-asset-mastered.png"
-              alt=""
-              fill
-              priority
-              className="object-cover"
-              aria-hidden="true"
-            />
-
-            {/* Real, dynamic POLAR ID patched over the baked
-                placeholder — never baked into production. */}
-            <div className="absolute" style={POLAR_ID_PATCH_BOX}>
-              <div className="absolute inset-0" style={{ backgroundColor: "#E2F1FB" }} aria-hidden="true" />
-              <p
-                className="relative flex h-full w-full items-center whitespace-nowrap font-body font-extrabold text-black"
-                style={{ fontSize: "3.4vw", lineHeight: 1 }}
-              >
-                {polarId}
-              </p>
-            </div>
-
-            {CLICK_TARGETS.map(({ href, label, box }) => (
-              <Link
-                key={href}
-                href={href}
-                aria-label={label}
-                className="absolute rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-light"
-                style={box}
+            <div className="absolute" style={OVERLAY_INSET}>
+              <Image
+                src="/dashboard/polar-client-dashboard-ui-asset-mastered.png"
+                alt=""
+                fill
+                priority
+                className="object-contain"
+                aria-hidden="true"
               />
-            ))}
+
+              {/* Real, dynamic POLAR ID patched over the baked
+                  placeholder — never baked into production. */}
+              <div className="absolute" style={POLAR_ID_PATCH_BOX}>
+                <div className="absolute inset-0" style={{ backgroundColor: "#E2F1FB" }} aria-hidden="true" />
+                <p
+                  className="relative flex h-full w-full items-center whitespace-nowrap font-body font-extrabold text-black"
+                  style={{ fontSize: `${3.4 * OVERLAY_SCALE}vw`, lineHeight: 1 }}
+                >
+                  {polarId}
+                </p>
+              </div>
+
+              {CLICK_TARGETS.map(({ href, label, box }) => (
+                <Link
+                  key={href}
+                  href={href}
+                  aria-label={label}
+                  className="absolute rounded-2xl focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-light"
+                  style={box}
+                />
+              ))}
+            </div>
           </div>
         </div>
       </main>
