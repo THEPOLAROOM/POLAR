@@ -23,7 +23,7 @@ const MONTH_LABELS_SHORT = [
 // renders at this fraction of the background's width, centred via
 // equal insets on every side — same "breathing room" treatment as
 // the Client Dashboard desktop composition.
-const OVERLAY_SCALE = 0.76;
+const OVERLAY_SCALE = 0.68;
 const OVERLAY_INSET_PCT = `${((1 - OVERLAY_SCALE) / 2) * 100}%`;
 const OVERLAY_INSET = {
   left: OVERLAY_INSET_PCT,
@@ -60,8 +60,6 @@ const FIELD_ROWS_TOP = {
   barber: "58.77%",
   style: "66.10%",
 } as const;
-
-const NO_UPCOMING_BOX = { left: "15.55%", top: "31.88%", width: "74.16%", height: "41.98%" };
 
 const DATE_BG = "#061527";
 const FIELD_RECT_BG = "#162539";
@@ -303,20 +301,7 @@ export default async function MyAppointmentsPage() {
                 />
                 <CancelBookingButton bookingId={upcoming.booking.id} box={CANCEL_BOX} />
               </>
-            ) : (
-              <div
-                className="absolute flex flex-col items-center justify-center gap-3 text-center"
-                style={NO_UPCOMING_BOX}
-              >
-                <p className="font-display text-xl text-white">No upcoming appointment</p>
-                <Link
-                  href="/dashboard/client/book"
-                  className="rounded-lg border border-royal-light bg-navy/70 px-4 py-2 text-sm text-royal-light shadow-ice-lg backdrop-blur-sm transition hover:bg-royal-light/10"
-                >
-                  Book an appointment
-                </Link>
-              </div>
-            )}
+            ) : null}
 
             <PreviousAppointmentsToggle
               box={PREV_BAR_BOX}
