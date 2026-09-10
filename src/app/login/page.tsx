@@ -189,23 +189,29 @@ export default function LoginPage() {
                     hands or background, regardless of content
                     length. */}
                 <div className="absolute flex flex-col overflow-hidden" style={UI_SCREEN_BOX}>
-                  {/* Atmosphere — deep navy/near-black base with restrained
-                      royal-blue + magenta ambient glow. Purely a background
-                      treatment sitting behind the real form below; the
-                      parent's overflow-hidden still clips it exactly like
-                      every other Layer 3 element. */}
+                  {/* Atmosphere — restrained navy/royal-blue/magenta glow,
+                      masked to fade to fully transparent well before the
+                      box edges so it reads as part of the tablet's own
+                      display rather than a separate rectangular panel. No
+                      flat edge-to-edge fill here on purpose — at the box
+                      boundary this layer is invisible, letting the
+                      tablet's own screen show through directly. */}
                   <div
-                    className="absolute inset-0"
+                    className="pointer-events-none absolute inset-0"
                     style={{
                       background:
-                        "radial-gradient(ellipse 90% 70% at 25% 0%, rgba(58,102,255,0.24), transparent 60%), radial-gradient(ellipse 55% 45% at 100% 100%, rgba(255,61,154,0.12), transparent 65%), linear-gradient(160deg, #05070f 0%, #0a1330 50%, #06091a 100%)",
+                        "radial-gradient(ellipse 85% 65% at 28% 8%, rgba(58,102,255,0.22), transparent 65%), radial-gradient(ellipse 55% 45% at 100% 100%, rgba(255,61,154,0.10), transparent 70%), radial-gradient(ellipse 110% 95% at 50% 50%, rgba(6,10,24,0.5), transparent 88%)",
+                      WebkitMaskImage: "radial-gradient(ellipse 78% 78% at 50% 50%, black 45%, transparent 92%)",
+                      maskImage: "radial-gradient(ellipse 78% 78% at 50% 50%, black 45%, transparent 92%)",
                     }}
                   />
                   <div
-                    className="absolute inset-0 opacity-[0.06]"
+                    className="pointer-events-none absolute inset-0 opacity-[0.05]"
                     style={{
                       backgroundImage:
-                        "repeating-linear-gradient(115deg, rgba(190,215,255,0.9) 0px, rgba(190,215,255,0.9) 1px, transparent 1px, transparent 14px)",
+                        "repeating-linear-gradient(115deg, rgba(190,215,255,0.9) 0px, rgba(190,215,255,0.9) 1px, transparent 1px, transparent 16px)",
+                      WebkitMaskImage: "radial-gradient(ellipse 68% 68% at 50% 50%, black 35%, transparent 88%)",
+                      maskImage: "radial-gradient(ellipse 68% 68% at 50% 50%, black 35%, transparent 88%)",
                     }}
                   />
 
@@ -213,10 +219,10 @@ export default function LoginPage() {
                     className="relative flex h-full w-full flex-col items-center justify-center px-[7%]"
                     style={{ transform: `scale(${UI_SCALE})`, transformOrigin: "center" }}
                   >
-                    <p className="font-display text-[1.3vw] tracking-wide text-white">WELCOME BACK</p>
-                    <p className="mt-[0.25vw] text-[0.78vw] text-white/50">Log in to continue.</p>
+                    <p className="font-display text-[1.3vw] tracking-[0.03em] text-ice-100 drop-shadow-[0_0_10px_rgba(91,155,255,0.45)]">WELCOME BACK</p>
+                    <p className="mt-[0.3vw] text-[0.78vw] text-white/50">Log in to continue.</p>
 
-                    <form onSubmit={handleSubmit} className="mt-[1.5vw] w-full">
+                    <form onSubmit={handleSubmit} className="mt-[1.6vw] w-full">
                       <div className="relative">
                         <span className="pointer-events-none absolute inset-y-0 left-[4%] flex items-center text-royal-light/70">
                           <EnvelopeIcon className="h-[1vw] w-[1vw]" />
@@ -226,7 +232,7 @@ export default function LoginPage() {
                           type="email"
                           required
                           placeholder="Email Address"
-                          className="w-full rounded-md border border-royal-light/30 bg-navy-light/60 py-[0.85vw] pl-[11%] pr-[4%] text-[0.85vw] text-white shadow-[0_0_12px_-7px_rgba(91,155,255,0.7)] outline-none backdrop-blur-sm placeholder:text-white/35 transition focus:border-royal-light focus:shadow-[0_0_0_1px_rgba(91,155,255,0.5),0_0_16px_-2px_rgba(91,155,255,0.6)]"
+                          className="w-full rounded-md border border-ice-glow/25 bg-navy-light/30 py-[0.85vw] pl-[11%] pr-[4%] text-[0.85vw] text-ice-100 shadow-[0_0_10px_-6px_rgba(127,209,255,0.6)] outline-none backdrop-blur-md placeholder:text-royal-light/40 transition focus:border-ice-glow/70 focus:bg-navy-light/40 focus:shadow-[0_0_0_1px_rgba(127,209,255,0.4),0_0_18px_-4px_rgba(91,155,255,0.65)]"
                         />
                       </div>
 
@@ -239,7 +245,7 @@ export default function LoginPage() {
                           type={showPassword ? "text" : "password"}
                           required
                           placeholder="Password"
-                          className="w-full rounded-md border border-royal-light/30 bg-navy-light/60 py-[0.85vw] pl-[11%] pr-[11%] text-[0.85vw] text-white shadow-[0_0_12px_-7px_rgba(91,155,255,0.7)] outline-none backdrop-blur-sm placeholder:text-white/35 transition focus:border-magenta/50 focus:shadow-[0_0_0_1px_rgba(255,61,154,0.35),0_0_16px_-2px_rgba(91,155,255,0.6)]"
+                          className="w-full rounded-md border border-ice-glow/25 bg-navy-light/30 py-[0.85vw] pl-[11%] pr-[11%] text-[0.85vw] text-ice-100 shadow-[0_0_10px_-6px_rgba(127,209,255,0.6)] outline-none backdrop-blur-md placeholder:text-royal-light/40 transition focus:border-magenta/50 focus:bg-navy-light/40 focus:shadow-[0_0_0_1px_rgba(255,61,154,0.35),0_0_18px_-4px_rgba(91,155,255,0.65)]"
                         />
                         <button
                           type="button"
@@ -263,15 +269,15 @@ export default function LoginPage() {
                       </button>
                     </form>
 
-                    <p className="mt-[0.8vw] text-[0.72vw] text-white/35">Forgot password?</p>
+                    <p className="mt-[0.9vw] text-[0.72vw] text-white/35">Forgot password?</p>
 
-                    <div className="mt-[1.3vw] flex w-full items-center gap-2">
+                    <div className="mt-[1.5vw] flex w-full items-center gap-2">
                       <div className="h-px flex-1 bg-white/10" />
                       <CrownIcon className="h-[0.75vw] w-[0.75vw] text-white/25" />
                       <div className="h-px flex-1 bg-white/10" />
                     </div>
 
-                    <p className="mt-[1vw] text-[0.78vw] text-white/50">
+                    <p className="mt-[1.1vw] text-[0.78vw] text-white/50">
                       New to POLAR?{" "}
                       <Link href="/signup" className="text-royal-light underline">
                         Create Account
