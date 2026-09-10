@@ -18,16 +18,24 @@ const BG_WRAPPER = { left: "0%", top: "0%", width: "100%", height: "100%" };
 // Layer 2 — POLAR POV hands + blank tablet
 // (public/login/login-tablet.png). Same canvas as the background, so
 // it defaults to the same full-bleed framing; adjust independently
-// by changing only this box.
+// by changing only this box. TABLET_SCALE is a pure size reduction
+// applied via transform (scaled around the box's own centre, not an
+// inset), which keeps the same centre alignment/perspective/general
+// vertical position while revealing more background around it —
+// changing only this one number is enough to resize it further.
 const TABLET_WRAPPER = { left: "0%", top: "0%", width: "100%", height: "100%" };
+const TABLET_SCALE = 0.94;
 
 // Layer 3 — the real login UI, positioned inside the tablet's own
 // screen area (measured directly against login-tablet.png: the
-// screen spans roughly x[420,1255] y[151,699] out of 1672x941; inset
-// further so every control stays clear of where the thumbs overlap
-// the screen around mid-height). UI_SCALE grows/shrinks the whole
-// form around its own centre without moving the tablet itself.
-const UI_SCREEN_BOX = { left: "30%", top: "19%", width: "40%", height: "52%" };
+// screen spans roughly x[420,1255] y[151,699] out of 1672x941).
+// Inset further in from that so every control stays clear of where
+// the thumbs overlap the screen, AND overflow-hidden below is a hard
+// clip — nothing belonging to Layer 3 can ever paint outside this
+// box (bezel/hands/background), regardless of content length.
+// UI_SCALE grows/shrinks the whole form around its own centre
+// without moving the tablet itself.
+const UI_SCREEN_BOX = { left: "31%", top: "21%", width: "38%", height: "50%" };
 const UI_SCALE = 1;
 
 function EnvelopeIcon({ className }: { className?: string }) {
@@ -149,91 +157,105 @@ export default function LoginPage() {
               />
             </div>
 
-            {/* Layer 2 — POLAR POV hands + tablet */}
+            {/* Layer 2 — POLAR POV hands + tablet. The scale wrapper
+                is `relative` (not just transformed) so Layer 3 below,
+                positioned absolutely against it, unambiguously scales
+                and stays aligned with the tablet as one unit. */}
             <div className="absolute" style={TABLET_WRAPPER}>
-              <Image
-                src="/login/login-tablet.png"
-                alt=""
-                fill
-                priority
-                className="object-cover"
-                aria-hidden="true"
-              />
+              <div
+                className="relative h-full w-full"
+                style={{ transform: `scale(${TABLET_SCALE})`, transformOrigin: "center" }}
+              >
+                <Image
+                  src="/login/login-tablet.png"
+                  alt=""
+                  fill
+                  priority
+                  className="object-cover"
+                  aria-hidden="true"
+                />
 
-              {/* Layer 3 — real login UI, inside the tablet screen */}
-              <div className="absolute flex flex-col" style={UI_SCREEN_BOX}>
-                <div
-                  className="flex h-full w-full flex-col items-center justify-center px-[6%]"
-                  style={{ transform: `scale(${UI_SCALE})`, transformOrigin: "center" }}
-                >
-                  <CrownIcon className="h-[6%] w-[6%] text-royal-light" />
-                  <p className="mt-[2%] font-display text-[2.6vw] leading-none tracking-wide text-white">POLAR</p>
-                  <p className="mt-[0.6%] text-[0.7vw] tracking-[0.3em] text-white/60">LONDON</p>
+                {/* Layer 3 — real login UI, strictly clipped to the
+                    tablet screen: overflow-hidden here is a hard
+                    guarantee nothing can ever paint over the bezel,
+                    hands or background, regardless of content
+                    length. */}
+                <div className="absolute flex flex-col overflow-hidden" style={UI_SCREEN_BOX}>
+                  <div
+                    className="flex h-full w-full flex-col items-center justify-center px-[7%]"
+                    style={{ transform: `scale(${UI_SCALE})`, transformOrigin: "center" }}
+                  >
+                    <CrownIcon className="h-[1.7vw] w-[1.7vw] text-royal-light drop-shadow-[0_0_6px_rgba(91,155,255,0.7)]" />
+                    <p className="mt-[0.3vw] font-display text-[2vw] font-black leading-none tracking-wide text-white drop-shadow-[0_0_10px_rgba(91,155,255,0.35)]">
+                      POLAR
+                    </p>
+                    <p className="mt-[0.15vw] text-[0.6vw] tracking-[0.4em] text-white/60">LONDON</p>
 
-                  <p className="mt-[5%] text-[1.35vw] font-semibold tracking-wide text-white">WELCOME BACK</p>
-                  <p className="mt-[0.6%] text-[0.85vw] text-white/50">Log in to continue.</p>
+                    <p className="mt-[1.3vw] font-display text-[1.3vw] tracking-wide text-white">WELCOME BACK</p>
+                    <p className="mt-[0.25vw] text-[0.78vw] text-white/50">Log in to continue.</p>
 
-                  <form onSubmit={handleSubmit} className="mt-[6%] w-full space-y-[3%]">
-                    <div className="relative">
-                      <span className="pointer-events-none absolute inset-y-0 left-[4%] flex items-center text-white/40">
-                        <EnvelopeIcon className="h-[1.1vw] w-[1.1vw]" />
-                      </span>
-                      <input
-                        name="email"
-                        type="email"
-                        required
-                        placeholder="Email Address"
-                        className="w-full rounded-md border border-white/15 bg-white/5 py-[2.6%] pl-[11%] pr-[4%] text-[0.9vw] text-white outline-none placeholder:text-white/40 focus:border-royal-light"
-                      />
-                    </div>
+                    <form onSubmit={handleSubmit} className="mt-[1.5vw] w-full">
+                      <div className="relative">
+                        <span className="pointer-events-none absolute inset-y-0 left-[4%] flex items-center text-royal-light/70">
+                          <EnvelopeIcon className="h-[1vw] w-[1vw]" />
+                        </span>
+                        <input
+                          name="email"
+                          type="email"
+                          required
+                          placeholder="Email Address"
+                          className="w-full rounded-md border border-royal-light/30 bg-navy-light/60 py-[0.85vw] pl-[11%] pr-[4%] text-[0.85vw] text-white outline-none placeholder:text-white/35 transition focus:border-royal-light focus:shadow-[0_0_0_1px_rgba(91,155,255,0.5),0_0_16px_-2px_rgba(91,155,255,0.6)]"
+                        />
+                      </div>
 
-                    <div className="relative">
-                      <span className="pointer-events-none absolute inset-y-0 left-[4%] flex items-center text-white/40">
-                        <LockIcon className="h-[1.1vw] w-[1.1vw]" />
-                      </span>
-                      <input
-                        name="password"
-                        type={showPassword ? "text" : "password"}
-                        required
-                        placeholder="Password"
-                        className="w-full rounded-md border border-white/15 bg-white/5 py-[2.6%] pl-[11%] pr-[11%] text-[0.9vw] text-white outline-none placeholder:text-white/40 focus:border-royal-light"
-                      />
+                      <div className="relative mt-[0.9vw]">
+                        <span className="pointer-events-none absolute inset-y-0 left-[4%] flex items-center text-royal-light/70">
+                          <LockIcon className="h-[1vw] w-[1vw]" />
+                        </span>
+                        <input
+                          name="password"
+                          type={showPassword ? "text" : "password"}
+                          required
+                          placeholder="Password"
+                          className="w-full rounded-md border border-royal-light/30 bg-navy-light/60 py-[0.85vw] pl-[11%] pr-[11%] text-[0.85vw] text-white outline-none placeholder:text-white/35 transition focus:border-magenta/50 focus:shadow-[0_0_0_1px_rgba(255,61,154,0.35),0_0_16px_-2px_rgba(91,155,255,0.6)]"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword((v) => !v)}
+                          aria-label={showPassword ? "Hide password" : "Show password"}
+                          className="absolute inset-y-0 right-[4%] flex items-center text-white/40 hover:text-white"
+                        >
+                          {showPassword ? <EyeOffIcon className="h-[1vw] w-[1vw]" /> : <EyeIcon className="h-[1vw] w-[1vw]" />}
+                        </button>
+                      </div>
+
+                      {error && <p className="mt-[0.5vw] text-[0.72vw] text-magenta">{error}</p>}
+
                       <button
-                        type="button"
-                        onClick={() => setShowPassword((v) => !v)}
-                        aria-label={showPassword ? "Hide password" : "Show password"}
-                        className="absolute inset-y-0 right-[4%] flex items-center text-white/40 hover:text-white"
+                        type="submit"
+                        disabled={pending}
+                        className="mt-[1vw] flex w-full items-center justify-center gap-2 rounded-md bg-royal py-[0.85vw] font-display text-[0.85vw] tracking-[0.15em] text-white shadow-[0_0_0_1px_rgba(91,155,255,0.5),0_0_18px_-2px_rgba(91,155,255,0.85)] transition hover:bg-royal-dark disabled:opacity-60"
                       >
-                        {showPassword ? <EyeOffIcon className="h-[1.1vw] w-[1.1vw]" /> : <EyeIcon className="h-[1.1vw] w-[1.1vw]" />}
+                        {pending ? "LOGGING IN…" : "LOG IN"}
+                        {!pending && <ArrowIcon className="h-[0.9vw] w-[0.9vw]" />}
                       </button>
+                    </form>
+
+                    <p className="mt-[0.8vw] text-[0.72vw] text-white/35">Forgot password?</p>
+
+                    <div className="mt-[1.3vw] flex w-full items-center gap-2">
+                      <div className="h-px flex-1 bg-white/10" />
+                      <CrownIcon className="h-[0.75vw] w-[0.75vw] text-white/25" />
+                      <div className="h-px flex-1 bg-white/10" />
                     </div>
 
-                    {error && <p className="text-[0.8vw] text-magenta">{error}</p>}
-
-                    <button
-                      type="submit"
-                      disabled={pending}
-                      className="flex w-full items-center justify-center gap-2 rounded-md bg-royal py-[2.6%] text-[0.95vw] font-bold uppercase tracking-widest text-white shadow-[0_0_25px_-4px_rgba(11,95,255,0.8)] transition hover:bg-royal-dark disabled:opacity-60"
-                    >
-                      {pending ? "Logging in…" : "Log in"}
-                      {!pending && <ArrowIcon className="h-[1vw] w-[1vw]" />}
-                    </button>
-                  </form>
-
-                  <p className="mt-[3%] text-[0.8vw] text-white/40">Forgot password?</p>
-
-                  <div className="mt-[5%] flex w-full items-center gap-3">
-                    <div className="h-px flex-1 bg-white/15" />
-                    <CrownIcon className="h-[1vw] w-[1vw] text-white/30" />
-                    <div className="h-px flex-1 bg-white/15" />
+                    <p className="mt-[1vw] text-[0.78vw] text-white/50">
+                      New to POLAR?{" "}
+                      <Link href="/signup" className="text-royal-light underline">
+                        Create Account
+                      </Link>
+                    </p>
                   </div>
-
-                  <p className="mt-[4%] text-[0.85vw] text-white/60">
-                    New to POLAR?{" "}
-                    <Link href="/signup" className="text-royal-light underline">
-                      Create Account
-                    </Link>
-                  </p>
                 </div>
               </div>
             </div>
