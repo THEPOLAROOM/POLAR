@@ -36,11 +36,25 @@ const CAL_ROW_TOP_PCT = 431 / 1024;
 const CAL_ROW_PITCH_PCT = 53.3 / 1024;
 const CAL_CELL_H_PCT = 44 / 1024;
 
-const TIME_GRID_BOX = { left: "63.15%", top: "31.64%", width: "33.85%", height: "25%" };
+// 4 columns x up to 5 rows, same measurement technique as the
+// calendar grid above.
+const TIME_COL_LEFT_PCT = 967 / 1536;
+const TIME_COL_PITCH_PCT = 134 / 1536;
+const TIME_CELL_W_PCT = 120 / 1536;
+const TIME_ROW_TOP_PCT = 326 / 1024;
+const TIME_ROW_PITCH_PCT = 51.3 / 1024;
+const TIME_CELL_H_PCT = 44 / 1024;
 
 const RECURRING_NO_BOX = { left: "63.15%", top: "65.92%", width: "15.95%", height: "5.08%" };
 const RECURRING_YES_BOX = { left: "80.40%", top: "65.92%", width: "16.60%", height: "5.08%" };
-const STEPPER_PANEL_BOX = { left: "63.15%", top: "74.61%", width: "33.85%", height: "9.28%" };
+// Small dot rendered inside each option's own baked radio circle
+// when selected, rather than a second bordered box on top of it.
+const RECURRING_NO_DOT = { left: "65.43%", top: "68.46%" };
+const RECURRING_YES_DOT = { left: "82.68%", top: "68.46%" };
+
+const STEPPER_MINUS_BOX = { left: "66.15%", top: "78.03%", width: "3.13%", height: "4.88%" };
+const STEPPER_NUMBER_BOX = { left: "70.05%", top: "78.03%", width: "8.14%", height: "4.88%" };
+const STEPPER_PLUS_BOX = { left: "78.98%", top: "78.03%", width: "3.13%", height: "4.88%" };
 
 const CONFIRM_BOX = { left: "1.69%", top: "86.91%", width: "96.61%", height: "6.15%" };
 const HELPER_BOX = { left: "36.78%", top: "93.55%", width: "26.43%", height: "4.39%" };
@@ -320,7 +334,7 @@ export function BookAppointmentForm({
                 aria-label="Select a service"
                 value={serviceId}
                 onChange={(e) => setServiceId(e.target.value)}
-                className="absolute appearance-none rounded-lg border border-royal-light/60 bg-navy/80 px-3 text-white outline-none"
+                className={`absolute appearance-none bg-transparent px-3 outline-none ${serviceId ? "text-white" : "text-transparent"}`}
                 style={{ ...SERVICE_DROPDOWN_BOX, fontSize: "1vw" }}
               >
                 <option value="" disabled>
@@ -383,13 +397,13 @@ export function BookAppointmentForm({
                     aria-label={dateStr}
                     aria-pressed={isSelected}
                     className={[
-                      "absolute flex items-center justify-center rounded-md text-white transition",
+                      "absolute flex items-center justify-center rounded-md bg-transparent transition",
                       isSelected
-                        ? "bg-royal border border-royal-light"
+                        ? "bg-royal/40 text-white"
                         : isAvailable
-                          ? "bg-emerald-500/15 border border-emerald-400/60 hover:bg-emerald-500/30"
-                          : "bg-white/5 border border-white/10 text-white/25 cursor-not-allowed",
-                      isToday ? "ring-2 ring-magenta" : "",
+                          ? "text-white/90 hover:bg-white/10"
+                          : "text-white/20 cursor-not-allowed",
+                      isToday && !isSelected ? "ring-1 ring-inset ring-magenta/70" : "",
                     ].join(" ")}
                     style={{ left, top, width: cellW, height: cellH, fontSize: "0.85vw" }}
                   >
@@ -401,95 +415,101 @@ export function BookAppointmentForm({
               {/* Panel 3 — Choose a Time + Make This a Recurring
                   Appointment. Headers baked; slot grid, toggle, and
                   stepper are real. */}
-              <div className="absolute grid grid-cols-4 gap-[1%]" style={TIME_GRID_BOX}>
-                {slotsError && (
-                  <p className="col-span-4 text-xs text-magenta">{slotsError}</p>
-                )}
-                {!selectedDate && (
-                  <p className="col-span-4 self-start font-body text-white/40" style={{ fontSize: "0.85vw" }}>
-                    Choose a date to see available times.
-                  </p>
-                )}
-                {selectedDate && slotsPending && (
-                  <p className="col-span-4 self-start font-body text-white/40" style={{ fontSize: "0.85vw" }}>
-                    Loading times…
-                  </p>
-                )}
-                {selectedDate && !slotsPending && slots && slots.length === 0 && (
-                  <p className="col-span-4 self-start font-body text-white/40" style={{ fontSize: "0.85vw" }}>
-                    No availability on this day.
-                  </p>
-                )}
-                {slots?.map((slot) => {
-                  const isSelected = selectedTime === slot.startTime;
-                  return (
-                    <button
-                      key={slot.startTime}
-                      type="button"
-                      disabled={slot.booked}
-                      onClick={() => setSelectedTime(slot.startTime)}
-                      className={[
-                        "rounded-lg border px-1 py-2 text-white transition",
-                        isSelected
-                          ? "bg-royal border-royal-light"
-                          : slot.booked
-                            ? "border-white/10 bg-white/5 text-white/25 cursor-not-allowed"
-                            : "border-royal-light/50 bg-navy/60 hover:bg-royal/20",
-                      ].join(" ")}
-                      style={{ fontSize: "0.85vw" }}
-                    >
-                      {formatTime12h(slot.startTime)}
-                    </button>
-                  );
-                })}
-              </div>
+              {selectedDate && slotsError && (
+                <p
+                  className="absolute font-body text-magenta"
+                  style={{ left: "63.15%", top: "31.64%", width: "33.85%", fontSize: "0.8vw" }}
+                >
+                  {slotsError}
+                </p>
+              )}
+              {selectedDate && !slotsPending && slots && slots.length === 0 && (
+                <p
+                  className="absolute font-body text-white/40"
+                  style={{ left: "63.15%", top: "31.64%", width: "33.85%", fontSize: "0.8vw" }}
+                >
+                  No availability on this day.
+                </p>
+              )}
+
+              {slots?.map((slot, i) => {
+                const row = Math.floor(i / 4);
+                const col = i % 4;
+                const isSelected = selectedTime === slot.startTime;
+                const left = `${(TIME_COL_LEFT_PCT + TIME_COL_PITCH_PCT * col) * 100}%`;
+                const top = `${(TIME_ROW_TOP_PCT + TIME_ROW_PITCH_PCT * row) * 100}%`;
+                const cellW = `${TIME_CELL_W_PCT * 100}%`;
+                const cellH = `${TIME_CELL_H_PCT * 100}%`;
+
+                return (
+                  <button
+                    key={slot.startTime}
+                    type="button"
+                    disabled={slot.booked}
+                    onClick={() => setSelectedTime(slot.startTime)}
+                    className={[
+                      "absolute flex items-center justify-center rounded-lg bg-transparent transition",
+                      isSelected
+                        ? "bg-royal/40 text-white"
+                        : slot.booked
+                          ? "text-white/20 cursor-not-allowed"
+                          : "text-white/90 hover:bg-white/10",
+                    ].join(" ")}
+                    style={{ left, top, width: cellW, height: cellH, fontSize: "0.85vw" }}
+                  >
+                    {formatTime12h(slot.startTime)}
+                  </button>
+                );
+              })}
 
               <button
                 type="button"
                 onClick={() => setIsRecurring("no")}
                 aria-pressed={isRecurring === "no"}
-                className={`absolute rounded-lg border transition ${isRecurring === "no" ? "border-royal-light bg-royal/10" : "border-white/15 bg-transparent"}`}
+                aria-label="Just this once"
+                className="absolute rounded-lg bg-transparent"
                 style={RECURRING_NO_BOX}
               />
               <button
                 type="button"
                 onClick={() => setIsRecurring("yes")}
                 aria-pressed={isRecurring === "yes"}
-                className={`absolute rounded-lg border transition ${isRecurring === "yes" ? "border-magenta bg-magenta/10" : "border-white/15 bg-transparent"}`}
+                aria-label="Set up a recurring booking"
+                className="absolute rounded-lg bg-transparent"
                 style={RECURRING_YES_BOX}
+              />
+              {/* Minimum state indication: a small dot inside the
+                  baked radio circle already shown for whichever
+                  option is selected — no second visible toggle. */}
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute h-[0.9%] w-[0.55%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-royal-light"
+                style={isRecurring === "no" ? RECURRING_NO_DOT : RECURRING_YES_DOT}
               />
 
               {isRecurring === "yes" && (
-                <div
-                  className="absolute flex items-center justify-center gap-3"
-                  style={STEPPER_PANEL_BOX}
-                >
+                <>
                   <button
                     type="button"
                     aria-label="Fewer weeks"
                     onClick={() => setIntervalWeeks((n) => Math.max(1, n - 1))}
-                    className="flex aspect-square h-[45%] items-center justify-center rounded-md border border-white/20 bg-white/5 text-white hover:bg-white/10"
-                  >
-                    −
-                  </button>
-                  <span
-                    className="flex h-[45%] min-w-[2.5em] items-center justify-center rounded-md border border-white/20 bg-navy/60 px-3 text-white"
-                    style={{ fontSize: "1vw" }}
+                    className="absolute bg-transparent"
+                    style={STEPPER_MINUS_BOX}
+                  />
+                  <div
+                    className="pointer-events-none absolute flex items-center justify-center text-white"
+                    style={{ ...STEPPER_NUMBER_BOX, fontSize: "1vw" }}
                   >
                     {intervalWeeks}
-                  </span>
+                  </div>
                   <button
                     type="button"
                     aria-label="More weeks"
                     onClick={() => setIntervalWeeks((n) => n + 1)}
-                    className="flex aspect-square h-[45%] items-center justify-center rounded-md border border-white/20 bg-white/5 text-white hover:bg-white/10"
-                  >
-                    +
-                  </button>
-                  <span className="text-white/80" style={{ fontSize: "0.9vw" }}>
-                    week{intervalWeeks === 1 ? "" : "s"}
-                  </span>
-                </div>
+                    className="absolute bg-transparent"
+                    style={STEPPER_PLUS_BOX}
+                  />
+                </>
               )}
 
               <button
@@ -497,22 +517,23 @@ export function BookAppointmentForm({
                 disabled={!canConfirm || submitPending}
                 onClick={handleConfirm}
                 aria-label="Confirm appointment"
-                className="absolute rounded-lg disabled:cursor-not-allowed"
+                className={`absolute rounded-lg transition disabled:cursor-not-allowed ${canConfirm ? "bg-white/5 shadow-[0_0_20px_-2px_rgba(91,155,255,0.35)]" : "bg-transparent"}`}
                 style={CONFIRM_BOX}
               />
 
-              <div
-                className="absolute flex items-center justify-center whitespace-nowrap font-body text-white/70"
-                style={{ ...HELPER_BOX, fontSize: "0.8vw" }}
-              >
-                {submitError
-                  ? submitError
-                  : submitSuccess
-                    ? "Appointment booked."
-                    : submitPending
-                      ? "Booking…"
-                      : "Select a service, date and time to continue."}
-              </div>
+              {/* The mastered asset already bakes in "Select a
+                  service, date and time to continue." — only render
+                  real text here when there's something genuinely
+                  different to say (error/pending/success), otherwise
+                  leave the baked copy showing through untouched. */}
+              {(submitError || submitSuccess || submitPending) && (
+                <div
+                  className="absolute flex items-center justify-center whitespace-nowrap rounded font-body text-white"
+                  style={{ ...HELPER_BOX, backgroundColor: PANEL_BG, fontSize: "0.8vw" }}
+                >
+                  {submitError ? submitError : submitSuccess ? "Appointment booked." : "Booking…"}
+                </div>
+              )}
             </div>
           </div>
         </div>
