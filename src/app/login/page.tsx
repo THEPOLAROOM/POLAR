@@ -38,6 +38,14 @@ const TABLET_SCALE = 0.94;
 const UI_SCREEN_BOX = { left: "31%", top: "21%", width: "38%", height: "50%" };
 const UI_SCALE = 1;
 
+// Layer 4 — official POLAR LONDON logo PNG (public/login/login-logo.png),
+// used exactly as supplied. Independent box so its position/size can be
+// tuned later without touching any other layer. Height is driven by the
+// asset's own aspect ratio (not a fixed %) so object-contain never
+// crops or distorts it.
+const LOGO_WRAPPER = { left: "4%", top: "5%", width: "15%" };
+const LOGO_ASPECT = "1774 / 887";
+
 function EnvelopeIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -181,17 +189,31 @@ export default function LoginPage() {
                     hands or background, regardless of content
                     length. */}
                 <div className="absolute flex flex-col overflow-hidden" style={UI_SCREEN_BOX}>
+                  {/* Atmosphere — deep navy/near-black base with restrained
+                      royal-blue + magenta ambient glow. Purely a background
+                      treatment sitting behind the real form below; the
+                      parent's overflow-hidden still clips it exactly like
+                      every other Layer 3 element. */}
                   <div
-                    className="flex h-full w-full flex-col items-center justify-center px-[7%]"
+                    className="absolute inset-0"
+                    style={{
+                      background:
+                        "radial-gradient(ellipse 90% 70% at 25% 0%, rgba(58,102,255,0.24), transparent 60%), radial-gradient(ellipse 55% 45% at 100% 100%, rgba(255,61,154,0.12), transparent 65%), linear-gradient(160deg, #05070f 0%, #0a1330 50%, #06091a 100%)",
+                    }}
+                  />
+                  <div
+                    className="absolute inset-0 opacity-[0.06]"
+                    style={{
+                      backgroundImage:
+                        "repeating-linear-gradient(115deg, rgba(190,215,255,0.9) 0px, rgba(190,215,255,0.9) 1px, transparent 1px, transparent 14px)",
+                    }}
+                  />
+
+                  <div
+                    className="relative flex h-full w-full flex-col items-center justify-center px-[7%]"
                     style={{ transform: `scale(${UI_SCALE})`, transformOrigin: "center" }}
                   >
-                    <CrownIcon className="h-[1.7vw] w-[1.7vw] text-royal-light drop-shadow-[0_0_6px_rgba(91,155,255,0.7)]" />
-                    <p className="mt-[0.3vw] font-display text-[2vw] font-black leading-none tracking-wide text-white drop-shadow-[0_0_10px_rgba(91,155,255,0.35)]">
-                      POLAR
-                    </p>
-                    <p className="mt-[0.15vw] text-[0.6vw] tracking-[0.4em] text-white/60">LONDON</p>
-
-                    <p className="mt-[1.3vw] font-display text-[1.3vw] tracking-wide text-white">WELCOME BACK</p>
+                    <p className="font-display text-[1.3vw] tracking-wide text-white">WELCOME BACK</p>
                     <p className="mt-[0.25vw] text-[0.78vw] text-white/50">Log in to continue.</p>
 
                     <form onSubmit={handleSubmit} className="mt-[1.5vw] w-full">
@@ -204,7 +226,7 @@ export default function LoginPage() {
                           type="email"
                           required
                           placeholder="Email Address"
-                          className="w-full rounded-md border border-royal-light/30 bg-navy-light/60 py-[0.85vw] pl-[11%] pr-[4%] text-[0.85vw] text-white outline-none placeholder:text-white/35 transition focus:border-royal-light focus:shadow-[0_0_0_1px_rgba(91,155,255,0.5),0_0_16px_-2px_rgba(91,155,255,0.6)]"
+                          className="w-full rounded-md border border-royal-light/30 bg-navy-light/60 py-[0.85vw] pl-[11%] pr-[4%] text-[0.85vw] text-white shadow-[0_0_12px_-7px_rgba(91,155,255,0.7)] outline-none backdrop-blur-sm placeholder:text-white/35 transition focus:border-royal-light focus:shadow-[0_0_0_1px_rgba(91,155,255,0.5),0_0_16px_-2px_rgba(91,155,255,0.6)]"
                         />
                       </div>
 
@@ -217,7 +239,7 @@ export default function LoginPage() {
                           type={showPassword ? "text" : "password"}
                           required
                           placeholder="Password"
-                          className="w-full rounded-md border border-royal-light/30 bg-navy-light/60 py-[0.85vw] pl-[11%] pr-[11%] text-[0.85vw] text-white outline-none placeholder:text-white/35 transition focus:border-magenta/50 focus:shadow-[0_0_0_1px_rgba(255,61,154,0.35),0_0_16px_-2px_rgba(91,155,255,0.6)]"
+                          className="w-full rounded-md border border-royal-light/30 bg-navy-light/60 py-[0.85vw] pl-[11%] pr-[11%] text-[0.85vw] text-white shadow-[0_0_12px_-7px_rgba(91,155,255,0.7)] outline-none backdrop-blur-sm placeholder:text-white/35 transition focus:border-magenta/50 focus:shadow-[0_0_0_1px_rgba(255,61,154,0.35),0_0_16px_-2px_rgba(91,155,255,0.6)]"
                         />
                         <button
                           type="button"
@@ -258,6 +280,22 @@ export default function LoginPage() {
                   </div>
                 </div>
               </div>
+            </div>
+
+            {/* Layer 4 — official logo PNG, independent of every other
+                layer, drawn on top of both the background and the
+                tablet so it always reads as page branding. */}
+            <div
+              className="absolute"
+              style={{ left: LOGO_WRAPPER.left, top: LOGO_WRAPPER.top, width: LOGO_WRAPPER.width, aspectRatio: LOGO_ASPECT }}
+            >
+              <Image
+                src="/login/login-logo.png"
+                alt="POLAR London"
+                fill
+                priority
+                className="object-contain"
+              />
             </div>
           </div>
         </div>
