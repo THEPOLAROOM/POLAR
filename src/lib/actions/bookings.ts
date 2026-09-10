@@ -7,8 +7,65 @@ import { POLAR_BARBER_PROFILE_ID } from "@/lib/config";
 
 const BOOK_PATH = "/dashboard/client/book";
 const BOOKINGS_PATH = "/dashboard/client/bookings";
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 type ActionResult = { error: string } | void;
+
+export type BookableSlot = {
+  startTime: string;
+  endTime: string;
+  booked: boolean;
+};
+
+/**
+ * Read-only lookup used by the interactive calendar on
+ * /dashboard/client/book: the barber's configured availability rows
+ * for that date's day-of-week, each flagged booked/free via the
+ * existing get_barber_booked_slots() RPC — the exact same two
+ * queries the page itself used before it became interactive, just
+ * callable directly from the client component (via useTransition,
+ * same pattern as bookSlot/cancelBooking) instead of a full-page
+ * ?date= navigation.
+ */
+export async function getBookableSlots(
+  date: string
+): Promise<{ slots: BookableSlot[] } | { error: string }> {
+  if (!DATE_RE.test(date)) {
+    return { error: "Invalid date." };
+  }
+
+  const { supabase } = await requireRole("client");
+  const dayOfWeek = new Date(`${date}T00:00:00Z`).getUTCDay();
+
+  const [{ data: slotRows }, { data: bookedRows }] = await Promise.all([
+    supabase
+      .from("barber_availability")
+      .select("start_time, end_time")
+      .eq("barber_profile_id", POLAR_BARBER_PROFILE_ID)
+      .eq("day_of_week", dayOfWeek)
+      .eq("is_active", true)
+      .order("start_time", { ascending: true }),
+    supabase.rpc("get_barber_booked_slots", {
+      target_barber_id: POLAR_BARBER_PROFILE_ID,
+      from_date: date,
+      to_date: date,
+    }),
+  ]);
+
+  const bookedStartTimes = new Set(
+    ((bookedRows ?? []) as { start_time: string }[]).map((row) => row.start_time)
+  );
+
+  const slots = ((slotRows ?? []) as { start_time: string; end_time: string }[]).map(
+    (row) => ({
+      startTime: row.start_time,
+      endTime: row.end_time,
+      booked: bookedStartTimes.has(row.start_time),
+    })
+  );
+
+  return { slots };
+}
 
 /**
  * Books a free slot for the calling client via create_or_reschedule_booking()
@@ -31,12 +88,17 @@ export async function bookSlot(formData: FormData): Promise<ActionResult> {
   const date = String(formData.get("date") ?? "").trim();
   const serviceId = String(formData.get("service_id") ?? "").trim();
   const startTime = String(formData.get("start_time") ?? "").trim();
+  const intervalWeeksRaw = String(formData.get("recurrence_interval_weeks") ?? "1").trim();
+  const intervalWeeks = Number.parseInt(intervalWeeksRaw, 10);
 
   if (!date || !serviceId || !startTime) {
     return { error: "Choose a service and a start time." };
   }
   if (recurrence !== "one_off" && recurrence !== "weekly") {
     return { error: "Choose a booking type." };
+  }
+  if (!Number.isInteger(intervalWeeks) || intervalWeeks < 1) {
+    return { error: "Choose how often the appointment should repeat." };
   }
 
   const { supabase } = await requireRole("client");
@@ -49,6 +111,7 @@ export async function bookSlot(formData: FormData): Promise<ActionResult> {
     p_end_date: null, // weekly stays open-ended until cancelled — no end-date input in this minimal UI
     p_service_id: serviceId,
     p_start_time: startTime,
+    p_recurrence_interval_weeks: intervalWeeks,
   });
 
   if (error) {
@@ -115,7 +178,7 @@ export async function rescheduleBooking(
 
   const { data: existing } = await supabase
     .from("bookings")
-    .select("recurrence, end_date, service_id")
+    .select("recurrence, end_date, service_id, recurrence_interval_weeks")
     .eq("id", bookingId)
     .eq("client_profile_id", user.id)
     .eq("status", "confirmed")
@@ -133,6 +196,7 @@ export async function rescheduleBooking(
     p_service_id: existing.service_id,
     p_start_date: date,
     p_start_time: startTime,
+    p_recurrence_interval_weeks: existing.recurrence_interval_weeks,
   });
 
   if (error) {

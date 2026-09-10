@@ -114,6 +114,7 @@ type BookingRow = {
   status: "confirmed" | "cancelled";
   service_id: string | null;
   services: ServiceInfo;
+  recurrence_interval_weeks: number;
 };
 
 function addDaysUTC(dateStr: string, days: number): string {
@@ -126,19 +127,29 @@ function addDaysUTC(dateStr: string, days: number): string {
 // never occurs again. Weekly bookings are stored as a single row per
 // series (not per occurrence), so the next occurrence has to be
 // computed rather than read directly off start_date, which is just
-// the series' original start.
+// the series' original start — repeating every
+// recurrence_interval_weeks weeks (defaults to 1, i.e. every week,
+// for bookings made before that column existed).
 function nextOccurrenceOnOrAfter(
-  booking: Pick<BookingRow, "recurrence" | "start_date" | "end_date">,
+  booking: Pick<
+    BookingRow,
+    "recurrence" | "start_date" | "end_date" | "recurrence_interval_weeks"
+  >,
   today: string
 ): string | null {
   if (booking.recurrence === "one_off") {
     return booking.start_date >= today ? booking.start_date : null;
   }
   if (booking.end_date && booking.end_date < today) return null;
-  const base = booking.start_date > today ? booking.start_date : today;
-  const bookingDow = new Date(`${booking.start_date}T00:00:00Z`).getUTCDay();
-  const baseDow = new Date(`${base}T00:00:00Z`).getUTCDay();
-  const next = addDaysUTC(base, (bookingDow - baseDow + 7) % 7);
+  if (booking.start_date >= today) return booking.start_date;
+
+  const intervalDays = (booking.recurrence_interval_weeks || 1) * 7;
+  const startMs = Date.parse(`${booking.start_date}T00:00:00Z`);
+  const todayMs = Date.parse(`${today}T00:00:00Z`);
+  const diffDays = Math.round((todayMs - startMs) / 86400000);
+  const stepsNeeded = Math.ceil(diffDays / intervalDays);
+  const next = addDaysUTC(booking.start_date, stepsNeeded * intervalDays);
+
   if (booking.end_date && next > booking.end_date) return null;
   return next;
 }
@@ -164,7 +175,7 @@ export default async function MyAppointmentsPage() {
     supabase
       .from("bookings")
       .select(
-        "id, recurrence, start_date, end_date, start_time, end_time, status, service_id, services(name, duration_minutes)"
+        "id, recurrence, start_date, end_date, start_time, end_time, status, service_id, recurrence_interval_weeks, services(name, duration_minutes)"
       )
       .eq("client_profile_id", user.id)
       .order("start_date", { ascending: true })

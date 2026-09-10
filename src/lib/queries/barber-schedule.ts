@@ -19,10 +19,14 @@ type BookingRow = {
   end_date: string | null;
   start_time: string;
   end_time: string;
+  recurrence_interval_weeks: number;
 };
 
 function occursOnDate(
-  booking: Pick<BookingRow, "recurrence" | "start_date" | "end_date">,
+  booking: Pick<
+    BookingRow,
+    "recurrence" | "start_date" | "end_date" | "recurrence_interval_weeks"
+  >,
   date: string,
   dayOfWeek: number
 ): boolean {
@@ -35,7 +39,14 @@ function occursOnDate(
   if (bookingDayOfWeek !== dayOfWeek) return false;
   if (date < booking.start_date) return false;
   if (booking.end_date && date > booking.end_date) return false;
-  return true;
+  // "weekly" repeats every recurrence_interval_weeks weeks from
+  // start_date (defaults to 1, i.e. every week, for every booking
+  // created before this column existed).
+  const intervalDays = (booking.recurrence_interval_weeks || 1) * 7;
+  const startMs = Date.parse(`${booking.start_date}T00:00:00Z`);
+  const dateMs = Date.parse(`${date}T00:00:00Z`);
+  const diffDays = Math.round((dateMs - startMs) / 86400000);
+  return diffDays % intervalDays === 0;
 }
 
 /**
@@ -58,7 +69,7 @@ export async function getBarberBookingsForDate(
   const { data: allBookings } = await supabase
     .from("bookings")
     .select(
-      "id, client_profile_id, recurrence, start_date, end_date, start_time, end_time"
+      "id, client_profile_id, recurrence, start_date, end_date, start_time, end_time, recurrence_interval_weeks"
     )
     .eq("barber_profile_id", barberProfileId)
     .eq("status", "confirmed")
