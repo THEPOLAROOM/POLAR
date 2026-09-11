@@ -11,6 +11,24 @@ import { getShopToday, getShopTimeNow, formatTime12h } from "@/lib/dates";
 // measured against the overlay's own native 1672x941 canvas (pixel-
 // level scan of each panel's border, same technique used for the
 // Client Dashboard overlay).
+
+// The overlay (plus every click target/patch below, all measured
+// against its own 1672x941 canvas) renders at this fraction of the
+// background's width and is centred via equal insets on every side —
+// same technique/value as the Client Dashboard overlay. The
+// background itself is untouched (still full-bleed, no scale/inset),
+// so shrinking only the overlay is what reveals room around it and
+// keeps the whole functional UI safely inside typical viewport
+// heights without needing to scroll.
+const OVERLAY_SCALE = 0.76;
+const OVERLAY_INSET_PCT = `${((1 - OVERLAY_SCALE) / 2) * 100}%`;
+const OVERLAY_INSET = {
+  left: OVERLAY_INSET_PCT,
+  right: OVERLAY_INSET_PCT,
+  top: OVERLAY_INSET_PCT,
+  bottom: OVERLAY_INSET_PCT,
+};
+
 const CARD_ROW = { top: "17.11%", height: "34.64%" };
 const CARDS = [
   { href: "/dashboard/barber/clients", label: "Clients", box: { left: "1.38%", width: "19.08%" } },
@@ -87,7 +105,22 @@ export default async function BarberDashboardPage() {
   const cuttingTimeLabel = `${Math.floor(cuttingMinutes / 60)}h ${cuttingMinutes % 60}m`;
 
   return (
-    <>
+    <div id="barber-dashboard-page">
+      {/* This page's nav lives in the shared barber layout
+          (src/app/dashboard/barber/layout.tsx), which every other
+          barber route still needs untouched — so rather than editing
+          that shared file (or its routes) to remove it there too,
+          this plain (non-styled-jsx, since this is a Server
+          Component) global style rule reaches out to hide just that
+          one sibling `nav` only when this exact page is the one
+          rendering, via the stable `#barber-dashboard-page` id
+          above. */}
+      <style>{`
+        div:has(> #barber-dashboard-page) > nav {
+          display: none;
+        }
+      `}</style>
+
       {/* Mobile — simple functional placeholder; the mastered layered
           design below is desktop-only for this pass. */}
       <main className="mx-auto max-w-xl px-6 py-16 sm:hidden">
@@ -137,10 +170,10 @@ export default async function BarberDashboardPage() {
       </main>
 
       {/* Desktop — mastered background + transparent UI overlay, with
-          real click targets and live data patched on top. Rendered
-          within the existing barber nav (unchanged — no nav/header is
-          added or removed here), sized responsively by its own
-          aspect ratio rather than forcing 100dvh. */}
+          real click targets and live data patched on top, sized
+          responsively by its own aspect ratio rather than forcing
+          100dvh. The shared barber nav is hidden for this page only
+          via the `:has()` rule above. */}
       <main className="relative hidden w-full overflow-hidden bg-navy sm:block">
         <div className="relative w-full aspect-[1672/941]">
           <Image
@@ -151,87 +184,98 @@ export default async function BarberDashboardPage() {
             className="object-cover"
             aria-hidden="true"
           />
-          <Image
-            src="/dashboard/polar-barber-dashboard-ui-mastered.png"
-            alt=""
-            fill
-            priority
-            className="object-cover"
-            aria-hidden="true"
-          />
 
-          {/* Five main cards */}
-          {CARDS.map(({ href, label, box }) => (
-            <Link
-              key={href}
-              href={href}
-              aria-label={label}
-              className={`${PANEL_HOVER_CLASS} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-light`}
-              style={{ ...CARD_ROW, ...box }}
+          <div className="absolute" style={OVERLAY_INSET}>
+            <Image
+              src="/dashboard/polar-barber-dashboard-ui-mastered.png"
+              alt=""
+              fill
+              priority
+              className="object-contain"
+              aria-hidden="true"
             />
-          ))}
 
-          {/* Quick Actions — Add Walk-In / Block Time route to the
-              existing pages that hold the real functionality
-              (calendar walk-in form / availability). Emergency has no
-              backend yet, so it stays an inert hover-only target. */}
-          <Link
-            href="/dashboard/barber/calendar"
-            aria-label="Add Walk-In"
-            className={`${PANEL_HOVER_CLASS} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-light`}
-            style={ADD_WALK_IN_BOX}
-          />
-          <Link
-            href="/dashboard/barber/availability"
-            aria-label="Block Time"
-            className={`${PANEL_HOVER_CLASS} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-light`}
-            style={BLOCK_TIME_BOX}
-          />
-          <div aria-hidden="true" className={PANEL_HOVER_CLASS} style={EMERGENCY_BOX} />
+            {/* Five main cards */}
+            {CARDS.map(({ href, label, box }) => (
+              <Link
+                key={href}
+                href={href}
+                aria-label={label}
+                className={`${PANEL_HOVER_CLASS} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-light`}
+                style={{ ...CARD_ROW, ...box }}
+              />
+            ))}
 
-          {/* Today's Schedule — only overridden with real content
-              when there genuinely are bookings today; otherwise the
-              overlay's own accurate empty-state art is left as-is. */}
-          {todaysBookings.length > 0 && (
-            <div className="absolute overflow-hidden rounded-xl" style={SCHEDULE_CONTENT_BOX}>
+            {/* Quick Actions — Add Walk-In / Block Time route to the
+                existing pages that hold the real functionality
+                (calendar walk-in form / availability). Emergency has
+                no backend yet, so it stays an inert hover-only
+                target. */}
+            <Link
+              href="/dashboard/barber/calendar"
+              aria-label="Add Walk-In"
+              className={`${PANEL_HOVER_CLASS} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-light`}
+              style={ADD_WALK_IN_BOX}
+            />
+            <Link
+              href="/dashboard/barber/availability"
+              aria-label="Block Time"
+              className={`${PANEL_HOVER_CLASS} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-light`}
+              style={BLOCK_TIME_BOX}
+            />
+            <div aria-hidden="true" className={PANEL_HOVER_CLASS} style={EMERGENCY_BOX} />
+
+            {/* Today's Schedule — only overridden with real content
+                when there genuinely are bookings today; otherwise the
+                overlay's own accurate empty-state art is left as-is. */}
+            {todaysBookings.length > 0 && (
+              <div className="absolute overflow-hidden rounded-xl" style={SCHEDULE_CONTENT_BOX}>
+                <div className="absolute inset-0" style={{ backgroundColor: PANEL_FILL }} aria-hidden="true" />
+                <ul
+                  className="relative flex h-full flex-col justify-center"
+                  style={{ gap: `${0.6 * OVERLAY_SCALE}vw`, paddingLeft: `${OVERLAY_SCALE}vw`, paddingRight: `${OVERLAY_SCALE}vw` }}
+                >
+                  {todaysBookings.slice(0, 4).map((booking) => (
+                    <li
+                      key={booking.id}
+                      className="flex items-center justify-between gap-2"
+                      style={{ fontSize: `${0.85 * OVERLAY_SCALE}vw` }}
+                    >
+                      <span className="truncate text-white">{booking.clientName}</span>
+                      <span className="shrink-0 text-royal-light">
+                        {formatTime12h(booking.startTime)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Today's Stats — real counts/duration patched over the
+                baked placeholder digits, Client-Dashboard-ID-patch
+                style. Walk-ins has no backing data source yet and is
+                left as the overlay's own genuine "0". */}
+            <div className="absolute flex items-center justify-center" style={COMPLETED_PATCH_BOX}>
               <div className="absolute inset-0" style={{ backgroundColor: PANEL_FILL }} aria-hidden="true" />
-              <ul className="relative flex h-full flex-col justify-center gap-[0.6vw] px-[1vw]">
-                {todaysBookings.slice(0, 4).map((booking) => (
-                  <li key={booking.id} className="flex items-center justify-between gap-2 text-[0.85vw]">
-                    <span className="truncate text-white">{booking.clientName}</span>
-                    <span className="shrink-0 text-royal-light">
-                      {formatTime12h(booking.startTime)}
-                    </span>
-                  </li>
-                ))}
-              </ul>
+              <p className="relative font-body font-black leading-none text-white" style={{ fontSize: `${1.6 * OVERLAY_SCALE}vw` }}>
+                {completedBookings.length}
+              </p>
             </div>
-          )}
-
-          {/* Today's Stats — real counts/duration patched over the
-              baked placeholder digits, Client-Dashboard-ID-patch
-              style. Walk-ins has no backing data source yet and is
-              left as the overlay's own genuine "0". */}
-          <div className="absolute flex items-center justify-center" style={COMPLETED_PATCH_BOX}>
-            <div className="absolute inset-0" style={{ backgroundColor: PANEL_FILL }} aria-hidden="true" />
-            <p className="relative font-body text-[1.6vw] font-black leading-none text-white">
-              {completedBookings.length}
-            </p>
-          </div>
-          <div className="absolute flex items-center justify-center" style={UPCOMING_PATCH_BOX}>
-            <div className="absolute inset-0" style={{ backgroundColor: PANEL_FILL }} aria-hidden="true" />
-            <p className="relative font-body text-[1.6vw] font-black leading-none text-white">
-              {upcomingCount}
-            </p>
-          </div>
-          <div className="absolute flex items-center justify-center" style={CUTTING_TIME_PATCH_BOX}>
-            <div className="absolute inset-0" style={{ backgroundColor: PANEL_FILL }} aria-hidden="true" />
-            <p className="relative font-body text-[1.4vw] font-black leading-none text-white">
-              {cuttingTimeLabel}
-            </p>
+            <div className="absolute flex items-center justify-center" style={UPCOMING_PATCH_BOX}>
+              <div className="absolute inset-0" style={{ backgroundColor: PANEL_FILL }} aria-hidden="true" />
+              <p className="relative font-body font-black leading-none text-white" style={{ fontSize: `${1.6 * OVERLAY_SCALE}vw` }}>
+                {upcomingCount}
+              </p>
+            </div>
+            <div className="absolute flex items-center justify-center" style={CUTTING_TIME_PATCH_BOX}>
+              <div className="absolute inset-0" style={{ backgroundColor: PANEL_FILL }} aria-hidden="true" />
+              <p className="relative font-body font-black leading-none text-white" style={{ fontSize: `${1.4 * OVERLAY_SCALE}vw` }}>
+                {cuttingTimeLabel}
+              </p>
+            </div>
           </div>
         </div>
       </main>
-    </>
+    </div>
   );
 }
