@@ -14,13 +14,14 @@ import { getShopToday, getShopTimeNow, formatTime12h } from "@/lib/dates";
 
 // The overlay (plus every click target/patch below, all measured
 // against its own 1672x941 canvas) renders at this fraction of the
-// background's width and is centred via equal insets on every side —
-// same technique/value as the Client Dashboard overlay. The
-// background itself is untouched (still full-bleed, no scale/inset),
-// so shrinking only the overlay is what reveals room around it and
-// keeps the whole functional UI safely inside typical viewport
-// heights without needing to scroll.
-const OVERLAY_SCALE = 0.76;
+// background's width and is centred via equal insets on every side.
+// The background itself is untouched (still full-bleed, no
+// scale/inset). The outer box is now hard-capped to the viewport (see
+// the width: min(...) below), which alone guarantees the overlay can
+// never be clipped — this is nudged down slightly further, from the
+// Client Dashboard's 0.76, purely so the overlay sits with visibly
+// comfortable margin rather than right at the edge.
+const OVERLAY_SCALE = 0.72;
 const OVERLAY_INSET_PCT = `${((1 - OVERLAY_SCALE) / 2) * 100}%`;
 const OVERLAY_INSET = {
   left: OVERLAY_INSET_PCT,
@@ -170,12 +171,20 @@ export default async function BarberDashboardPage() {
       </main>
 
       {/* Desktop — mastered background + transparent UI overlay, with
-          real click targets and live data patched on top, sized
-          responsively by its own aspect ratio rather than forcing
-          100dvh. The shared barber nav is hidden for this page only
-          via the `:has()` rule above. */}
-      <main className="relative hidden w-full overflow-hidden bg-navy sm:block">
-        <div className="relative w-full aspect-[1672/941]">
+          real click targets and live data patched on top. Fixed to
+          exactly 100dvh with overflow-hidden so this route never
+          scrolls; the aspect-ratio box's own width is capped via
+          `min(100%, 100dvh * 1672/941)` so its height (driven by that
+          width) can never exceed the viewport either — a hard
+          guarantee against clipping/scrolling on any screen, not a
+          value tuned to one assumed viewport. The shared barber nav
+          is hidden for this page only via the `:has()` rule above. */}
+      <main className="relative hidden overflow-hidden bg-navy sm:block" style={{ height: "100dvh" }}>
+        <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
+        <div
+          className="relative aspect-[1672/941]"
+          style={{ width: "min(100%, calc(100dvh * 1672 / 941))" }}
+        >
           <Image
             src="/dashboard/polar-barber-dashboard-background.png"
             alt=""
@@ -274,6 +283,7 @@ export default async function BarberDashboardPage() {
               </p>
             </div>
           </div>
+        </div>
         </div>
       </main>
     </div>
