@@ -32,8 +32,20 @@ import { requireRole } from "@/lib/auth/require-role";
 // unchanged padding then simply extends a little past the visible
 // viewport edge on the (still) overflow-hidden wrapper — invisible,
 // since it's transparent, and still guarantees no scrollbar.
+//
+// That content-fit sizing was then confirmed too large against the
+// approved reference (CURRENT vs TARGET comparison): measuring both
+// panels of that reference directly (the card's own outer border,
+// pixel-scanned against each panel's frame) puts the TARGET card at
+// ~92.6% of the CURRENT card's size. UI_SIZE_SCALE applies that
+// measured reduction uniformly on top of the content-fit box above —
+// it is not a re-guess, it's the same box scaled down by the ratio
+// actually measured between the two reference panels.
 const ASSET_ASPECT = "1672 / 941";
-const CONTENT_FIT_HEIGHT_RATIO = "1672 / 772";
+const CONTENT_FIT_HEIGHT_PX = 772;
+const UI_SIZE_SCALE = 0.926;
+const EFFECTIVE_HEIGHT_PX = CONTENT_FIT_HEIGHT_PX / UI_SIZE_SCALE;
+const CONTENT_FIT_HEIGHT_RATIO = `1672 / ${EFFECTIVE_HEIGHT_PX}`;
 
 // Every box below is measured directly against the mastered asset's
 // own 1672x941 canvas (pixel-level border scan), same technique used
@@ -48,15 +60,14 @@ const COL_C = { left: "65.79%", width: "31.52%" };
 const PHOTO_BOX = { left: "5.53%", top: "16.90%", width: "16.45%", height: "29.23%" };
 const EDIT_HEADER_BOX = { left: "74.34%", top: "38.79%", width: "20.57%", height: "6.91%" };
 
-// Only "Years Experience" has a real backing field
-// (barber_professional_details.years_experience). Happy Clients and
-// Achievements have no schema/tracking anywhere, so the asset's own
-// baked "0" for those is left exactly as-is (genuinely accurate, not
-// invented). This patch box covers just the baked digit, sampled from
-// the card's own background colour, matching the same
-// real-data-over-baked-placeholder technique already used for the
-// Client Dashboard's POLAR ID.
+// Years Experience is fixed at its default 0 for now — real data is
+// explicitly not wired in yet, matching the mastered asset's own
+// baked default state, same as Happy Clients/Achievements. The patch
+// box is kept (rather than removed) since a real value will land here
+// later; it currently just redraws the same "0" already baked in the
+// artwork.
 const YEARS_EXPERIENCE_PATCH_BOX = { left: "68.54%", top: "24.44%", width: "3.3%", height: "3.4%" };
+const YEARS_EXPERIENCE_DEFAULT = 0;
 const STAT_PATCH_FILL = "#010d1d";
 
 const HOVER_CLASS =
@@ -78,15 +89,7 @@ const CARDS = [
 // Server-side ROLE check happens FIRST, same as every other protected
 // barber page.
 export default async function BarberAccountPage() {
-  const { supabase, user } = await requireRole("barber");
-
-  const { data: professional } = await supabase
-    .from("barber_professional_details")
-    .select("years_experience")
-    .eq("profile_id", user.id)
-    .maybeSingle();
-
-  const yearsExperience = professional?.years_experience ?? 0;
+  const { user } = await requireRole("barber");
 
   return (
     <div id="barber-profile-page">
@@ -174,7 +177,7 @@ export default async function BarberAccountPage() {
             <div className="absolute flex items-center justify-center" style={YEARS_EXPERIENCE_PATCH_BOX}>
               <div className="absolute inset-0" style={{ backgroundColor: STAT_PATCH_FILL }} aria-hidden="true" />
               <p className="relative font-body font-black leading-none text-white" style={{ fontSize: "1.1vw" }}>
-                {yearsExperience}
+                {YEARS_EXPERIENCE_DEFAULT}
               </p>
             </div>
           </div>
