@@ -43,7 +43,7 @@ const UI_SCALE = 1;
 // tuned later without touching any other layer. Height is driven by the
 // asset's own aspect ratio (not a fixed %) so object-contain never
 // crops or distorts it.
-const LOGO_WRAPPER = { left: "4%", top: "5%", width: "15%" };
+const LOGO_WRAPPER = { left: "4%", top: "9.5%", width: "15%" };
 const LOGO_ASPECT = "1774 / 887";
 
 function EnvelopeIcon({ className }: { className?: string }) {
@@ -200,7 +200,7 @@ export default function LoginPage() {
                     className="pointer-events-none absolute inset-0"
                     style={{
                       background:
-                        "radial-gradient(ellipse 85% 65% at 28% 8%, rgba(58,102,255,0.22), transparent 65%), radial-gradient(ellipse 55% 45% at 100% 100%, rgba(255,61,154,0.10), transparent 70%), radial-gradient(ellipse 110% 95% at 50% 50%, rgba(6,10,24,0.5), transparent 88%)",
+                        "radial-gradient(ellipse 70% 55% at 12% 5%, rgba(58,102,255,0.32), transparent 68%), radial-gradient(ellipse 60% 48% at 95% 98%, rgba(255,61,154,0.18), transparent 70%), radial-gradient(ellipse 110% 95% at 50% 50%, rgba(6,10,24,0.5), transparent 88%)",
                       WebkitMaskImage: "radial-gradient(ellipse 78% 78% at 50% 50%, black 45%, transparent 92%)",
                       maskImage: "radial-gradient(ellipse 78% 78% at 50% 50%, black 45%, transparent 92%)",
                     }}
@@ -214,6 +214,12 @@ export default function LoginPage() {
                       maskImage: "radial-gradient(ellipse 68% 68% at 50% 50%, black 35%, transparent 88%)",
                     }}
                   />
+                  {/* Faint crown watermark, centred behind the interface —
+                      environmental branding only, low enough opacity to
+                      never compete with text or inputs. */}
+                  <div className="pointer-events-none absolute inset-0 flex items-center justify-center opacity-[0.06]">
+                    <CrownIcon className="h-[60%] w-[60%] text-ice-glow" />
+                  </div>
 
                   <div
                     className="relative flex h-full w-full flex-col items-center justify-center px-[7%]"
@@ -232,7 +238,7 @@ export default function LoginPage() {
                           type="email"
                           required
                           placeholder="Email Address"
-                          className="w-full rounded-md border border-ice-glow/25 bg-navy-light/30 py-[0.85vw] pl-[11%] pr-[4%] text-[0.85vw] text-ice-100 shadow-[0_0_10px_-6px_rgba(127,209,255,0.6)] outline-none backdrop-blur-md placeholder:text-royal-light/40 transition focus:border-ice-glow/70 focus:bg-navy-light/40 focus:shadow-[0_0_0_1px_rgba(127,209,255,0.4),0_0_18px_-4px_rgba(91,155,255,0.65)]"
+                          className="polar-input w-full rounded-md border border-ice-glow/25 bg-navy-light/30 py-[0.85vw] pl-[11%] pr-[4%] text-[0.85vw] text-ice-100 shadow-[0_0_10px_-6px_rgba(127,209,255,0.6)] outline-none backdrop-blur-md placeholder:text-royal-light/40 transition focus:border-ice-glow/70 focus:bg-navy-light/40 focus:shadow-[0_0_0_1px_rgba(127,209,255,0.4),0_0_18px_-4px_rgba(91,155,255,0.65)]"
                         />
                       </div>
 
@@ -245,7 +251,7 @@ export default function LoginPage() {
                           type={showPassword ? "text" : "password"}
                           required
                           placeholder="Password"
-                          className="w-full rounded-md border border-ice-glow/25 bg-navy-light/30 py-[0.85vw] pl-[11%] pr-[11%] text-[0.85vw] text-ice-100 shadow-[0_0_10px_-6px_rgba(127,209,255,0.6)] outline-none backdrop-blur-md placeholder:text-royal-light/40 transition focus:border-magenta/50 focus:bg-navy-light/40 focus:shadow-[0_0_0_1px_rgba(255,61,154,0.35),0_0_18px_-4px_rgba(91,155,255,0.65)]"
+                          className="polar-input w-full rounded-md border border-ice-glow/25 bg-navy-light/30 py-[0.85vw] pl-[11%] pr-[11%] text-[0.85vw] text-ice-100 shadow-[0_0_10px_-6px_rgba(127,209,255,0.6)] outline-none backdrop-blur-md placeholder:text-royal-light/40 transition focus:border-magenta/50 focus:bg-navy-light/40 focus:shadow-[0_0_0_1px_rgba(255,61,154,0.35),0_0_18px_-4px_rgba(91,155,255,0.65)]"
                         />
                         <button
                           type="button"
@@ -284,6 +290,26 @@ export default function LoginPage() {
                       </Link>
                     </p>
                   </div>
+
+                  {/* Chrome/Edge autofill paints its own opaque
+                      background + black text, overriding the classes
+                      above — force it back to the same translucent
+                      icy-navy glass treatment so autofilled fields
+                      never flash white. */}
+                  <style jsx global>{`
+                    .polar-input:-webkit-autofill,
+                    .polar-input:-webkit-autofill:hover,
+                    .polar-input:-webkit-autofill:focus,
+                    .polar-input:-webkit-autofill:active {
+                      -webkit-text-fill-color: #e4f2ff;
+                      caret-color: #e4f2ff;
+                      -webkit-box-shadow: 0 0 0 1000px rgba(17, 27, 58, 0.75) inset,
+                        0 0 10px -6px rgba(127, 209, 255, 0.6);
+                      box-shadow: 0 0 0 1000px rgba(17, 27, 58, 0.75) inset,
+                        0 0 10px -6px rgba(127, 209, 255, 0.6);
+                      transition: background-color 9999s ease-in-out 0s;
+                    }
+                  `}</style>
                 </div>
               </div>
             </div>
