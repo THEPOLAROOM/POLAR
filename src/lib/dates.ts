@@ -14,6 +14,22 @@ export function getShopToday(): string {
 }
 
 /**
+ * Current time of day in the shop's local time (Europe/London) as a
+ * zero-padded 24-hour "HH:MM" string — comparable against the stored
+ * "HH:MM"/"HH:MM:SS" booking start_time/end_time columns to derive
+ * whether a given booking has started/finished yet, without adding
+ * any new schema or status column.
+ */
+export function getShopTimeNow(): string {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Europe/London",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(new Date());
+}
+
+/**
  * Formats a stored 24-hour "HH:MM" or "HH:MM:SS" time string as
  * 12-hour with AM/PM for display, e.g. "16:54" -> "4:54 PM". Storage
  * (the underlying `time` columns) is unchanged — this is display-only.
