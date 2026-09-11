@@ -33,17 +33,17 @@ import { requireRole } from "@/lib/auth/require-role";
 // viewport edge on the (still) overflow-hidden wrapper — invisible,
 // since it's transparent, and still guarantees no scrollbar.
 //
-// That content-fit sizing was then reduced once already (to 92.6% of
-// this box) against an approved size reference, but was still too
-// large on production. This pass reduces it further: 80% of the
-// previously-displayed size, i.e. 0.926 * 0.8 = 0.7408. UI_SIZE_SCALE
-// applies uniformly on top of the content-fit box above, so shape,
-// centring, and every hit area (all defined as % of this same box)
-// stay exactly aligned with the artwork — only the overall size
-// changes.
+// That content-fit sizing was reduced twice already (to 92.6%, then to
+// 80% of that = 0.7408) against production review. This pass is a
+// modest further nudge (90% of that, i.e. 0.7408 * 0.9 = 0.66672) so
+// the POLAR wall logo on the background above the UI stays clearly
+// visible. UI_SIZE_SCALE applies uniformly on top of the content-fit
+// box above, so shape, centring, and every hit area (all defined as %
+// of this same box) stay exactly aligned with the artwork — only the
+// overall size changes.
 const ASSET_ASPECT = "1672 / 941";
 const CONTENT_FIT_HEIGHT_PX = 772;
-const UI_SIZE_SCALE = 0.7408;
+const UI_SIZE_SCALE = 0.66672;
 const EFFECTIVE_HEIGHT_PX = CONTENT_FIT_HEIGHT_PX / UI_SIZE_SCALE;
 const CONTENT_FIT_HEIGHT_RATIO = `1672 / ${EFFECTIVE_HEIGHT_PX}`;
 
