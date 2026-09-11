@@ -15,12 +15,25 @@ import { requireRole } from "@/lib/auth/require-role";
 // (public/dashboard/polar-your-profile-dashboard.png) happens to
 // genuinely be 1672x941 too (verified via its own file metadata), so
 // the same aspect-ratio/viewport-fit formula is correct here because
-// it matches this asset, not because it was assumed. There is no
-// extra "OVERLAY_SCALE" shrink/inset applied on top: the asset already
-// has its own baked-in margin (~2.5% left/right, ~11% top, ~7%
-// bottom of its own 1672x941 canvas), so it is rendered via
-// object-contain at the full size of the viewport-fit box.
+// it matches this asset, not because it was assumed. The box's SHAPE
+// stays the asset's native 1672:941 canvas ratio (never distorted).
+//
+// The box's SIZE, however, must not be fit to the full 941px-tall
+// canvas — that canvas has ~11% dead transparent padding at the top
+// and ~7% at the bottom (measured directly from the asset's own alpha
+// channel: opaque content spans y:[104,876] of 941, i.e. 772px of
+// real content). Since the near-16:9 canvas ratio means the viewport
+// HEIGHT is almost always the binding constraint on a real browser
+// window, fitting the full canvas height was reserving screen space
+// for invisible padding instead of the visible UI — this is the
+// actual cause the UI rendered noticeably smaller than intended.
+// Fitting the CONTENT height (772px) to the viewport instead scales
+// the whole box up uniformly by 941/772 (~1.22x); the box's own
+// unchanged padding then simply extends a little past the visible
+// viewport edge on the (still) overflow-hidden wrapper — invisible,
+// since it's transparent, and still guarantees no scrollbar.
 const ASSET_ASPECT = "1672 / 941";
+const CONTENT_FIT_HEIGHT_RATIO = "1672 / 772";
 
 // Every box below is measured directly against the mastered asset's
 // own 1672x941 canvas (pixel-level border scan), same technique used
@@ -123,7 +136,7 @@ export default async function BarberAccountPage() {
         <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
           <div
             className="relative"
-            style={{ width: `min(100%, calc(100dvh * ${ASSET_ASPECT}))`, aspectRatio: ASSET_ASPECT }}
+            style={{ width: `min(100%, calc(100dvh * ${CONTENT_FIT_HEIGHT_RATIO}))`, aspectRatio: ASSET_ASPECT }}
           >
             <Image
               src="/dashboard/polar-your-profile-dashboard.png"
