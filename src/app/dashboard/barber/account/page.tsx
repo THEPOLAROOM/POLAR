@@ -17,8 +17,18 @@ const OVERLAY_INSET = {
   bottom: OVERLAY_INSET_PCT,
 };
 
+// Every size below was authored as a design pixel value against the
+// same 1672-wide reference canvas the Barber Dashboard's overlay uses
+// (e.g. "90" = 90px on that 1672px-wide canvas), then must be
+// converted to a percentage of the actual viewport width before
+// OVERLAY_SCALE is applied. The previous version skipped the
+// px→vw-of-1672 conversion and multiplied the raw px number by
+// OVERLAY_SCALE directly (e.g. vw(90) => "64.8vw", i.e. 64.8% of the
+// viewport width) — that's what produced the giant off-screen magenta
+// photo-placeholder ring and the oversized, backdrop-blurred header
+// card that swallowed the rest of the UI.
 function vw(px: number) {
-  return `${px * OVERLAY_SCALE}vw`;
+  return `${(px / 1672) * 100 * OVERLAY_SCALE}vw`;
 }
 
 type IconProps = { className?: string; style?: React.CSSProperties };
