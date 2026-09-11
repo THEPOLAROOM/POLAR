@@ -180,20 +180,24 @@ export default async function BarberDashboardPage() {
           value tuned to one assumed viewport. The shared barber nav
           is hidden for this page only via the `:has()` rule above. */}
       <main className="relative hidden overflow-hidden bg-navy sm:block" style={{ height: "100dvh" }}>
+        {/* Background is its own full-bleed layer, independent of the
+            width-capped overlay box below, so it always covers the
+            entire viewport edge-to-edge (no solid sidebars) even when
+            that box is narrower than 100% width. */}
+        <Image
+          src="/dashboard/polar-barber-dashboard-background.png"
+          alt=""
+          fill
+          priority
+          className="object-cover"
+          aria-hidden="true"
+        />
+
         <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
         <div
           className="relative aspect-[1672/941]"
           style={{ width: "min(100%, calc(100dvh * 1672 / 941))" }}
         >
-          <Image
-            src="/dashboard/polar-barber-dashboard-background.png"
-            alt=""
-            fill
-            priority
-            className="object-cover"
-            aria-hidden="true"
-          />
-
           <div className="absolute" style={OVERLAY_INSET}>
             <Image
               src="/dashboard/polar-barber-dashboard-ui-mastered.png"
