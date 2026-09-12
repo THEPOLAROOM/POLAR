@@ -29,12 +29,11 @@ const EMPTY_ADD_CLIENT_BOX = { left: "31.7%", top: "63.6%", width: "30.6%", heig
 
 // The button shape/border is already fully baked into the mastered
 // asset, so this never draws a shape or outline of its own — only a
-// tight, closely-hugging glow (small blur, no spread, no ring) on
-// hover, echoing the cyan/magenta glow used for hover states
-// elsewhere on POLAR, so the existing baked neon border itself simply
-// looks like it's illuminating rather than gaining a second aura.
+// soft, blurred glow (no spread, no ring) on hover, echoing the
+// cyan/magenta glow used for hover states elsewhere on POLAR, so the
+// existing baked button simply looks like it's glowing brighter.
 const HIT_AREA_CLASS =
-  "absolute rounded-2xl bg-transparent transition duration-200 ease-out hover:shadow-[0_0_6px_0px_rgba(91,155,255,0.5),0_0_10px_1px_rgba(255,61,154,0.25)]";
+  "absolute rounded-2xl bg-transparent transition duration-200 ease-out hover:shadow-[0_0_18px_4px_rgba(91,155,255,0.4),0_0_26px_8px_rgba(255,61,154,0.22)]";
 
 const ALPHABET = ["#", ...Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i))];
 
