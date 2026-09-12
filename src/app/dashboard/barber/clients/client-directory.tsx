@@ -27,13 +27,10 @@ const INDEX_COL_BOX = { left: "91.7%", top: "13.7%", width: "7.2%", height: "83.
 const LIST_BOX = { left: "1.1%", top: "21.6%", width: "88.9%", height: "75.1%" };
 const EMPTY_ADD_CLIENT_BOX = { left: "31.7%", top: "63.6%", width: "30.6%", height: "6.2%" };
 
-// Sampled directly from the search bar's own fill colour, so the real
-// input's placeholder can sit exactly where the baked placeholder
-// text is without a mismatched patch showing through.
-const SEARCH_FILL = "#001a4a";
-
-const HOVER_CLASS =
-  "absolute rounded-2xl bg-transparent transition duration-200 ease-out hover:bg-white/[0.06] hover:shadow-[0_0_0_2px_rgba(91,155,255,0.55),0_0_28px_6px_rgba(91,155,255,0.5)]";
+// The button appearance is already fully baked into the mastered
+// asset, so these hit areas stay visually invisible in every state —
+// no hover background/border/glow of their own.
+const HIT_AREA_CLASS = "absolute bg-transparent";
 
 const ALPHABET = ["#", ...Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i))];
 
@@ -206,19 +203,19 @@ export function ClientDirectory({ clients }: { clients: Client[] }) {
               className="object-contain"
             />
 
-            {/* Search — the baked placeholder text is covered with a
-                patch sampled from the search bar's own fill, then a
-                real input with a matching placeholder sits on top, so
-                there is no ghosting between baked and real text. */}
+            {/* Search — fully transparent so the mastered artwork
+                (including its own baked placeholder text) is the only
+                thing visually drawing this control; the placeholder
+                is set to transparent so it never doubles up with the
+                baked text, while typed value text stays visible. */}
             <div className="absolute flex items-center" style={SEARCH_BOX}>
-              <div className="absolute inset-0 rounded-full" style={{ backgroundColor: SEARCH_FILL, left: "7%" }} aria-hidden="true" />
               <input
                 type="text"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search clients..."
                 aria-label="Search clients"
-                className="relative h-full w-full bg-transparent text-white outline-none placeholder:text-white/40"
+                className="h-full w-full border-none bg-transparent text-white shadow-none outline-none placeholder:text-transparent focus:border-none focus:shadow-none focus:outline-none focus:ring-0"
                 style={{ fontSize: "1vw", paddingLeft: "7.5%" }}
               />
             </div>
@@ -227,9 +224,9 @@ export function ClientDirectory({ clients }: { clients: Client[] }) {
                 triggered from either baked button (header, and the
                 empty-state's own centred button when there are no
                 clients yet). */}
-            <button type="button" aria-label="Add client" onClick={() => setAddOpen((v) => !v)} className={HOVER_CLASS} style={HEADER_ADD_CLIENT_BOX} />
+            <button type="button" aria-label="Add client" onClick={() => setAddOpen((v) => !v)} className={HIT_AREA_CLASS} style={HEADER_ADD_CLIENT_BOX} />
             {!hasAnyClients && (
-              <button type="button" aria-label="Add client" onClick={() => setAddOpen((v) => !v)} className={HOVER_CLASS} style={EMPTY_ADD_CLIENT_BOX} />
+              <button type="button" aria-label="Add client" onClick={() => setAddOpen((v) => !v)} className={HIT_AREA_CLASS} style={EMPTY_ADD_CLIENT_BOX} />
             )}
             {addClientForm}
 
