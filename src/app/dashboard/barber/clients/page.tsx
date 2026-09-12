@@ -1,13 +1,12 @@
-import Link from "next/link";
 import { requireRole } from "@/lib/auth/require-role";
-import { linkClientByEmail } from "@/lib/actions/barber-client-links";
+import { ClientDirectory } from "./client-directory";
 
 // Server-side ROLE check happens FIRST, same as every other protected
-// barber page. The list is scoped to this barber's own clients by
-// both the query (.eq("barber_profile_id", user.id)) and the existing
-// RLS policy (barber_client_links: barber reads own links); profiles
-// are readable via the existing "profiles: linked barber reads"
-// policy for exactly these linked clients.
+// barber page. Same data source as before this redesign (unchanged):
+// this barber's linked clients via barber_client_links -> profiles,
+// scoped by both the query and the existing RLS policies. Sorting
+// alphabetically here (not in the client component) means the server
+// always hands down an already-ordered, real list.
 export default async function BarberClientsPage() {
   const { supabase, user } = await requireRole("barber");
 
@@ -29,47 +28,5 @@ export default async function BarberClientsPage() {
           .order("full_name", { ascending: true })
       : { data: [] as { id: string; full_name: string }[] };
 
-  return (
-    <main className="mx-auto max-w-xl px-6 py-16">
-      <h1 className="text-xl font-semibold text-polar-text">
-        Client Phone Book
-      </h1>
-
-      <form action={linkClientByEmail} className="mt-4 flex gap-2">
-        <label className="flex-1 text-sm">
-          <span className="sr-only">Client email</span>
-          <input
-            name="client_email"
-            type="email"
-            required
-            placeholder="Client's email"
-            className="w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm outline-none focus:border-polar-text"
-          />
-        </label>
-        <button
-          type="submit"
-          className="rounded border border-polar-border px-4 py-2 text-sm text-polar-text"
-        >
-          Link client
-        </button>
-      </form>
-
-      {clients && clients.length > 0 ? (
-        <ul className="mt-4 space-y-2">
-          {clients.map((client) => (
-            <li key={client.id}>
-              <Link
-                href={`/dashboard/barber/clients/${client.id}`}
-                className="block rounded border border-polar-border px-3 py-2 text-sm text-polar-text"
-              >
-                {client.full_name}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p className="mt-4 text-sm text-polar-muted">No clients yet.</p>
-      )}
-    </main>
-  );
+  return <ClientDirectory clients={clients ?? []} />;
 }
