@@ -52,6 +52,30 @@ function panelContentRect(col: number, row: number): { left: string; top: string
   return { left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%` };
 }
 
+// Cash Revenue, Working Hours, £ per Working Hour and Utilisation
+// share the same header-icon template. Pixel-measured on all four
+// (right edge/bottom edge, as % of that panel's own width/height):
+// Cash Revenue 16.7%/28.8%, Working Hours 17.8%/28.5%, £/Working Hour
+// 15.6%/27.5%, Utilisation 17.9%/30.8% — consistent enough to share
+// one conservative offset (19%/31%) that clears every one of them
+// with margin. This positions ONLY the headline value, as its own
+// independent rectangle — it does not move panelContentRect (used for
+// the chart body beneath it, which already sits correctly against the
+// baked chart-grid and is left untouched).
+function headlineRect(col: number, row: number): { left: string; top: string; width: string; height: string } {
+  const panelLeft = COL_BOUNDS[col * 2];
+  const panelTop = ROW_BOUNDS[row * 2];
+  const panelWidth = COL_BOUNDS[col * 2 + 1] - COL_BOUNDS[col * 2];
+  const panelHeight = ROW_BOUNDS[row * 2 + 1] - ROW_BOUNDS[row * 2];
+
+  const left = panelLeft + 0.19 * panelWidth;
+  const top = panelTop + 0.31 * panelHeight;
+  const width = panelWidth * (1 - 0.19 - (PANEL_INSET.right / 100));
+  const height = panelHeight * 0.1;
+
+  return { left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%` };
+}
+
 const TAB_ROW_BOX = { left: "46.224%", top: "0.684%", width: "30.794%", height: "8.398%" };
 const NAV_ROW_BOX = { left: "78.125%", top: "0.684%", width: "21.289%", height: "8.398%" };
 
@@ -213,11 +237,24 @@ export function AnalyticsView({ period, date, today, data }: { period: Period; d
             </Link>
           </div>
 
-            {/* 9 panels */}
-            <PanelContent box={panelContentRect(0, 0)}><CashRevenuePanel data={data} /></PanelContent>
-            <PanelContent box={panelContentRect(1, 0)}><WorkingHoursPanel data={data} /></PanelContent>
-            <PanelContent box={panelContentRect(2, 0)}><PerHourPanel data={data} /></PanelContent>
-            <PanelContent box={panelContentRect(0, 1)}><UtilisationPanel data={data} /></PanelContent>
+            {/* 9 panels. The 4 headline-chart panels (Cash Revenue,
+                Working Hours, £/Working Hour, Utilisation) render
+                their headline value as a SEPARATE overlay positioned
+                by headlineRect, independent of their chart body's
+                panelContentRect — moving the headline to clear its
+                panel's icon must not move the chart underneath it. */}
+            <PanelContent box={headlineRect(0, 0)}><CashRevenueHeadline data={data} /></PanelContent>
+            <PanelContent box={panelContentRect(0, 0)}><CashRevenueBody data={data} /></PanelContent>
+
+            <PanelContent box={headlineRect(1, 0)}><WorkingHoursHeadline data={data} /></PanelContent>
+            <PanelContent box={panelContentRect(1, 0)}><WorkingHoursBody data={data} /></PanelContent>
+
+            <PanelContent box={headlineRect(2, 0)}><PerHourHeadline data={data} /></PanelContent>
+            <PanelContent box={panelContentRect(2, 0)}><PerHourBody /></PanelContent>
+
+            <PanelContent box={headlineRect(0, 1)}><UtilisationHeadline data={data} /></PanelContent>
+            <PanelContent box={panelContentRect(0, 1)}><UtilisationBody /></PanelContent>
+
             <PanelContent box={panelContentRect(1, 1)}><AppointmentsPanel data={data} /></PanelContent>
             <PanelContent box={panelContentRect(2, 1)}><TopServicesPanel data={data} /></PanelContent>
             <PanelContent box={panelContentRect(0, 2)}><ClientActivityPanel data={data} /></PanelContent>
@@ -291,59 +328,51 @@ function BarChart({ buckets, formatValue }: { buckets: { label: string; value: n
   );
 }
 
-function CashRevenuePanel({ data }: { data: AnalyticsData }) {
+// Cash Revenue, Working Hours, £/Working Hour and Utilisation are
+// each split into a Headline (positioned by headlineRect, clearing
+// that panel's own baked icon) and a Body (chart or empty state,
+// positioned by the unchanged panelContentRect) — two independent
+// overlays instead of one, so correcting the headline's position
+// never moves the chart underneath it.
+function CashRevenueHeadline({ data }: { data: AnalyticsData }) {
+  return <Headline>{data.cashRevenue.total > 0 ? money(data.cashRevenue.total) : "£—"}</Headline>;
+}
+function CashRevenueBody({ data }: { data: AnalyticsData }) {
   const hasData = data.cashRevenue.total > 0;
-  return (
-    <div className="flex h-full flex-col">
-      <Headline>{hasData ? money(data.cashRevenue.total) : "£—"}</Headline>
-      <div className="mt-[3%] flex-1">
-        {hasData ? (
-          <BarChart buckets={data.cashRevenue.buckets} formatValue={money} />
-        ) : (
-          <EmptyNote title="No revenue data yet" body="Complete appointments to see your earnings." />
-        )}
-      </div>
-    </div>
+  return hasData ? (
+    <BarChart buckets={data.cashRevenue.buckets} formatValue={money} />
+  ) : (
+    <EmptyNote title="No revenue data yet" body="Complete appointments to see your earnings." />
   );
 }
 
-function WorkingHoursPanel({ data }: { data: AnalyticsData }) {
+function WorkingHoursHeadline({ data }: { data: AnalyticsData }) {
+  return <Headline>{data.workingHours.totalMinutes > 0 ? hoursLabel(data.workingHours.totalMinutes) : "—"}</Headline>;
+}
+function WorkingHoursBody({ data }: { data: AnalyticsData }) {
   const hasData = data.workingHours.totalMinutes > 0;
   return (
-    <div className="flex h-full flex-col">
-      <Headline>{hasData ? hoursLabel(data.workingHours.totalMinutes) : "—"}</Headline>
-      <div className="mt-[3%] flex-1">
-        <EmptyNote
-          title={hasData ? "Effective working time" : "No working hours data yet"}
-          body={hasData ? "Scheduled hours minus breaks and blocked time." : "Start taking bookings to see your hours."}
-        />
-      </div>
-    </div>
+    <EmptyNote
+      title={hasData ? "Effective working time" : "No working hours data yet"}
+      body={hasData ? "Scheduled hours minus breaks and blocked time." : "Start taking bookings to see your hours."}
+    />
   );
 }
 
-function PerHourPanel({ data }: { data: AnalyticsData }) {
+function PerHourHeadline({ data }: { data: AnalyticsData }) {
   const hasData = data.perWorkingHour != null;
-  return (
-    <div className="flex h-full flex-col">
-      <Headline>{hasData ? `${money(data.perWorkingHour as number)}/hr` : "£—"}</Headline>
-      <div className="mt-[3%] flex-1">
-        <EmptyNote title="No data yet" body="Your average earnings per hour will appear here." />
-      </div>
-    </div>
-  );
+  return <Headline>{hasData ? `${money(data.perWorkingHour as number)}/hr` : "£—"}</Headline>;
+}
+function PerHourBody() {
+  return <EmptyNote title="No data yet" body="Your average earnings per hour will appear here." />;
 }
 
-function UtilisationPanel({ data }: { data: AnalyticsData }) {
+function UtilisationHeadline({ data }: { data: AnalyticsData }) {
   const hasData = data.utilisation != null;
-  return (
-    <div className="flex h-full flex-col">
-      <Headline>{hasData ? `${data.utilisation}%` : "—%"}</Headline>
-      <div className="mt-[3%] flex-1">
-        <EmptyNote title="No data yet" body="Complete appointments to see your utilisation." />
-      </div>
-    </div>
-  );
+  return <Headline>{hasData ? `${data.utilisation}%` : "—%"}</Headline>;
+}
+function UtilisationBody() {
+  return <EmptyNote title="No data yet" body="Complete appointments to see your utilisation." />;
 }
 
 function AppointmentsPanel({ data }: { data: AnalyticsData }) {
@@ -438,7 +467,14 @@ function ClientActivityPanel({ data }: { data: AnalyticsData }) {
     <div className="flex h-full flex-col justify-center gap-[6%]">
       {rows.map((r) => (
         <div key={r.label} className="flex items-center justify-between">
-          <span className="text-white/70" style={{ fontSize: "0.7cqw" }}>{r.label}</span>
+          {/* Client Activity's baked row icons measure ~13.2% of the
+              panel's own width (65px of 492px). Label starts at 17.7%
+              of the panel — expressed here as margin-left relative to
+              THIS content box (which already starts at 4% of the
+              panel, is 92% of the panel wide): (17.7-4)/92 = 14.9%.
+              The value span is untouched, still placed by
+              justify-between at its existing position. */}
+          <span className="text-white/70" style={{ fontSize: "0.7cqw", marginLeft: "14.9%" }}>{r.label}</span>
           <span className="text-white" style={{ fontSize: "0.7cqw" }}>{r.value}</span>
         </div>
       ))}
@@ -475,7 +511,12 @@ function QuickStatsPanel({ data }: { data: AnalyticsData }) {
     <div className="flex h-full flex-col justify-center gap-[5%]">
       {rows.map((r) => (
         <div key={r.label} className="flex items-center justify-between">
-          <span className="text-white/70" style={{ fontSize: "0.68cqw" }}>{r.label}</span>
+          {/* Quick Stats' baked row icons measure ~11.5% of the
+              panel's own width (57px of 494px). Label starts at 16%
+              of the panel — as margin-left relative to this content
+              box (starts at 4%, 92% wide): (16-4)/92 = 13.0%. Value
+              span untouched. */}
+          <span className="text-white/70" style={{ fontSize: "0.68cqw", marginLeft: "13.0%" }}>{r.label}</span>
           <span className="text-white" style={{ fontSize: "0.68cqw" }}>{r.value}</span>
         </div>
       ))}
