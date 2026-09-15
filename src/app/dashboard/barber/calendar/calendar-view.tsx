@@ -404,23 +404,28 @@ export function CalendarView({
                       className="absolute overflow-hidden transition hover:bg-white/[0.04]"
                       style={box}
                     >
-                      {/* Generous patch — comfortably covers the
-                          baked artwork's own example day number
-                          (which only matches one specific month/year)
-                          including its glow, so the real number below
-                          never doubles up with it. */}
+                      {/* Patches the cell's entire interior (inset
+                          just enough to leave the baked gridline
+                          border itself visible) — not just a corner
+                          — so there is categorically nothing baked
+                          left underneath the real date: no example
+                          number, no fragment of one, regardless of
+                          how far its glow actually extends. The real
+                          date is then drawn at a fixed, identical
+                          inset in every cell, derived purely from
+                          this cell's own geometry. */}
                       <div
-                        className="absolute"
-                        style={{ left: "1%", top: "2%", width: "42%", height: "40%", backgroundColor: CELL_FILL }}
+                        className="absolute inset-[3%]"
+                        style={{ backgroundColor: CELL_FILL }}
                         aria-hidden="true"
                       />
                       <p
                         className={`absolute font-body ${cell.isFullyBooked ? "text-white/35" : "text-white"}`}
-                        style={{ left: "7%", top: "8%", fontSize: "0.85vw" }}
+                        style={{ left: "8%", top: "9%", fontSize: "0.85vw", lineHeight: 1 }}
                       >
                         {cell.day}
                       </p>
-                      {cell.isFullyBooked && <div className="absolute inset-0 bg-black/35" aria-hidden="true" />}
+                      {cell.isFullyBooked && <div className="absolute inset-[3%] bg-black/35" aria-hidden="true" />}
                     </Link>
                   );
                 })}
