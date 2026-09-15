@@ -80,6 +80,7 @@ export async function createBlockedTime(formData: FormData): Promise<ActionResul
   const startTime = String(formData.get("start_time") ?? "").trim();
   const endTime = String(formData.get("end_time") ?? "").trim();
   const label = String(formData.get("label") ?? "").trim();
+  const isBreak = String(formData.get("is_break") ?? "") === "true";
 
   if (!date || !startTime || !endTime) {
     return { error: "Choose a start and end time." };
@@ -92,6 +93,7 @@ export async function createBlockedTime(formData: FormData): Promise<ActionResul
     p_start_time: startTime,
     p_end_time: endTime,
     p_label: label || null,
+    p_is_break: isBreak,
   });
 
   if (error) return { error: error.message };

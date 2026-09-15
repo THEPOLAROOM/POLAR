@@ -12,6 +12,7 @@ export type CalendarBooking = {
   endTime: string;
   isBarter: boolean;
   isBlocked: boolean;
+  isBreak: boolean;
   isWalkIn: boolean;
   label: string | null;
   barterNotes: string | null;
@@ -32,6 +33,7 @@ type BookingRow = {
   recurrence_interval_weeks: number;
   is_barter: boolean;
   is_blocked: boolean;
+  is_break: boolean;
   walk_in_label: string | null;
   barter_notes: string | null;
 };
@@ -75,7 +77,7 @@ async function fetchAllConfirmedBookings(
   const { data } = await supabase
     .from("bookings")
     .select(
-      "id, barber_profile_id, client_profile_id, service_id, recurrence, start_date, end_date, start_time, end_time, recurrence_interval_weeks, is_barter, is_blocked, walk_in_label, barter_notes"
+      "id, barber_profile_id, client_profile_id, service_id, recurrence, start_date, end_date, start_time, end_time, recurrence_interval_weeks, is_barter, is_blocked, is_break, walk_in_label, barter_notes"
     )
     .eq("barber_profile_id", barberProfileId)
     .eq("status", "confirmed");
@@ -120,6 +122,7 @@ function toCalendarBooking(
     endTime: b.end_time,
     isBarter: b.is_barter,
     isBlocked: b.is_blocked,
+    isBreak: b.is_break,
     isWalkIn,
     label: b.walk_in_label,
     barterNotes: b.barter_notes,

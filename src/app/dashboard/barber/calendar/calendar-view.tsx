@@ -118,6 +118,15 @@ function periodLabel(view: ViewKind, dateStr: string): string {
 function money(n: number): string {
   return `£${n.toFixed(2)}`;
 }
+function timeToMinutes(t: string): number {
+  const [h, m] = t.split(":").map(Number);
+  return h * 60 + m;
+}
+function minutesToTime(total: number): string {
+  const h = Math.floor(total / 60);
+  const m = total % 60;
+  return `${pad(h)}:${pad(m)}`;
+}
 
 type TimelineSegment =
   | { kind: "available"; start: string; end: string }
@@ -166,10 +175,24 @@ function buildTimeline(availability: { startTime: string; endTime: string }[], b
 }
 
 function bookingKindLabel(b: CalendarBooking): string {
-  if (b.isBlocked) return "BLOCKED";
+  if (b.isBlocked) return b.isBreak ? "BREAK" : "BLOCKED";
   if (b.isBarter) return "BARTER";
   if (b.isWalkIn) return "WALK-IN";
   return b.clientName ?? "Appointment";
+}
+
+// Six visually distinct-but-restrained treatments (Day view
+// requirement 6) drawn only from the existing POLAR palette
+// (royal/ice/magenta/white) — nothing invented.
+function bookingKindClass(b: CalendarBooking): string {
+  if (b.isBlocked) {
+    return b.isBreak
+      ? "border-dashed border-white/30 text-white/70"
+      : "border-white/15 text-white/40";
+  }
+  if (b.isBarter) return "border-magenta/40 text-magenta";
+  if (b.isWalkIn) return "border-ice-glow/40 text-ice-100";
+  return "border-royal/50 text-white";
 }
 
 export function CalendarView({
@@ -514,7 +537,12 @@ export function CalendarView({
                           Block whole day
                         </button>
                       </div>
-                      <div className="mt-[1%] flex-1 overflow-y-auto" style={{ paddingRight: "0.5%" }}>
+                      {/* min-h-0 lets this flex child actually shrink
+                          so overflow-y-auto can engage (same fix as
+                          Year view) — a long working day scrolls only
+                          within this panel; the Calendar shell and
+                          right-hand panel never move. */}
+                      <div className="mt-[1%] min-h-0 flex-1 overflow-y-auto" style={{ paddingRight: "0.5%" }}>
                         {timeline.length === 0 ? (
                           <p className="text-white/50" style={{ fontSize: "0.85vw" }}>No availability set for this day.</p>
                         ) : (
@@ -537,13 +565,7 @@ export function CalendarView({
                                   <button
                                     type="button"
                                     onClick={() => setDetail(seg.booking)}
-                                    className={`flex w-full items-center justify-between rounded-md border px-[1.2%] py-[0.8%] text-left transition hover:bg-white/[0.06] ${
-                                      seg.booking.isBlocked
-                                        ? "border-white/15 text-white/50"
-                                        : seg.booking.isBarter
-                                          ? "border-magenta/40 text-magenta"
-                                          : "border-royal/40 text-white"
-                                    }`}
+                                    className={`flex w-full items-center justify-between rounded-md border px-[1.2%] py-[0.8%] text-left transition hover:bg-white/[0.06] ${bookingKindClass(seg.booking)}`}
                                     style={{ fontSize: "0.8vw" }}
                                   >
                                     <span>
@@ -609,7 +631,7 @@ export function CalendarView({
                 {modal === "block" && "Block Time"}
               </p>
               <p className="mt-1 text-xs text-white/50">
-                {formatTime12h(activeSlot.start)} on {dayLabel(date)}
+                {formatTime12h(activeSlot.start)} – {formatTime12h(activeSlot.end)} on {dayLabel(date)}
               </p>
 
               {modal === "book" && (
@@ -619,7 +641,6 @@ export function CalendarView({
                     e.preventDefault();
                     const fd = new FormData(e.currentTarget);
                     fd.set("date", date);
-                    fd.set("start_time", activeSlot.start);
                     runAction(() => createBookingAsBarber(fd));
                   }}
                 >
@@ -630,7 +651,7 @@ export function CalendarView({
                     ))}
                   </select>
                   {clients.length === 0 && <p className="text-xs text-white/40">No linked clients yet — link one from the Clients page first.</p>}
-                  <ServiceSelect services={services} />
+                  <ServiceAndStartFields services={services} gapStart={activeSlot.start} gapEnd={activeSlot.end} />
                   {error && <p className="text-xs text-polar-danger">{error}</p>}
                   <button type="submit" disabled={pending} className="w-full rounded bg-royal py-2 text-sm font-semibold text-white disabled:opacity-60">
                     {pending ? "Booking…" : "Confirm Booking"}
@@ -645,12 +666,11 @@ export function CalendarView({
                     e.preventDefault();
                     const fd = new FormData(e.currentTarget);
                     fd.set("date", date);
-                    fd.set("start_time", activeSlot.start);
                     runAction(() => createWalkIn(fd));
                   }}
                 >
                   <input name="label" type="text" placeholder="Name (optional)" className="w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm text-white placeholder:text-white/30" />
-                  <ServiceSelect services={services} />
+                  <ServiceAndStartFields services={services} gapStart={activeSlot.start} gapEnd={activeSlot.end} />
                   {error && <p className="text-xs text-polar-danger">{error}</p>}
                   <button type="submit" disabled={pending} className="w-full rounded bg-royal py-2 text-sm font-semibold text-white disabled:opacity-60">
                     {pending ? "Adding…" : "Add Walk-In"}
@@ -665,12 +685,11 @@ export function CalendarView({
                     e.preventDefault();
                     const fd = new FormData(e.currentTarget);
                     fd.set("date", date);
-                    fd.set("start_time", activeSlot.start);
                     runAction(() => createBarterBooking(fd));
                   }}
                 >
                   <input name="with_label" type="text" placeholder="Who was it with?" className="w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm text-white placeholder:text-white/30" />
-                  <ServiceSelect services={services} />
+                  <ServiceAndStartFields services={services} gapStart={activeSlot.start} gapEnd={activeSlot.end} />
                   <textarea name="notes" placeholder="What was received in exchange?" className="w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm text-white placeholder:text-white/30" />
                   <p className="text-xs text-white/40">Amount charged will be recorded as £0 — barter value is never counted as cash revenue.</p>
                   {error && <p className="text-xs text-polar-danger">{error}</p>}
@@ -686,15 +705,27 @@ export function CalendarView({
                   onSubmit={(e) => {
                     e.preventDefault();
                     const fd = new FormData(e.currentTarget);
-                    const minutes = Number(new FormData(e.currentTarget).get("duration"));
-                    const [h, m] = activeSlot.start.split(":").map(Number);
-                    const endTotal = h * 60 + m + minutes;
+                    const minutes = Number(fd.get("duration"));
+                    const endTotal = timeToMinutes(activeSlot.start) + minutes;
                     fd.set("date", date);
                     fd.set("start_time", activeSlot.start);
-                    fd.set("end_time", `${pad(Math.floor(endTotal / 60) % 24)}:${pad(endTotal % 60)}`);
+                    fd.set("end_time", minutesToTime(endTotal));
                     runAction(() => createBlockedTime(fd));
                   }}
                 >
+                  {/* Break vs Blocked — both occupy the time the same
+                      way; this only distinguishes a normal scheduled
+                      break from other planned unavailable time. */}
+                  <div className="flex gap-3 text-xs text-white/70">
+                    <label className="flex items-center gap-1.5">
+                      <input type="radio" name="is_break" value="false" defaultChecked />
+                      Blocked
+                    </label>
+                    <label className="flex items-center gap-1.5">
+                      <input type="radio" name="is_break" value="true" />
+                      Break
+                    </label>
+                  </div>
                   <label className="block text-xs text-white/60">
                     Block for
                     <select name="duration" defaultValue={30} className="mt-1 w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm text-white">
@@ -742,7 +773,7 @@ export function CalendarView({
                   </Link>
                 )}
                 <button type="button" disabled={pending} onClick={() => handleCancel(detail.id)} className="rounded border border-magenta/50 px-3 py-1.5 text-xs text-magenta hover:bg-magenta/10 disabled:opacity-50">
-                  {pending ? "…" : detail.isBlocked ? "Unblock" : "Cancel"}
+                  {pending ? "…" : detail.isBlocked ? (detail.isBreak ? "Remove break" : "Unblock") : "Cancel"}
                 </button>
                 <button type="button" onClick={() => setDetail(null)} className="ml-auto text-xs text-white/40 hover:text-white">
                   Close
@@ -756,15 +787,65 @@ export function CalendarView({
   );
 }
 
-function ServiceSelect({ services }: { services: Service[] }) {
+// Requirement 5 (duration-aware availability): only services whose
+// real duration fits inside this gap are offerable at all, and once
+// one is picked, the start time is constrained to values where the
+// entire service still finishes before the gap's own end — which is
+// itself already bounded by the next appointment/break/block/closing
+// time (buildTimeline never produces a gap that crosses one). The
+// database RPCs re-validate all of this independently regardless.
+function ServiceAndStartFields({ services, gapStart, gapEnd }: { services: Service[]; gapStart: string; gapEnd: string }) {
+  const gapMinutes = timeToMinutes(gapEnd) - timeToMinutes(gapStart);
+  const fitting = useMemo(() => services.filter((s) => s.durationMinutes <= gapMinutes), [services, gapMinutes]);
+  const [serviceId, setServiceId] = useState("");
+  const selected = fitting.find((s) => s.id === serviceId) ?? null;
+
+  const startOptions = useMemo(() => {
+    if (!selected) return [];
+    const latest = timeToMinutes(gapEnd) - selected.durationMinutes;
+    const opts: string[] = [];
+    for (let m = timeToMinutes(gapStart); m <= latest; m += 5) opts.push(minutesToTime(m));
+    if (opts.length === 0) opts.push(gapStart);
+    return opts;
+  }, [selected, gapStart, gapEnd]);
+
+  const [startTime, setStartTime] = useState(gapStart);
+
   return (
-    <select name="service_id" required className="w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm text-white">
-      <option value="">Choose a service…</option>
-      {services.map((s) => (
-        <option key={s.id} value={s.id}>
-          {s.name} · {s.durationMinutes}m · {money(s.price)}
-        </option>
-      ))}
-    </select>
+    <>
+      <select
+        name="service_id"
+        required
+        value={serviceId}
+        onChange={(e) => {
+          setServiceId(e.target.value);
+          setStartTime(gapStart);
+        }}
+        className="w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm text-white"
+      >
+        <option value="">Choose a service…</option>
+        {fitting.map((s) => (
+          <option key={s.id} value={s.id}>
+            {s.name} · {s.durationMinutes}m · {money(s.price)}
+          </option>
+        ))}
+      </select>
+      {services.length > 0 && fitting.length === 0 && (
+        <p className="text-xs text-white/40">No service fits this {gapMinutes}-minute gap.</p>
+      )}
+      {selected && startOptions.length > 1 && (
+        <select
+          name="start_time"
+          value={startTime}
+          onChange={(e) => setStartTime(e.target.value)}
+          className="w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm text-white"
+        >
+          {startOptions.map((t) => (
+            <option key={t} value={t}>{formatTime12h(t)}</option>
+          ))}
+        </select>
+      )}
+      {selected && startOptions.length <= 1 && <input type="hidden" name="start_time" value={gapStart} />}
+    </>
   );
 }
