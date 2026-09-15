@@ -52,26 +52,38 @@ function panelContentRect(col: number, row: number): { left: string; top: string
   return { left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%` };
 }
 
-// Cash Revenue, Working Hours, £ per Working Hour and Utilisation
-// share the same header-icon template. Pixel-measured on all four
-// (right edge/bottom edge, as % of that panel's own width/height):
-// Cash Revenue 16.7%/28.8%, Working Hours 17.8%/28.5%, £/Working Hour
-// 15.6%/27.5%, Utilisation 17.9%/30.8% — consistent enough to share
-// one conservative offset (19%/31%) that clears every one of them
-// with margin. This positions ONLY the headline value, as its own
-// independent rectangle — it does not move panelContentRect (used for
-// the chart body beneath it, which already sits correctly against the
-// baked chart-grid and is left untouched).
-function headlineRect(col: number, row: number): { left: string; top: string; width: string; height: string } {
+// Cash Revenue, Working Hours, £ per Working Hour and Utilisation each
+// have their OWN measured gap between their header icon's bottom edge
+// and their chart-grid's top edge (icon bottom / grid top, as % of
+// that panel's own height): Cash Revenue 28.8%/41.0%, Working Hours
+// 28.5%/41.0%, £/Working Hour 26.4%/41.4%, Utilisation 29.7%/41.4% —
+// genuinely different per panel, not one shared approximation. Left
+// offset likewise measured per panel from that icon's own right edge.
+// This positions ONLY the headline value, as its own independent
+// rectangle — it does not move panelContentRect (used for the chart
+// body beneath it, which already sits correctly against the baked
+// chart-grid and is left untouched).
+const HEADLINE_ANCHORS = {
+  cashRevenue: { left: 0.195, top: 0.288, height: 0.122 },
+  workingHours: { left: 0.195, top: 0.285, height: 0.125 },
+  perHour: { left: 0.172, top: 0.264, height: 0.15 },
+  utilisation: { left: 0.195, top: 0.297, height: 0.117 },
+};
+
+function headlineRect(
+  col: number,
+  row: number,
+  anchor: { left: number; top: number; height: number }
+): { left: string; top: string; width: string; height: string } {
   const panelLeft = COL_BOUNDS[col * 2];
   const panelTop = ROW_BOUNDS[row * 2];
   const panelWidth = COL_BOUNDS[col * 2 + 1] - COL_BOUNDS[col * 2];
   const panelHeight = ROW_BOUNDS[row * 2 + 1] - ROW_BOUNDS[row * 2];
 
-  const left = panelLeft + 0.19 * panelWidth;
-  const top = panelTop + 0.31 * panelHeight;
-  const width = panelWidth * (1 - 0.19 - (PANEL_INSET.right / 100));
-  const height = panelHeight * 0.1;
+  const left = panelLeft + anchor.left * panelWidth;
+  const top = panelTop + anchor.top * panelHeight;
+  const width = panelWidth * (1 - anchor.left - PANEL_INSET.right / 100);
+  const height = panelHeight * anchor.height;
 
   return { left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%` };
 }
@@ -243,16 +255,16 @@ export function AnalyticsView({ period, date, today, data }: { period: Period; d
                 by headlineRect, independent of their chart body's
                 panelContentRect — moving the headline to clear its
                 panel's icon must not move the chart underneath it. */}
-            <PanelContent box={headlineRect(0, 0)}><CashRevenueHeadline data={data} /></PanelContent>
+            <PanelContent box={headlineRect(0, 0, HEADLINE_ANCHORS.cashRevenue)}><CashRevenueHeadline data={data} /></PanelContent>
             <PanelContent box={panelContentRect(0, 0)}><CashRevenueBody data={data} /></PanelContent>
 
-            <PanelContent box={headlineRect(1, 0)}><WorkingHoursHeadline data={data} /></PanelContent>
+            <PanelContent box={headlineRect(1, 0, HEADLINE_ANCHORS.workingHours)}><WorkingHoursHeadline data={data} /></PanelContent>
             <PanelContent box={panelContentRect(1, 0)}><WorkingHoursBody data={data} /></PanelContent>
 
-            <PanelContent box={headlineRect(2, 0)}><PerHourHeadline data={data} /></PanelContent>
+            <PanelContent box={headlineRect(2, 0, HEADLINE_ANCHORS.perHour)}><PerHourHeadline data={data} /></PanelContent>
             <PanelContent box={panelContentRect(2, 0)}><PerHourBody /></PanelContent>
 
-            <PanelContent box={headlineRect(0, 1)}><UtilisationHeadline data={data} /></PanelContent>
+            <PanelContent box={headlineRect(0, 1, HEADLINE_ANCHORS.utilisation)}><UtilisationHeadline data={data} /></PanelContent>
             <PanelContent box={panelContentRect(0, 1)}><UtilisationBody /></PanelContent>
 
             <PanelContent box={panelContentRect(1, 1)}><AppointmentsPanel data={data} /></PanelContent>
@@ -285,9 +297,23 @@ function PanelContent({ box, children }: { box: { left: string; top: string; wid
 
 function Headline({ children }: { children: React.ReactNode }) {
   return (
-    <p className="font-display text-white" style={{ fontSize: "1.5cqw", lineHeight: 1 }}>
+    <p className="font-display flex h-full items-center text-white" style={{ fontSize: "1.5cqw", lineHeight: 1 }}>
       {children}
     </p>
+  );
+}
+
+/** Empty-state copy positioned at a specific measured offset within a
+ * panel that has other baked/drawn content (a ring, legend or bars)
+ * occupying the rest of the box — unlike EmptyNote, this does NOT
+ * center across the full height, so it never competes with that
+ * content for the same space. */
+function FooterNote({ top, title, body }: { top: string; title: string; body: string }) {
+  return (
+    <div className="absolute inset-x-0 text-center" style={{ top }}>
+      <p className="text-white/60" style={{ fontSize: "0.75cqw" }}>{title}</p>
+      <p className="mt-[4%] text-white/35" style={{ fontSize: "0.6cqw" }}>{body}</p>
+    </div>
   );
 }
 
@@ -385,7 +411,13 @@ function AppointmentsPanel({ data }: { data: AnalyticsData }) {
     { label: "Upcoming", value: a.upcoming, className: "bg-white/50" },
   ];
   if (total === 0) {
-    return <EmptyNote title="No appointments yet" body="Your appointment data will appear here." />;
+    // The ring, its 4 dots and the 4 legend lines are baked into
+    // Layer 2 (confirmed by inspection) — centering copy across the
+    // full box put text on top of that artwork. Measured the genuine
+    // clear band below it (ring/legend bottom ~79.5% of the panel,
+    // content-box bottom at 94%): as an offset within THIS content
+    // box, that's (79.5-21)/73 = 80.1%.
+    return <FooterNote top="80.1%" title="No appointments yet" body="Your appointment data will appear here." />;
   }
   const circumference = 2 * Math.PI * 40;
   let offset = 0;
@@ -437,7 +469,11 @@ function AppointmentsPanel({ data }: { data: AnalyticsData }) {
 
 function TopServicesPanel({ data }: { data: AnalyticsData }) {
   if (data.topServices.length === 0) {
-    return <EmptyNote title="No service data yet" body="Your most popular services will appear here." />;
+    // The 4 placeholder bars and their label/value lines are baked
+    // into Layer 2. Measured clear band below them (bars end ~72.2%
+    // of the panel, content-box bottom at 94%): as an offset within
+    // this content box, (72.2-21)/73 = 70.1%.
+    return <FooterNote top="70.1%" title="No service data yet" body="Your most popular services will appear here." />;
   }
   const max = Math.max(1, ...data.topServices.map((s) => s.revenue));
   return (
@@ -464,22 +500,33 @@ function ClientActivityPanel({ data }: { data: AnalyticsData }) {
     { label: "Average Spend", value: c.averageSpend != null ? money(c.averageSpend) : "£—" },
   ];
   return (
-    <div className="flex h-full flex-col justify-center gap-[6%]">
-      {rows.map((r) => (
-        <div key={r.label} className="flex items-center justify-between">
-          {/* Client Activity's baked row icons measure ~13.2% of the
-              panel's own width (65px of 492px). Label starts at 17.7%
-              of the panel — expressed here as margin-left relative to
-              THIS content box (which already starts at 4% of the
-              panel, is 92% of the panel wide): (17.7-4)/92 = 14.9%.
-              The value span is untouched, still placed by
-              justify-between at its existing position. */}
-          <span className="text-white/70" style={{ fontSize: "0.7cqw", marginLeft: "14.9%" }}>{r.label}</span>
-          <span className="text-white" style={{ fontSize: "0.7cqw" }}>{r.value}</span>
-        </div>
-      ))}
+    <div className="flex h-full flex-col">
+      {/* The 4 real baked divider rows span 60-216px of a 284px-tall
+          panel (measured) — 156px. This content box starts at 21% of
+          the panel (59.6px), essentially the same as the first
+          divider, so the row block's height as a fraction of THIS
+          box (207.4px tall) is 156/207.4 = 75.2%. grid-rows-4 with no
+          gap matches the baked dividers, which sit back-to-back with
+          no gap between them — unlike the previous justify-center
+          layout, which centered the whole group and never actually
+          lined up with any of them. */}
+      <div className="grid grid-rows-4" style={{ height: "75.2%" }}>
+        {rows.map((r) => (
+          <div key={r.label} className="flex items-center justify-between">
+            {/* Row icons measure ~13.2% of the panel's own width (65px
+                of 492px). Label starts at 17.7% of the panel —
+                margin-left relative to this content box (starts at
+                4%, 92% wide): (17.7-4)/92 = 14.9%. Font size raised
+                from 0.7cqw to 1.05cqw, proportioned to the ~13.7%-tall
+                row rather than to the icon alone, which is what read
+                as too small. */}
+            <span className="text-white/70" style={{ fontSize: "1.05cqw", marginLeft: "14.9%" }}>{r.label}</span>
+            <span className="text-white" style={{ fontSize: "1.05cqw" }}>{r.value}</span>
+          </div>
+        ))}
+      </div>
       {c.totalClients === 0 && (
-        <p className="mt-[2%] text-center text-white/35" style={{ fontSize: "0.6cqw" }}>No client data yet — start taking appointments to see your client activity.</p>
+        <p className="mt-[3%] text-center text-white/35" style={{ fontSize: "0.6cqw" }}>No client data yet — start taking appointments to see your client activity.</p>
       )}
     </div>
   );
@@ -500,28 +547,41 @@ function BusiestTimesPanel({ data }: { data: AnalyticsData }) {
 
 function QuickStatsPanel({ data }: { data: AnalyticsData }) {
   const q = data.quickStats;
-  const rows = [
-    { label: "Services Completed", value: String(q.servicesCompleted) },
-    { label: "Total Clients", value: String(q.totalClients) },
-    { label: "Average Service Time", value: q.averageServiceMinutes != null ? `${Math.round(q.averageServiceMinutes)}m` : "—" },
-    { label: "Total Cash Collected", value: money(q.totalCashCollected) },
-  ];
   const hasAny = q.servicesCompleted > 0 || q.totalClients > 0 || q.totalCashCollected > 0;
+  const rowStyle = { fontSize: "1.0cqw" as const, marginLeft: "13.0%" };
   return (
-    <div className="flex h-full flex-col justify-center gap-[5%]">
-      {rows.map((r) => (
-        <div key={r.label} className="flex items-center justify-between">
-          {/* Quick Stats' baked row icons measure ~11.5% of the
-              panel's own width (57px of 494px). Label starts at 16%
-              of the panel — as margin-left relative to this content
-              box (starts at 4%, 92% wide): (16-4)/92 = 13.0%. Value
-              span untouched. */}
-          <span className="text-white/70" style={{ fontSize: "0.68cqw", marginLeft: "13.0%" }}>{r.label}</span>
-          <span className="text-white" style={{ fontSize: "0.68cqw" }}>{r.value}</span>
+    <div className="flex h-full flex-col">
+      {/* The artwork bakes 5 icon rows (scissors, people, clock,
+          star/rating, coins) but Quick Stats only has 4 real
+          statistics — Client Rating has no legitimate data source and
+          is intentionally not fabricated. Slot 4 (star) is left
+          genuinely empty rather than shifting "Total Cash Collected"
+          up into it, which would put that value beside the wrong
+          (rating) icon instead of the coins icon it actually belongs
+          next to. Measured 5 dividers span 61-~245px of the 284px
+          panel (184px); as a fraction of this content box (207.4px,
+          starting ~at the first divider): 184/207.4 = 88.7%. */}
+      <div className="grid grid-rows-5" style={{ height: "88.7%" }}>
+        <div className="flex items-center justify-between">
+          <span className="text-white/70" style={rowStyle}>Services Completed</span>
+          <span className="text-white" style={{ fontSize: "1.0cqw" }}>{q.servicesCompleted}</span>
         </div>
-      ))}
+        <div className="flex items-center justify-between">
+          <span className="text-white/70" style={rowStyle}>Total Clients</span>
+          <span className="text-white" style={{ fontSize: "1.0cqw" }}>{q.totalClients}</span>
+        </div>
+        <div className="flex items-center justify-between">
+          <span className="text-white/70" style={rowStyle}>Average Service Time</span>
+          <span className="text-white" style={{ fontSize: "1.0cqw" }}>{q.averageServiceMinutes != null ? `${Math.round(q.averageServiceMinutes)}m` : "—"}</span>
+        </div>
+        <div aria-hidden="true" />
+        <div className="flex items-center justify-between">
+          <span className="text-white/70" style={rowStyle}>Total Cash Collected</span>
+          <span className="text-white" style={{ fontSize: "1.0cqw" }}>{money(q.totalCashCollected)}</span>
+        </div>
+      </div>
       {!hasAny && (
-        <p className="mt-[2%] text-center text-white/35" style={{ fontSize: "0.6cqw" }}>No data yet — your key stats will appear here as you use POLAR.</p>
+        <p className="mt-[3%] text-center text-white/35" style={{ fontSize: "0.6cqw" }}>No data yet — your key stats will appear here as you use POLAR.</p>
       )}
     </div>
   );
