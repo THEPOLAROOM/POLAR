@@ -14,34 +14,44 @@ export type MonthCell = { date: string; day: number; count: number; isFullyBooke
 type Service = { id: string; name: string; durationMinutes: number; price: number };
 type Client = { id: string; fullName: string };
 
-const ASSET_ASPECT = "1893 / 705";
+// Asset replaced (checkerboard-noise cleanup) — its canvas is now
+// 1954x580; every box below was re-measured against it (the original
+// coordinates were re-derived via the exact crop-offset transform
+// between the old and new canvases, not re-eyeballed).
+const ASSET_ASPECT = "1954 / 580";
 
-// Every box below is measured directly against the mastered asset's
-// own cropped canvas (pixel-level border scan), same technique used
-// throughout the Barber Portal.
-const SMART_ANALYTICS_BOX = { left: "29.42%", top: "18.16%", width: "12.84%", height: "8.79%" };
-const DAY_TAB_BOX = { left: "46.38%", top: "18.72%", width: "6.07%", height: "7.66%" };
-const WEEK_TAB_BOX = { left: "53.09%", top: "18.72%", width: "6.87%", height: "7.66%" };
-const MONTH_TAB_BOX = { left: "60.64%", top: "18.16%", width: "7.50%", height: "8.79%" };
-const YEAR_TAB_BOX = { left: "68.67%", top: "18.72%", width: "6.34%", height: "7.66%" };
-const PREV_BOX = { left: "80.30%", top: "18.72%", width: "2.64%", height: "7.66%" };
-const TODAY_BOX = { left: "84.52%", top: "18.16%", width: "8.72%", height: "8.79%" };
-const NEXT_BOX = { left: "94.56%", top: "18.72%", width: "2.64%", height: "7.66%" };
+const SMART_ANALYTICS_BOX = { left: "29.83%", top: "8.28%", width: "12.44%", height: "10.68%" };
 
-const GRID_AREA_BOX = { left: "0.74%", top: "29.08%", width: "77.18%", height: "59.15%" };
-const GRID_LEFT = 0.74;
-const GRID_TOP = 36.17;
-const COL_WIDTH = 11.02;
-const ROW_HEIGHT = 10.41;
+// Day/Week/Month/Year — the mastered artwork always bakes "Month" as
+// the visually active tab, which is wrong whenever another view is
+// selected. That whole row is patched over and replaced with four
+// real tab buttons carrying their own dynamic active state instead.
+const TAB_ROW_BOX = { left: "45.6%", top: "7.6%", width: "28.6%", height: "12%" };
 
-const ADD_APPOINTMENT_BOX = { left: "80.19%", top: "60.57%", width: "17.43%", height: "6.38%" };
-const RIGHT_TEXT_PATCH_BOX = { left: "80.19%", top: "46.10%", width: "17.43%", height: "13.48%" };
+// Prev/Today/Next — replaced with a real dynamic period label (Fix 2)
+// plus a small separate Today shortcut, so this whole row is patched
+// over too.
+const NAV_ROW_BOX = { left: "78.6%", top: "7.6%", width: "17.4%", height: "12%" };
+
+const GRID_AREA_BOX = { left: "2.05%", top: "21.55%", width: "74.77%", height: "71.90%" };
+const GRID_LEFT = 2.05;
+const GRID_TOP = 30.17;
+const COL_WIDTH = 10.68;
+const ROW_HEIGHT = 12.65;
+
+const ADD_APPOINTMENT_BOX = { left: "79.02%", top: "59.83%", width: "16.89%", height: "7.75%" };
+const RIGHT_TEXT_PATCH_BOX = { left: "79.02%", top: "42.24%", width: "16.89%", height: "16.39%" };
 
 const CELL_FILL = "#011530";
 const PANEL_FILL = "#00102c";
+const HEADER_FILL = "#050f37";
 
 const HIT_AREA_CLASS =
   "absolute rounded-2xl bg-transparent transition duration-200 ease-out hover:shadow-[0_0_18px_4px_rgba(91,155,255,0.4),0_0_26px_8px_rgba(255,61,154,0.22)]";
+
+const TAB_ACTIVE_CLASS =
+  "bg-gradient-to-r from-royal to-magenta text-white shadow-[0_0_14px_-2px_rgba(91,155,255,0.7)]";
+const TAB_INACTIVE_CLASS = "border border-royal-light/30 text-white/80 hover:bg-white/5";
 
 function pad(n: number): string {
   return String(n).padStart(2, "0");
@@ -71,6 +81,39 @@ function dayLabel(dateStr: string): string {
     month: "long",
     timeZone: "UTC",
   });
+}
+function fullDateLabel(dateStr: string): string {
+  return new Date(`${dateStr}T00:00:00Z`).toLocaleDateString("en-GB", {
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+function startOfWeekMonday(dateStr: string): string {
+  const d = new Date(`${dateStr}T00:00:00Z`);
+  const mondayIndex = (d.getUTCDay() + 6) % 7;
+  d.setUTCDate(d.getUTCDate() - mondayIndex);
+  return d.toISOString().slice(0, 10);
+}
+function weekRangeLabel(dateStr: string): string {
+  const start = startOfWeekMonday(dateStr);
+  const end = addDays(start, 6);
+  const startDate = new Date(`${start}T00:00:00Z`);
+  const endDate = new Date(`${end}T00:00:00Z`);
+  const sameMonth = startDate.getUTCMonth() === endDate.getUTCMonth() && startDate.getUTCFullYear() === endDate.getUTCFullYear();
+  if (sameMonth) {
+    return `${startDate.getUTCDate()} – ${endDate.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" })}`;
+  }
+  const startFmt = startDate.toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "UTC" });
+  const endFmt = endDate.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+  return `${startFmt} – ${endFmt}`;
+}
+function periodLabel(view: ViewKind, dateStr: string): string {
+  if (view === "day") return fullDateLabel(dateStr);
+  if (view === "week") return weekRangeLabel(dateStr);
+  if (view === "year") return dateStr.slice(0, 4);
+  return monthLabel(dateStr);
 }
 function money(n: number): string {
   return `£${n.toFixed(2)}`;
@@ -149,7 +192,7 @@ export function CalendarView({
   todaySummary: { count: number; nextTime: string | null };
   monthCells: MonthCell[] | null;
   dayData: { availability: { startTime: string; endTime: string }[]; bookings: CalendarBooking[] } | null;
-  weekDays: { date: string; label: string; count: number; isFullyBooked: boolean }[] | null;
+  weekDays: { date: string; label: string; count: number; isFullyBooked: boolean; hasAvailability: boolean }[] | null;
   yearMonths: { month: number; label: string; cells: MonthCell[] }[] | null;
 }) {
   const [activeSlot, setActiveSlot] = useState<{ start: string; end: string } | null>(null);
@@ -265,14 +308,59 @@ export function CalendarView({
                 is intentionally not built yet (out of scope). */}
             <Link href="/dashboard/barber/calendar/analytics" className={HIT_AREA_CLASS} style={SMART_ANALYTICS_BOX} aria-label="Smart Analytics" />
 
-            <Link href={`?view=day&date=${date}`} className={HIT_AREA_CLASS} style={DAY_TAB_BOX} aria-label="Day view" />
-            <Link href={`?view=week&date=${date}`} className={HIT_AREA_CLASS} style={WEEK_TAB_BOX} aria-label="Week view" />
-            <Link href={`?view=month&date=${date}`} className={HIT_AREA_CLASS} style={MONTH_TAB_BOX} aria-label="Month view" />
-            <Link href={`?view=year&date=${date}`} className={HIT_AREA_CLASS} style={YEAR_TAB_BOX} aria-label="Year view" />
+            {/* Day/Week/Month/Year — the baked artwork always shows
+                "Month" as active regardless of the real selected
+                view, so this whole row is patched over and replaced
+                with real tab buttons carrying their own dynamic
+                active state (POLAR cyan/magenta gradient when
+                active). */}
+            <div className="absolute flex items-stretch" style={{ ...TAB_ROW_BOX, gap: "2%" }}>
+              <div className="absolute inset-0 -m-[6%] rounded-xl" style={{ backgroundColor: HEADER_FILL }} aria-hidden="true" />
+              {(["day", "week", "month", "year"] as ViewKind[]).map((v) => (
+                <Link
+                  key={v}
+                  href={`?view=${v}&date=${date}`}
+                  className={`relative flex flex-1 items-center justify-center rounded-lg font-body capitalize transition ${view === v ? TAB_ACTIVE_CLASS : TAB_INACTIVE_CLASS}`}
+                  style={{ fontSize: "0.85vw" }}
+                >
+                  {v}
+                </Link>
+              ))}
+            </div>
 
-            <Link href={prevHref} className={HIT_AREA_CLASS} style={PREV_BOX} aria-label="Previous" />
-            <Link href={todayHref} className={HIT_AREA_CLASS} style={TODAY_BOX} aria-label="Today" />
-            <Link href={nextHref} className={HIT_AREA_CLASS} style={NEXT_BOX} aria-label="Next" />
+            {/* Prev / dynamic period label / small Today shortcut /
+                Next — replaces the baked static "Today" control,
+                which is patched over the same way as the tab row. */}
+            <div className="absolute flex items-center" style={{ ...NAV_ROW_BOX, gap: "3%" }}>
+              <div className="absolute inset-0 -m-[6%] rounded-xl" style={{ backgroundColor: HEADER_FILL }} aria-hidden="true" />
+              <Link
+                href={prevHref}
+                aria-label="Previous"
+                className="relative flex flex-none items-center justify-center rounded-lg border border-royal-light/30 text-white/80 transition hover:bg-white/5"
+                style={{ width: "14%", height: "100%", fontSize: "0.85vw" }}
+              >
+                ‹
+              </Link>
+              <p className="relative flex-1 truncate text-center text-white" style={{ fontSize: "0.78vw" }}>
+                {periodLabel(view, date)}
+              </p>
+              <Link
+                href={todayHref}
+                aria-label="Jump to today"
+                className="relative flex-none rounded-lg border border-royal-light/40 px-[6%] py-[8%] text-royal-light transition hover:bg-royal-light/10"
+                style={{ fontSize: "0.68vw" }}
+              >
+                Today
+              </Link>
+              <Link
+                href={nextHref}
+                aria-label="Next"
+                className="relative flex flex-none items-center justify-center rounded-lg border border-royal-light/30 text-white/80 transition hover:bg-white/5"
+                style={{ width: "14%", height: "100%", fontSize: "0.85vw" }}
+              >
+                ›
+              </Link>
+            </div>
 
             {/* Right panel — permanent copy + real today summary
                 patched over the baked example text; the artwork's own
@@ -316,14 +404,19 @@ export function CalendarView({
                       className="absolute overflow-hidden transition hover:bg-white/[0.04]"
                       style={box}
                     >
+                      {/* Generous patch — comfortably covers the
+                          baked artwork's own example day number
+                          (which only matches one specific month/year)
+                          including its glow, so the real number below
+                          never doubles up with it. */}
                       <div
                         className="absolute"
-                        style={{ left: "6%", top: "8%", width: "26%", height: "30%", backgroundColor: CELL_FILL }}
+                        style={{ left: "1%", top: "2%", width: "42%", height: "40%", backgroundColor: CELL_FILL }}
                         aria-hidden="true"
                       />
                       <p
                         className={`absolute font-body ${cell.isFullyBooked ? "text-white/35" : "text-white"}`}
-                        style={{ left: "6%", top: "8%", fontSize: "0.85vw" }}
+                        style={{ left: "7%", top: "8%", fontSize: "0.85vw" }}
                       >
                         {cell.day}
                       </p>
@@ -356,7 +449,11 @@ export function CalendarView({
                           >
                             <span className="text-white" style={{ fontSize: "0.75vw" }}>{d.label}</span>
                             <span className="mt-auto text-royal-light" style={{ fontSize: "0.7vw" }}>
-                              {d.count === 0 ? "Free" : `${d.count} booking${d.count === 1 ? "" : "s"}`}
+                              {d.count > 0
+                                ? `${d.count} booking${d.count === 1 ? "" : "s"}`
+                                : d.hasAvailability
+                                  ? "Available"
+                                  : "No availability set"}
                             </span>
                           </Link>
                         ))}
@@ -367,7 +464,14 @@ export function CalendarView({
                   {view === "year" && yearMonths && (
                     <>
                       <p className="font-display text-white" style={{ fontSize: "1vw" }}>{date.slice(0, 4)}</p>
-                      <div className="mt-[0.8%] grid flex-1 grid-cols-4 grid-rows-3" style={{ gap: "0.8%" }}>
+                      {/* min-h-0 lets this flex child actually shrink
+                          so overflow-y-auto can engage — otherwise a
+                          flex item defaults to never being smaller
+                          than its content, and any excess silently
+                          escapes the outer overflow-hidden instead of
+                          scrolling. Only this inner area ever scrolls,
+                          never the page itself. */}
+                      <div className="mt-[0.8%] grid min-h-0 flex-1 grid-cols-4 grid-rows-3 overflow-y-auto" style={{ gap: "0.8%" }}>
                         {yearMonths.map((m) => (
                           <Link
                             key={m.month}

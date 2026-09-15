@@ -33,7 +33,7 @@ function buildMonthCells(year: number, month: number, summaries: Map<string, Day
   for (let day = 1; day <= daysInMonth; day++) {
     if (cells.length >= 35) break; // the mastered grid has exactly 5 rows x 7 cols
     const date = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    const summary = summaries.get(date) ?? { count: 0, isFullyBooked: false };
+    const summary = summaries.get(date) ?? { count: 0, isFullyBooked: false, hasAvailability: false };
     cells.push({ date, day, count: summary.count, isFullyBooked: summary.isFullyBooked });
   }
   while (cells.length < 35) cells.push(null);
@@ -96,7 +96,7 @@ export default async function BarberCalendarPage({
 
   let monthCells: MonthCell[] | null = null;
   let dayData: { availability: { startTime: string; endTime: string }[]; bookings: Awaited<ReturnType<typeof getDayBookings>> } | null = null;
-  let weekDays: { date: string; label: string; count: number; isFullyBooked: boolean }[] | null = null;
+  let weekDays: { date: string; label: string; count: number; isFullyBooked: boolean; hasAvailability: boolean }[] | null = null;
   let yearMonths: { month: number; label: string; cells: MonthCell[] }[] | null = null;
 
   if (view === "month") {
@@ -124,8 +124,14 @@ export default async function BarberCalendarPage({
       const d = new Date(weekStart);
       d.setUTCDate(d.getUTCDate() + i);
       const dateStr = toDateStr(d);
-      const summary = summaries.get(dateStr) ?? { count: 0, isFullyBooked: false };
-      return { date: dateStr, label: `${label} ${d.getUTCDate()}`, count: summary.count, isFullyBooked: summary.isFullyBooked };
+      const summary = summaries.get(dateStr) ?? { count: 0, isFullyBooked: false, hasAvailability: false };
+      return {
+        date: dateStr,
+        label: `${label} ${d.getUTCDate()}`,
+        count: summary.count,
+        isFullyBooked: summary.isFullyBooked,
+        hasAvailability: summary.hasAvailability,
+      };
     });
   } else if (view === "year") {
     const summaries = await getDaySummaries(supabase, user.id, `${year}-01-01`, `${year}-12-31`);

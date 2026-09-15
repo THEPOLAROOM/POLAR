@@ -172,7 +172,7 @@ export async function getAvailabilityForDate(
   }));
 }
 
-export type DaySummary = { count: number; isFullyBooked: boolean };
+export type DaySummary = { count: number; isFullyBooked: boolean; hasAvailability: boolean };
 
 /**
  * Per-date summary for every real day in [startDate, endDateInclusive]
@@ -222,6 +222,7 @@ export async function getDaySummaries(
     summaries.set(date, {
       count: dayBookings.length,
       isFullyBooked: availableMinutes > 0 && bookedMinutes >= availableMinutes,
+      hasAvailability: availableMinutes > 0,
     });
     cursor.setUTCDate(cursor.getUTCDate() + 1);
   }
