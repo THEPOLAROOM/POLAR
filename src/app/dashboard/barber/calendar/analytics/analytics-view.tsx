@@ -175,12 +175,25 @@ export function AnalyticsView({ period, date, today, data }: { period: Period; d
   );
 }
 
+// Single explicit box (identical technique to TAB_ROW_BOX/NAV_ROW_BOX,
+// which render correctly) with the internal inset applied as padding
+// on that same box, rather than a second nested div sized implicitly
+// from left+right/top+bottom with no explicit width/height of its
+// own. That implicit inner box was the one thing on this page whose
+// size the browser had to infer rather than being told outright, and
+// it was resolving to a degenerate width live — padding percentages
+// resolve unambiguously against this div's own already-definite
+// width, so the content area is genuinely derived from the same
+// measured panel box, not just visually clipped to hide a wrong
+// position. overflow-hidden is a backstop against future long
+// content, not a fix for positioning.
 function PanelContent({ box, children }: { box: { left: string; top: string; width: string; height: string }; children: ReactNode }) {
   return (
-    <div className="absolute" style={box}>
-      <div className="absolute" style={{ left: "4%", right: "4%", top: "21%", bottom: "6%" }}>
-        {children}
-      </div>
+    <div
+      className="absolute overflow-hidden"
+      style={{ ...box, paddingLeft: "4%", paddingRight: "4%", paddingTop: "21%", paddingBottom: "6%" }}
+    >
+      {children}
     </div>
   );
 }
