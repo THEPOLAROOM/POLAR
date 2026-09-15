@@ -263,13 +263,16 @@ export function ServicesManager({ services }: { services: ServiceWithImages[] })
             Profile/Clients ones, so — per instruction — it's sized
             from height alone (not the usual min(100%, height-derived)
             formula, which would let its wide ratio push width to
-            100% and height too close to the full viewport) and
-            bottom-aligned, leaving deliberate clear space above for
-            the room background's own POLAR LONDON wall sign. */}
-        <div className="absolute inset-0 flex items-end justify-center overflow-hidden">
+            100% and height too close to the full viewport). Top-
+            aligned with a fixed top offset that clears the room
+            background's own POLAR LONDON wall sign, then sized as
+            large as that remaining vertical budget allows — which,
+            at this asset's aspect ratio, is also what maximises its
+            width. */}
+        <div className="absolute inset-0 flex items-start justify-center overflow-hidden">
           <div
             className="relative"
-            style={{ height: "68dvh", maxWidth: "90%", aspectRatio: ASSET_ASPECT, marginBottom: "4dvh" }}
+            style={{ height: "78dvh", maxWidth: "94%", aspectRatio: ASSET_ASPECT, marginTop: "20dvh" }}
           >
             <Image
               src="/dashboard/polar-barber-services-ui-mastered.png"
