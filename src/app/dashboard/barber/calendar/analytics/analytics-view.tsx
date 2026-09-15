@@ -12,16 +12,44 @@ import type { AnalyticsData, Period } from "@/lib/queries/barber-analytics";
 // pair of measured edges rather than a 33.3%/33.3% formula.
 const ASSET_ASPECT = "1536 / 1024";
 
+// Each panel is a genuinely separate rounded box with a real gap to
+// its neighbours (unlike Calendar's month grid, where cells are
+// contiguous) — so these arrays store PAIRS: [panel0_left,
+// panel0_right, panel1_left, panel1_right, panel2_left, panel2_right].
+// Indexing must therefore step by 2 per panel, not by 1 — see
+// panelContentRect below.
 const COL_BOUNDS = [1.432, 33.464, 34.440, 65.495, 66.406, 98.568];
 const ROW_BOUNDS = [10.547, 39.355, 40.625, 67.285, 68.457, 96.191];
 
-function panelBox(col: number, row: number) {
-  return {
-    left: `${COL_BOUNDS[col]}%`,
-    top: `${ROW_BOUNDS[row]}%`,
-    width: `${COL_BOUNDS[col + 1] - COL_BOUNDS[col]}%`,
-    height: `${ROW_BOUNDS[row + 1] - ROW_BOUNDS[row]}%`,
-  };
+// Internal inset as a fraction of the PANEL's own box — kept as one
+// named constant so the whole content rectangle below is derived from
+// it explicitly in JS, rather than via CSS padding (which resolves
+// top/bottom percentages against the containing block's WIDTH, not
+// its height — the exact bug this replaces) or an implicit
+// left+right/top+bottom inset with no stated width/height.
+const PANEL_INSET = { left: 4, right: 4, top: 21, bottom: 6 };
+
+/**
+ * The final, explicit content rectangle for one panel — left, top,
+ * width and height all computed here in JS from the same measured
+ * COL_BOUNDS/ROW_BOUNDS numbers and expressed in the SAME coordinate
+ * system as TAB_ROW_BOX/NAV_ROW_BOX (percent of the whole asset/card).
+ * Nothing is left for the browser to infer: no implicit sizing, no
+ * percentage padding, no ambiguous axis. This is the one and only
+ * place panel content geometry is derived.
+ */
+function panelContentRect(col: number, row: number): { left: string; top: string; width: string; height: string } {
+  const panelLeft = COL_BOUNDS[col * 2];
+  const panelTop = ROW_BOUNDS[row * 2];
+  const panelWidth = COL_BOUNDS[col * 2 + 1] - COL_BOUNDS[col * 2];
+  const panelHeight = ROW_BOUNDS[row * 2 + 1] - ROW_BOUNDS[row * 2];
+
+  const left = panelLeft + (PANEL_INSET.left / 100) * panelWidth;
+  const top = panelTop + (PANEL_INSET.top / 100) * panelHeight;
+  const width = panelWidth * (1 - (PANEL_INSET.left + PANEL_INSET.right) / 100);
+  const height = panelHeight * (1 - (PANEL_INSET.top + PANEL_INSET.bottom) / 100);
+
+  return { left: `${left}%`, top: `${top}%`, width: `${width}%`, height: `${height}%` };
 }
 
 const TAB_ROW_BOX = { left: "46.224%", top: "0.684%", width: "30.794%", height: "8.398%" };
@@ -101,12 +129,38 @@ export function AnalyticsView({ period, date, today, data }: { period: Period; d
   const todayHref = `?period=${period}&date=${today}`;
 
   return (
-    <main className="relative hidden overflow-hidden bg-navy sm:block" style={{ height: "100dvh" }}>
-      <Image src="/dashboard/polar-barber-dashboard-background.png" alt="" fill priority className="object-cover" aria-hidden="true" />
+    <div id="barber-analytics-page">
+      {/* Same route-scoped suppression Calendar already uses for its
+          own immersive full-bleed layout — hides only the shared
+          barber-portal <nav> on THIS route, without touching the
+          shared layout or DashboardNav themselves. */}
+      <style>{`
+        div:has(> #barber-analytics-page) > nav {
+          display: none;
+        }
+      `}</style>
 
-      <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
-        <div className="relative" style={{ width: `min(94%, calc(100dvh * ${ASSET_ASPECT}))`, aspectRatio: ASSET_ASPECT }}>
-          <Image src="/dashboard/polar-barber-analytics-ui-mastered.png" alt="Smart Analytics" fill priority className="object-contain" />
+      <main className="relative hidden overflow-hidden bg-navy sm:block" style={{ height: "100dvh" }}>
+        <Image src="/dashboard/polar-barber-dashboard-background.png" alt="" fill priority className="object-cover" aria-hidden="true" />
+
+        <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
+          {/* containerType: inline-size makes this card a CSS
+              container, so every `cqw` unit inside it resolves
+              against THIS box's own rendered width — never the
+              viewport. Calendar's very wide (3.37:1) card happens to
+              end up ~94% of the viewport width most of the time, so
+              its `vw` fonts looked right by coincidence; this card's
+              more square (1.5:1) ratio is frequently bounded by
+              height instead (`100dvh * 1.5` < `94vw`), so `vw` sized
+              text off the wrong (viewport) dimension and rendered far
+              too large for the actual card — which is what produced
+              the severe overflow. `cqw` is immune to that by
+              construction. */}
+          <div
+            className="relative"
+            style={{ width: `min(94%, calc(100dvh * ${ASSET_ASPECT}))`, aspectRatio: ASSET_ASPECT, containerType: "inline-size" }}
+          >
+            <Image src="/dashboard/polar-barber-analytics-ui-mastered.png" alt="Smart Analytics" fill priority className="object-contain" />
 
           {/* Period tabs — same shared-strip + breakout-active-pill
               architecture as Calendar's Day/Week/Month/Year row (the
@@ -123,7 +177,7 @@ export function AnalyticsView({ period, date, today, data }: { period: Period; d
                   className={`flex flex-1 items-center justify-center font-body capitalize transition ${
                     period === p ? TAB_ACTIVE_CLASS : `${TAB_INACTIVE_CLASS} ${i > 0 ? "border-l border-royal-light/20" : ""}`
                   }`}
-                  style={{ fontSize: "0.85vw" }}
+                  style={{ fontSize: "0.85cqw" }}
                 >
                   {p}
                 </Link>
@@ -138,14 +192,14 @@ export function AnalyticsView({ period, date, today, data }: { period: Period; d
               href={prevHref}
               aria-label="Previous"
               className="relative flex flex-none items-center justify-center rounded-lg border border-royal-light/30 text-white/80 transition hover:bg-white/5"
-              style={{ width: "13%", height: "100%", fontSize: "0.85vw" }}
+              style={{ width: "13%", height: "100%", fontSize: "0.85cqw" }}
             >
               ‹
             </Link>
             <Link
               href={todayHref}
               className="relative flex-1 truncate rounded-lg border border-royal-light/30 text-center text-white transition hover:bg-white/5"
-              style={{ fontSize: "0.78vw", padding: "0 2%" }}
+              style={{ fontSize: "0.78cqw", padding: "0 2%" }}
             >
               {periodLabel(period, date)}
             </Link>
@@ -153,46 +207,40 @@ export function AnalyticsView({ period, date, today, data }: { period: Period; d
               href={nextHref}
               aria-label="Next"
               className="relative flex flex-none items-center justify-center rounded-lg border border-royal-light/30 text-white/80 transition hover:bg-white/5"
-              style={{ width: "13%", height: "100%", fontSize: "0.85vw" }}
+              style={{ width: "13%", height: "100%", fontSize: "0.85cqw" }}
             >
               ›
             </Link>
           </div>
 
-          {/* 9 panels */}
-          <PanelContent box={panelBox(0, 0)}><CashRevenuePanel data={data} /></PanelContent>
-          <PanelContent box={panelBox(1, 0)}><WorkingHoursPanel data={data} /></PanelContent>
-          <PanelContent box={panelBox(2, 0)}><PerHourPanel data={data} /></PanelContent>
-          <PanelContent box={panelBox(0, 1)}><UtilisationPanel data={data} /></PanelContent>
-          <PanelContent box={panelBox(1, 1)}><AppointmentsPanel data={data} /></PanelContent>
-          <PanelContent box={panelBox(2, 1)}><TopServicesPanel data={data} /></PanelContent>
-          <PanelContent box={panelBox(0, 2)}><ClientActivityPanel data={data} /></PanelContent>
-          <PanelContent box={panelBox(1, 2)}><BusiestTimesPanel data={data} /></PanelContent>
-          <PanelContent box={panelBox(2, 2)}><QuickStatsPanel data={data} /></PanelContent>
+            {/* 9 panels */}
+            <PanelContent box={panelContentRect(0, 0)}><CashRevenuePanel data={data} /></PanelContent>
+            <PanelContent box={panelContentRect(1, 0)}><WorkingHoursPanel data={data} /></PanelContent>
+            <PanelContent box={panelContentRect(2, 0)}><PerHourPanel data={data} /></PanelContent>
+            <PanelContent box={panelContentRect(0, 1)}><UtilisationPanel data={data} /></PanelContent>
+            <PanelContent box={panelContentRect(1, 1)}><AppointmentsPanel data={data} /></PanelContent>
+            <PanelContent box={panelContentRect(2, 1)}><TopServicesPanel data={data} /></PanelContent>
+            <PanelContent box={panelContentRect(0, 2)}><ClientActivityPanel data={data} /></PanelContent>
+            <PanelContent box={panelContentRect(1, 2)}><BusiestTimesPanel data={data} /></PanelContent>
+            <PanelContent box={panelContentRect(2, 2)}><QuickStatsPanel data={data} /></PanelContent>
+          </div>
         </div>
-      </div>
-    </main>
+      </main>
+    </div>
   );
 }
 
-// Single explicit box (identical technique to TAB_ROW_BOX/NAV_ROW_BOX,
-// which render correctly) with the internal inset applied as padding
-// on that same box, rather than a second nested div sized implicitly
-// from left+right/top+bottom with no explicit width/height of its
-// own. That implicit inner box was the one thing on this page whose
-// size the browser had to infer rather than being told outright, and
-// it was resolving to a degenerate width live — padding percentages
-// resolve unambiguously against this div's own already-definite
-// width, so the content area is genuinely derived from the same
-// measured panel box, not just visually clipped to hide a wrong
-// position. overflow-hidden is a backstop against future long
-// content, not a fix for positioning.
+// The content rectangle (panelContentRect) is already fully explicit
+// — left, top, width and height all computed in JS from the measured
+// asset geometry, in the same coordinate system as TAB_ROW_BOX and
+// NAV_ROW_BOX. This div only needs to render that box as-is; nothing
+// here infers or recomputes any dimension. overflow-hidden is a
+// defensive boundary against unexpectedly long future content — it is
+// not doing any positioning work, since the box above is already
+// correct on its own.
 function PanelContent({ box, children }: { box: { left: string; top: string; width: string; height: string }; children: ReactNode }) {
   return (
-    <div
-      className="absolute overflow-hidden"
-      style={{ ...box, paddingLeft: "4%", paddingRight: "4%", paddingTop: "21%", paddingBottom: "6%" }}
-    >
+    <div className="absolute overflow-hidden" style={box}>
       {children}
     </div>
   );
@@ -200,7 +248,7 @@ function PanelContent({ box, children }: { box: { left: string; top: string; wid
 
 function Headline({ children }: { children: React.ReactNode }) {
   return (
-    <p className="font-display text-white" style={{ fontSize: "1.5vw", lineHeight: 1 }}>
+    <p className="font-display text-white" style={{ fontSize: "1.5cqw", lineHeight: 1 }}>
       {children}
     </p>
   );
@@ -209,8 +257,8 @@ function Headline({ children }: { children: React.ReactNode }) {
 function EmptyNote({ title, body }: { title: string; body: string }) {
   return (
     <div className="flex h-full flex-col items-center justify-center text-center">
-      <p className="text-white/60" style={{ fontSize: "0.8vw" }}>{title}</p>
-      <p className="mt-[2%] text-white/35" style={{ fontSize: "0.65vw" }}>{body}</p>
+      <p className="text-white/60" style={{ fontSize: "0.8cqw" }}>{title}</p>
+      <p className="mt-[2%] text-white/35" style={{ fontSize: "0.65cqw" }}>{body}</p>
     </div>
   );
 }
@@ -234,7 +282,7 @@ function BarChart({ buckets, formatValue }: { buckets: { label: string; value: n
       </div>
       <div className="mt-[2%] flex gap-[2px]">
         {buckets.map((b, i) => (
-          <span key={i} className="flex-1 truncate text-center text-white/40" style={{ fontSize: "0.55vw" }}>
+          <span key={i} className="flex-1 truncate text-center text-white/40" style={{ fontSize: "0.55cqw" }}>
             {i % labelEvery === 0 ? b.label : ""}
           </span>
         ))}
@@ -348,9 +396,9 @@ function AppointmentsPanel({ data }: { data: AnalyticsData }) {
       <div className="flex flex-1 flex-col gap-[4%]">
         {rows.map((r) => (
           <div key={r.label} className="flex items-center gap-[6%]">
-            <span className={`h-[0.6vw] w-[0.6vw] flex-none rounded-full ${r.className}`} />
-            <span className="flex-1 truncate text-white/70" style={{ fontSize: "0.68vw" }}>{r.label}</span>
-            <span className="text-white" style={{ fontSize: "0.68vw" }}>{r.value}</span>
+            <span className={`h-[0.6cqw] w-[0.6cqw] flex-none rounded-full ${r.className}`} />
+            <span className="flex-1 truncate text-white/70" style={{ fontSize: "0.68cqw" }}>{r.label}</span>
+            <span className="text-white" style={{ fontSize: "0.68cqw" }}>{r.value}</span>
           </div>
         ))}
       </div>
@@ -367,11 +415,11 @@ function TopServicesPanel({ data }: { data: AnalyticsData }) {
     <div className="flex h-full flex-col justify-center gap-[6%]">
       {data.topServices.map((s) => (
         <div key={s.serviceId} className="flex items-center gap-[3%]">
-          <span className="truncate text-white/70" style={{ fontSize: "0.68vw", width: "28%" }}>{s.name}</span>
-          <div className="h-[0.9vw] flex-1 overflow-hidden rounded-sm bg-white/5">
+          <span className="truncate text-white/70" style={{ fontSize: "0.68cqw", width: "28%" }}>{s.name}</span>
+          <div className="h-[0.9cqw] flex-1 overflow-hidden rounded-sm bg-white/5">
             <div className="h-full rounded-sm bg-gradient-to-r from-royal to-magenta" style={{ width: `${Math.max(4, (s.revenue / max) * 100)}%` }} />
           </div>
-          <span className="text-white" style={{ fontSize: "0.65vw", width: "16%", textAlign: "right" }}>{money(s.revenue)}</span>
+          <span className="text-white" style={{ fontSize: "0.65cqw", width: "16%", textAlign: "right" }}>{money(s.revenue)}</span>
         </div>
       ))}
     </div>
@@ -390,12 +438,12 @@ function ClientActivityPanel({ data }: { data: AnalyticsData }) {
     <div className="flex h-full flex-col justify-center gap-[6%]">
       {rows.map((r) => (
         <div key={r.label} className="flex items-center justify-between">
-          <span className="text-white/70" style={{ fontSize: "0.7vw" }}>{r.label}</span>
-          <span className="text-white" style={{ fontSize: "0.7vw" }}>{r.value}</span>
+          <span className="text-white/70" style={{ fontSize: "0.7cqw" }}>{r.label}</span>
+          <span className="text-white" style={{ fontSize: "0.7cqw" }}>{r.value}</span>
         </div>
       ))}
       {c.totalClients === 0 && (
-        <p className="mt-[2%] text-center text-white/35" style={{ fontSize: "0.6vw" }}>No client data yet — start taking appointments to see your client activity.</p>
+        <p className="mt-[2%] text-center text-white/35" style={{ fontSize: "0.6cqw" }}>No client data yet — start taking appointments to see your client activity.</p>
       )}
     </div>
   );
@@ -427,12 +475,12 @@ function QuickStatsPanel({ data }: { data: AnalyticsData }) {
     <div className="flex h-full flex-col justify-center gap-[5%]">
       {rows.map((r) => (
         <div key={r.label} className="flex items-center justify-between">
-          <span className="text-white/70" style={{ fontSize: "0.68vw" }}>{r.label}</span>
-          <span className="text-white" style={{ fontSize: "0.68vw" }}>{r.value}</span>
+          <span className="text-white/70" style={{ fontSize: "0.68cqw" }}>{r.label}</span>
+          <span className="text-white" style={{ fontSize: "0.68cqw" }}>{r.value}</span>
         </div>
       ))}
       {!hasAny && (
-        <p className="mt-[2%] text-center text-white/35" style={{ fontSize: "0.6vw" }}>No data yet — your key stats will appear here as you use POLAR.</p>
+        <p className="mt-[2%] text-center text-white/35" style={{ fontSize: "0.6cqw" }}>No data yet — your key stats will appear here as you use POLAR.</p>
       )}
     </div>
   );
