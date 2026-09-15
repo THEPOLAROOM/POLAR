@@ -1,142 +1,154 @@
-import Link from "next/link";
 import { requireRole } from "@/lib/auth/require-role";
-import { getBarberBookingsForDate } from "@/lib/queries/barber-schedule";
-import { getShopToday, formatTime12h } from "@/lib/dates";
-import { CancelBookingButton } from "../schedule/cancel-booking-button";
-import { ShiftView } from "../shift/shift-view";
-import { WalkInForm } from "./walk-in-form";
+import { getShopToday, getShopTimeNow } from "@/lib/dates";
+import {
+  getAvailabilityForDate,
+  getDayBookings,
+  getDaySummaries,
+  type DaySummary,
+} from "@/lib/queries/barber-calendar";
+import { CalendarView, type MonthCell, type ViewKind } from "./calendar-view";
 
+const VALID_VIEWS: ViewKind[] = ["day", "week", "month", "year"];
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-type ServiceRow = { id: string; name: string; duration_minutes: number };
+function toDateStr(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+function startOfWeekMonday(dateStr: string): Date {
+  const d = new Date(`${dateStr}T00:00:00Z`);
+  const jsDay = d.getUTCDay(); // 0=Sun..6=Sat
+  const mondayIndex = (jsDay + 6) % 7; // 0=Mon..6=Sun
+  d.setUTCDate(d.getUTCDate() - mondayIndex);
+  return d;
+}
+
+function buildMonthCells(year: number, month: number, summaries: Map<string, DaySummary>): MonthCell[] {
+  const firstOfMonth = new Date(Date.UTC(year, month - 1, 1));
+  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  const mondayIndex = (firstOfMonth.getUTCDay() + 6) % 7;
+
+  const cells: MonthCell[] = [];
+  for (let i = 0; i < mondayIndex; i++) cells.push(null);
+  for (let day = 1; day <= daysInMonth; day++) {
+    if (cells.length >= 35) break; // the mastered grid has exactly 5 rows x 7 cols
+    const date = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+    const summary = summaries.get(date) ?? { count: 0, isFullyBooked: false };
+    cells.push({ date, day, count: summary.count, isFullyBooked: summary.isFullyBooked });
+  }
+  while (cells.length < 35) cells.push(null);
+  return cells;
+}
 
 // Server-side ROLE check happens FIRST, same as every other protected
-// barber page. This is now the one primary Calendar area — it
-// consolidates what used to be three separate top-level pages
-// (Schedule, Availability, Active Shift) by reusing their existing,
-// unchanged code rather than rebuilding it:
-//   - the day's appointment list + reschedule/cancel controls are the
-//     same query and the same CancelBookingButton/reschedule route
-//     the old Schedule page used;
-//   - the "current/next appointment" workflow reuses ShiftView as-is,
-//     shown only when the selected date is today (that concept only
-//     makes sense live);
-//   - Availability (the weekly working-hours template) stays its own
-//     page/route — reachable via the link below — since merging its
-//     distinct form/list into this page would mean rebuilding rather
-//     than reusing it.
-// Walk-In depends on the proposed services/create_walk_in migration
-// (not yet applied) — see walk-in-form.tsx / walk-ins.ts.
+// barber page.
 export default async function BarberCalendarPage({
   searchParams,
 }: {
-  searchParams: Promise<{ date?: string }>;
+  searchParams: Promise<{ view?: string; date?: string }>;
 }) {
   const { supabase, user } = await requireRole("barber");
-  const { date: rawDate } = await searchParams;
+  const { view: rawView, date: rawDate } = await searchParams;
 
   const today = getShopToday();
+  const view: ViewKind = VALID_VIEWS.includes(rawView as ViewKind) ? (rawView as ViewKind) : "month";
   const date = rawDate && DATE_RE.test(rawDate) ? rawDate : today;
 
-  const [bookings, { data: activeServices }] = await Promise.all([
-    getBarberBookingsForDate(supabase, user.id, date),
+  const [year, month] = date.split("-").map(Number);
+
+  // Today's real summary for the right-hand "At a Glance" panel —
+  // shown regardless of which view is active, same as the approved
+  // design.
+  const now = getShopTimeNow();
+  const [todaysBookings, activeServices, clientLinks] = await Promise.all([
+    getDayBookings(supabase, user.id, today),
     supabase
       .from("services")
-      .select("id, name, duration_minutes")
+      .select("id, name, duration_minutes, price")
       .eq("barber_profile_id", user.id)
       .eq("is_active", true)
       .order("name", { ascending: true }),
+    supabase.from("barber_client_links").select("client_profile_id").eq("barber_profile_id", user.id),
   ]);
 
-  const services = (activeServices ?? []) as ServiceRow[];
+  const clientIds = (clientLinks.data ?? []).map((l) => l.client_profile_id as string);
+  const { data: clientProfiles } =
+    clientIds.length > 0
+      ? await supabase.from("profiles").select("id, full_name").in("id", clientIds).order("full_name", { ascending: true })
+      : { data: [] as { id: string; full_name: string }[] };
+
+  const services = (activeServices.data ?? []).map((s) => ({
+    id: s.id as string,
+    name: s.name as string,
+    durationMinutes: s.duration_minutes as number,
+    price: Number(s.price),
+  }));
+  const clients = ((clientProfiles ?? []) as { id: string; full_name: string }[]).map((c) => ({
+    id: c.id,
+    fullName: c.full_name,
+  }));
+
+  const upcoming = todaysBookings.filter((b) => b.startTime > now);
+  const todaySummary = {
+    count: todaysBookings.length,
+    nextTime: upcoming[0]?.startTime ?? null,
+  };
+
+  let monthCells: MonthCell[] | null = null;
+  let dayData: { availability: { startTime: string; endTime: string }[]; bookings: Awaited<ReturnType<typeof getDayBookings>> } | null = null;
+  let weekDays: { date: string; label: string; count: number; isFullyBooked: boolean }[] | null = null;
+  let yearMonths: { month: number; label: string; cells: MonthCell[] }[] | null = null;
+
+  if (view === "month") {
+    const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+    const summaries = await getDaySummaries(
+      supabase,
+      user.id,
+      `${year}-${String(month).padStart(2, "0")}-01`,
+      `${year}-${String(month).padStart(2, "0")}-${String(daysInMonth).padStart(2, "0")}`
+    );
+    monthCells = buildMonthCells(year, month, summaries);
+  } else if (view === "day") {
+    const [availability, bookings] = await Promise.all([
+      getAvailabilityForDate(supabase, user.id, date),
+      getDayBookings(supabase, user.id, date),
+    ]);
+    dayData = { availability, bookings };
+  } else if (view === "week") {
+    const weekStart = startOfWeekMonday(date);
+    const weekEnd = new Date(weekStart);
+    weekEnd.setUTCDate(weekEnd.getUTCDate() + 6);
+    const summaries = await getDaySummaries(supabase, user.id, toDateStr(weekStart), toDateStr(weekEnd));
+    const labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    weekDays = labels.map((label, i) => {
+      const d = new Date(weekStart);
+      d.setUTCDate(d.getUTCDate() + i);
+      const dateStr = toDateStr(d);
+      const summary = summaries.get(dateStr) ?? { count: 0, isFullyBooked: false };
+      return { date: dateStr, label: `${label} ${d.getUTCDate()}`, count: summary.count, isFullyBooked: summary.isFullyBooked };
+    });
+  } else if (view === "year") {
+    const summaries = await getDaySummaries(supabase, user.id, `${year}-01-01`, `${year}-12-31`);
+    const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    yearMonths = monthLabels.map((label, i) => ({
+      month: i + 1,
+      label,
+      cells: buildMonthCells(year, i + 1, summaries),
+    }));
+  }
 
   return (
-    <main className="mx-auto max-w-xl px-6 py-16">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-polar-text">Calendar</h1>
-        <Link
-          href="/dashboard/barber/availability"
-          className="text-sm text-polar-text underline"
-        >
-          Edit availability
-        </Link>
-      </div>
-
-      <form method="get" className="mt-4 flex items-end gap-2">
-        <label className="text-sm">
-          <span className="mb-1 block font-medium text-polar-text">
-            Date
-          </span>
-          <input
-            name="date"
-            type="date"
-            defaultValue={date}
-            className="rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm outline-none focus:border-polar-text"
-          />
-        </label>
-        <button
-          type="submit"
-          className="rounded border border-polar-border px-4 py-2 text-sm text-polar-text"
-        >
-          View
-        </button>
-      </form>
-
-      <section className="mt-6">
-        <WalkInForm date={date} services={services} />
-      </section>
-
-      {date === today && (
-        <section className="mt-8">
-          <h2 className="text-sm font-semibold text-polar-text">
-            Active Shift
-          </h2>
-          <ShiftView bookings={bookings} />
-        </section>
-      )}
-
-      <section className="mt-8">
-        <h2 className="text-sm font-semibold text-polar-text">
-          {date === today ? "Today's appointments" : "Appointments"}
-        </h2>
-        {bookings.length === 0 ? (
-          <p className="mt-2 text-sm text-polar-muted">
-            No appointments on this day.
-          </p>
-        ) : (
-          <ul className="mt-2 space-y-2">
-            {bookings.map((booking) => (
-              <li
-                key={booking.id}
-                className="flex items-center justify-between gap-4 rounded border border-polar-border px-3 py-2"
-              >
-                <div className="text-sm text-polar-text">
-                  {formatTime12h(booking.startTime)}–
-                  {formatTime12h(booking.endTime)} — {booking.clientName}
-                  <span className="ml-2 text-xs text-polar-muted">
-                    {booking.recurrence === "weekly" ? "Weekly" : "One-off"}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Link
-                    href={`/dashboard/barber/clients/${booking.clientProfileId}`}
-                    className="rounded border border-polar-border px-3 py-1 text-xs text-polar-text"
-                  >
-                    View client
-                  </Link>
-                  <Link
-                    href={`/dashboard/barber/schedule/${booking.id}/reschedule`}
-                    className="rounded border border-polar-border px-3 py-1 text-xs text-polar-text"
-                  >
-                    Reschedule
-                  </Link>
-                  <CancelBookingButton bookingId={booking.id} />
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-    </main>
+    <CalendarView
+      view={view}
+      date={date}
+      today={today}
+      services={services}
+      clients={clients}
+      todaySummary={todaySummary}
+      monthCells={monthCells}
+      dayData={dayData}
+      weekDays={weekDays}
+      yearMonths={yearMonths}
+    />
   );
 }
