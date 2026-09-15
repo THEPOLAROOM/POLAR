@@ -56,9 +56,18 @@ const HEADER_FILL = "#050f37";
 const HIT_AREA_CLASS =
   "absolute rounded-2xl bg-transparent transition duration-200 ease-out hover:shadow-[0_0_18px_4px_rgba(91,155,255,0.4),0_0_26px_8px_rgba(255,61,154,0.22)]";
 
+// The active tab previously carried `m-[6%]` — a percentage margin on
+// a flex child resolves against the CONTAINING STRIP's own width/
+// height, not the tab's own ~1/4 share of it. On a strip only ~70px
+// tall, a 6% margin (≈33px) top AND bottom nearly cancelled out the
+// entire visible height, which is why the active tab looked dull/dark
+// (mostly showing the dark strip fill behind a collapsed sliver of
+// gradient) and visibly smaller than its neighbours. It must render
+// at the exact same flex-1 footprint as every inactive tab — no
+// margin, no resize — with only its background/border/glow differing.
 const TAB_ACTIVE_CLASS =
-  "m-[6%] rounded-lg bg-gradient-to-r from-royal to-magenta text-white shadow-[0_0_14px_-2px_rgba(91,155,255,0.7)]";
-const TAB_INACTIVE_CLASS = "text-white/80 hover:bg-white/5";
+  "rounded-lg bg-gradient-to-r from-royal to-magenta text-white shadow-[0_0_14px_-2px_rgba(255,61,154,0.75)] hover:brightness-110";
+const TAB_INACTIVE_CLASS = "text-white/70 hover:bg-white/5 hover:text-white";
 
 function pad(n: number): string {
   return String(n).padStart(2, "0");
