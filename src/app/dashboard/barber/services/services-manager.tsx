@@ -28,39 +28,42 @@ export type ServiceWithImages = {
 // Layer 1 = full-bleed background (reused, decorative only), Layer 2
 // = the locked, mastered two-panel Services UI PNG (the sole visual
 // source of truth — nothing below recreates its cards/icons/
-// typography), Layer 3 = real hit areas/data on top. This asset's own
-// canvas (1363x941 — cropped tight to content; the raw supplied file
-// had ~20% dead space from a baked-in "transparency" checkerboard,
-// same issue as the Clients asset) is used at its own aspect ratio.
-const ASSET_ASPECT = "1363 / 941";
+// typography), Layer 3 = real hit areas/data on top. This is the
+// second mastered asset for this page — wider and shorter than the
+// first — cropped tight to its own content (1631x888; the raw
+// supplied file had a thin ~1-3% opaque dark margin around the two
+// panels, not a checkerboard this time, so no alpha conversion was
+// needed) and used at its own aspect ratio.
+const ASSET_ASPECT = "1631 / 888";
 
 // Every box below is measured directly against this asset's own
 // cropped canvas (pixel-level border scan), same technique used for
 // the Barber Dashboard/Clients overlays.
-const SEARCH_BOX = { left: "2.38%", top: "15.67%", width: "35.03%", height: "5.84%" };
-const REORDER_BOX = { left: "39.18%", top: "15.67%", width: "10.64%", height: "5.84%" };
-const LIST_BOX = { left: "0.73%", top: "22.58%", width: "49.89%", height: "77.05%" };
+const SEARCH_BOX = { left: "1.84%", top: "16.50%", width: "23.45%", height: "6.76%" };
+const REORDER_BOX = { left: "26.36%", top: "16.50%", width: "9.04%", height: "6.76%" };
+const ADD_SERVICE_HEADER_BOX = { left: "36.48%", top: "16.22%", width: "11.19%", height: "7.15%" };
+const LIST_BOX = { left: "1.84%", top: "32.26%", width: "45.98%", height: "65.60%" };
 
-const CLOSE_X_BOX = { left: "94.9%", top: "4.78%", width: "2.38%", height: "3.45%" };
-const TITLE_PATCH_BOX = { left: "62.77%", top: "5.05%", width: "14.86%", height: "3.45%" };
-const SERVICE_NAME_BOX = { left: "56.16%", top: "16.20%", width: "41.28%", height: "4.78%" };
-const PRICE_BOX = { left: "60.38%", top: "26.30%", width: "15.96%", height: "4.52%" };
-const HOURS_BOX = { left: "78.28%", top: "26.30%", width: "8.51%", height: "4.52%" };
-const MINUTES_BOX = { left: "88.70%", top: "26.30%", width: "8.62%", height: "4.52%" };
-const DESCRIPTION_BOX = { left: "56.16%", top: "36.03%", width: "41.28%", height: "9.56%" };
-const NOTES_BOX = { left: "56.16%", top: "51.81%", width: "41.28%", height: "9.56%" };
-const IMAGE_SLOT_TOP = "67.22%";
-const IMAGE_SLOT_HEIGHT = "9.30%";
+const TITLE_PATCH_BOX = { left: "59.81%", top: "2.98%", width: "15.94%", height: "3.94%" };
+const SERVICE_NAME_BOX = { left: "52.61%", top: "18.36%", width: "45.53%", height: "4.90%" };
+const PRICE_BOX = { left: "56.28%", top: "28.49%", width: "16.55%", height: "6.19%" };
+const HOURS_BOX = { left: "74.92%", top: "28.49%", width: "10.73%", height: "6.19%" };
+const MINUTES_BOX = { left: "87.09%", top: "28.49%", width: "11.04%", height: "6.19%" };
+const DESCRIPTION_BOX = { left: "52.61%", top: "39.30%", width: "45.53%", height: "10.70%" };
+const NOTES_BOX = { left: "52.61%", top: "73.54%", width: "45.53%", height: "8.00%" };
+const IMAGE_SLOT_TOP = "55.35%";
+const IMAGE_SLOT_HEIGHT = "10.70%";
 const IMAGE_SLOTS = [
-  { left: "56.16%", width: "9.35%" },
-  { left: "66.54%", width: "6.97%" },
-  { left: "74.98%", width: "6.05%" },
-  { left: "82.50%", width: "6.86%" },
-  { left: "90.76%", width: "6.68%" },
+  { left: "52.61%", width: "8.52%" },
+  { left: "61.74%", width: "6.56%" },
+  { left: "69.16%", width: "6.44%" },
+  { left: "76.45%", width: "6.50%" },
+  { left: "83.81%", width: "6.50%" },
 ];
-const STATUS_TOGGLE_BOX = { left: "64.42%", top: "84.22%", width: "4.04%", height: "3.19%" };
-const DELETE_BUTTON_BOX = { left: "56.16%", top: "92.72%", width: "12.11%", height: "5.31%" };
-const SAVE_BUTTON_BOX = { left: "70.29%", top: "92.72%", width: "27.15%", height: "5.31%" };
+const STATUS_TOGGLE_BOX = { left: "59.66%", top: "84.35%", width: "2.61%", height: "3.38%" };
+const DELETE_BUTTON_BOX = { left: "52.61%", top: "91.95%", width: "9.20%", height: "7.04%" };
+const CANCEL_BUTTON_BOX = { left: "69.47%", top: "91.95%", width: "12.72%", height: "7.04%" };
+const SAVE_BUTTON_BOX = { left: "83.29%", top: "91.95%", width: "14.84%", height: "7.04%" };
 
 const PATCH_FILL = "#01112a";
 const LIST_FILL = "#010e25";
@@ -256,10 +259,17 @@ export function ServicesManager({ services }: { services: ServiceWithImages[] })
           aria-hidden="true"
         />
 
-        <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
+        {/* This mastered asset is wider/shorter than the Dashboard/My
+            Profile/Clients ones, so — per instruction — it's sized
+            from height alone (not the usual min(100%, height-derived)
+            formula, which would let its wide ratio push width to
+            100% and height too close to the full viewport) and
+            bottom-aligned, leaving deliberate clear space above for
+            the room background's own POLAR LONDON wall sign. */}
+        <div className="absolute inset-0 flex items-end justify-center overflow-hidden">
           <div
             className="relative"
-            style={{ width: `min(100%, calc(100dvh * ${ASSET_ASPECT}))`, aspectRatio: ASSET_ASPECT }}
+            style={{ height: "68dvh", maxWidth: "90%", aspectRatio: ASSET_ASPECT, marginBottom: "4dvh" }}
           >
             <Image
               src="/dashboard/polar-barber-services-ui-mastered.png"
@@ -292,6 +302,16 @@ export function ServicesManager({ services }: { services: ServiceWithImages[] })
               onClick={() => setReorderMode((v) => !v)}
               className={HIT_AREA_CLASS}
               style={{ ...REORDER_BOX, boxShadow: reorderMode ? "0 0 0 2px rgba(91,155,255,0.7), 0 0 18px 4px rgba(91,155,255,0.5)" : undefined }}
+            />
+
+            {/* Add Service — resets the right panel to its default
+                "new service" state, same as Cancel below. */}
+            <button
+              type="button"
+              aria-label="Add service"
+              onClick={() => setSelectedId(null)}
+              className={HIT_AREA_CLASS}
+              style={ADD_SERVICE_HEADER_BOX}
             />
 
             {/* Services list — only rendered with real rows once
@@ -369,14 +389,6 @@ export function ServicesManager({ services }: { services: ServiceWithImages[] })
             {/* Add/Edit Service form */}
             <form key={selectedId ?? "new"} onSubmit={handleSave}>
               <input type="hidden" name="service_id" value={selectedId ?? ""} />
-
-              <button
-                type="button"
-                aria-label="Reset to Add Service"
-                onClick={() => setSelectedId(null)}
-                className={HIT_AREA_CLASS}
-                style={CLOSE_X_BOX}
-              />
 
               {/* The baked title reads "ADD SERVICE" — patched with
                   real text so it correctly reads "EDIT SERVICE" once
@@ -537,6 +549,14 @@ export function ServicesManager({ services }: { services: ServiceWithImages[] })
                 onClick={handleDelete}
                 className={`${HIT_AREA_CLASS} disabled:pointer-events-none disabled:opacity-40`}
                 style={DELETE_BUTTON_BOX}
+              />
+
+              <button
+                type="button"
+                aria-label="Cancel"
+                onClick={() => setSelectedId(null)}
+                className={HIT_AREA_CLASS}
+                style={CANCEL_BUTTON_BOX}
               />
 
               <button
