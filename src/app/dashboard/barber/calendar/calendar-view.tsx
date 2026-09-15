@@ -34,10 +34,17 @@ const TAB_ROW_BOX = { left: "45.6%", top: "7.6%", width: "28.6%", height: "12%" 
 const NAV_ROW_BOX = { left: "78.6%", top: "7.6%", width: "17.4%", height: "12%" };
 
 const GRID_AREA_BOX = { left: "2.05%", top: "21.55%", width: "74.77%", height: "71.90%" };
-const GRID_LEFT = 2.05;
-const GRID_TOP = 30.17;
-const COL_WIDTH = 10.68;
-const ROW_HEIGHT = 12.65;
+
+// The Month grid's 7 day-columns and 5 date-rows are NOT evenly
+// spaced in the mastered asset (pixel-scanned directly off the baked
+// gridlines: column widths range ~166-220px of the 1954px-wide
+// canvas). A single uniform COL_WIDTH/ROW_HEIGHT multiplier drifted
+// up to ~40px by the later columns, which is what left unpatched
+// baked fragments and visibly offset cell-fill rectangles. These are
+// the real boundaries (% of the asset's own width/height), so every
+// cell box is derived from its own two adjacent boundaries instead.
+const COL_BOUNDS = [2.098, 13.332, 24.489, 35.541, 46.489, 57.334, 68.229, 76.741];
+const ROW_BOUNDS = [30.431, 43.362, 56.293, 69.224, 82.155, 93.276];
 
 const ADD_APPOINTMENT_BOX = { left: "79.02%", top: "59.83%", width: "16.89%", height: "7.75%" };
 const RIGHT_TEXT_PATCH_BOX = { left: "79.02%", top: "42.24%", width: "16.89%", height: "16.39%" };
@@ -50,8 +57,8 @@ const HIT_AREA_CLASS =
   "absolute rounded-2xl bg-transparent transition duration-200 ease-out hover:shadow-[0_0_18px_4px_rgba(91,155,255,0.4),0_0_26px_8px_rgba(255,61,154,0.22)]";
 
 const TAB_ACTIVE_CLASS =
-  "bg-gradient-to-r from-royal to-magenta text-white shadow-[0_0_14px_-2px_rgba(91,155,255,0.7)]";
-const TAB_INACTIVE_CLASS = "border border-royal-light/30 text-white/80 hover:bg-white/5";
+  "m-[6%] rounded-lg bg-gradient-to-r from-royal to-magenta text-white shadow-[0_0_14px_-2px_rgba(91,155,255,0.7)]";
+const TAB_INACTIVE_CLASS = "text-white/80 hover:bg-white/5";
 
 function pad(n: number): string {
   return String(n).padStart(2, "0");
@@ -183,16 +190,18 @@ function bookingKindLabel(b: CalendarBooking): string {
 
 // Six visually distinct-but-restrained treatments (Day view
 // requirement 6) drawn only from the existing POLAR palette
-// (royal/ice/magenta/white) — nothing invented.
+// (royal/ice/magenta/white) — nothing invented. A faint state-tinted
+// fill (in addition to the border) gives the timeline a POLAR "card"
+// feel at a glance rather than reading as plain bordered HTML rows.
 function bookingKindClass(b: CalendarBooking): string {
   if (b.isBlocked) {
     return b.isBreak
-      ? "border-dashed border-white/30 text-white/70"
-      : "border-white/15 text-white/40";
+      ? "border-dashed border-white/30 bg-white/[0.02] text-white/70"
+      : "border-white/15 bg-white/[0.015] text-white/40";
   }
-  if (b.isBarter) return "border-magenta/40 text-magenta";
-  if (b.isWalkIn) return "border-ice-glow/40 text-ice-100";
-  return "border-royal/50 text-white";
+  if (b.isBarter) return "border-magenta/40 bg-magenta/[0.05] text-magenta";
+  if (b.isWalkIn) return "border-ice-glow/40 bg-ice-glow/[0.05] text-ice-100";
+  return "border-royal/50 bg-royal/[0.07] text-white";
 }
 
 export function CalendarView({
@@ -336,38 +345,53 @@ export function CalendarView({
                 view, so this whole row is patched over and replaced
                 with real tab buttons carrying their own dynamic
                 active state (POLAR cyan/magenta gradient when
-                active). */}
-            <div className="absolute flex items-stretch" style={{ ...TAB_ROW_BOX, gap: "2%" }}>
-              {/* Patch sized to just this row's own footprint (a small
-                  ~1% bleed to cover anti-aliasing on the baked pill
-                  shapes) — the previous -m-[6%] margin, being a
-                  percentage of this row's OWN width, expanded ~30px+
-                  vertically for a row only ~70px tall, bleeding into
-                  the grid header below and distorting the card's top
-                  frame. */}
+                active).
+
+                The mastered art renders these as ONE continuous
+                outer-rounded strip with thin dividers between
+                segments — not four independently-bordered pills. The
+                previous version gave every tab its own full border,
+                which (measured against the baked strip) produced two
+                close-together border lines at each seam and read as a
+                ghost/double outline. This now matches the baked
+                structure: one shared border+rounding on the strip,
+                plain dividers between inactive tabs, and only the
+                active tab breaking out as its own raised pill — same
+                as "Month" does in the artwork. */}
+            <div className="absolute" style={TAB_ROW_BOX}>
               <div className="absolute -inset-[1%] rounded-xl" style={{ backgroundColor: HEADER_FILL }} aria-hidden="true" />
-              {(["day", "week", "month", "year"] as ViewKind[]).map((v) => (
-                <Link
-                  key={v}
-                  href={`?view=${v}&date=${date}`}
-                  className={`relative flex flex-1 items-center justify-center rounded-lg font-body capitalize transition ${view === v ? TAB_ACTIVE_CLASS : TAB_INACTIVE_CLASS}`}
-                  style={{ fontSize: "0.85vw" }}
-                >
-                  {v}
-                </Link>
-              ))}
+              <div className="relative flex h-full items-stretch overflow-hidden rounded-xl border border-royal-light/30">
+                {(["day", "week", "month", "year"] as ViewKind[]).map((v, i) => (
+                  <Link
+                    key={v}
+                    href={`?view=${v}&date=${date}`}
+                    className={`flex flex-1 items-center justify-center font-body capitalize transition ${
+                      view === v ? TAB_ACTIVE_CLASS : `${TAB_INACTIVE_CLASS} ${i > 0 ? "border-l border-royal-light/20" : ""}`
+                    }`}
+                    style={{ fontSize: "0.85vw" }}
+                  >
+                    {v}
+                  </Link>
+                ))}
+              </div>
             </div>
 
             {/* Prev / dynamic period label / small Today shortcut /
                 Next — replaces the baked static "Today" control,
-                which is patched over the same way as the tab row. */}
-            <div className="absolute flex items-center" style={{ ...NAV_ROW_BOX, gap: "3%" }}>
+                which is patched over the same way as the tab row.
+                The baked control has no separate period-label element
+                (its middle segment is just one wide "Today" pill), so
+                its exact gap can't be reused once a label is added
+                between the elements — but its arrow width (~13% of
+                the row) is reused here for consistency with the rest
+                of the shell. */}
+            <div className="absolute flex items-center" style={{ ...NAV_ROW_BOX, gap: "4%" }}>
               <div className="absolute -inset-[1%] rounded-xl" style={{ backgroundColor: HEADER_FILL }} aria-hidden="true" />
               <Link
                 href={prevHref}
                 aria-label="Previous"
                 className="relative flex flex-none items-center justify-center rounded-lg border border-royal-light/30 text-white/80 transition hover:bg-white/5"
-                style={{ width: "14%", height: "100%", fontSize: "0.85vw" }}
+                style={{ width: "13%", height: "100%", fontSize: "0.85vw" }}
               >
                 ‹
               </Link>
@@ -386,7 +410,7 @@ export function CalendarView({
                 href={nextHref}
                 aria-label="Next"
                 className="relative flex flex-none items-center justify-center rounded-lg border border-royal-light/30 text-white/80 transition hover:bg-white/5"
-                style={{ width: "14%", height: "100%", fontSize: "0.85vw" }}
+                style={{ width: "13%", height: "100%", fontSize: "0.85vw" }}
               >
                 ›
               </Link>
@@ -421,10 +445,10 @@ export function CalendarView({
                   const row = Math.floor(i / 7);
                   const col = i % 7;
                   const box = {
-                    left: `${GRID_LEFT + col * COL_WIDTH}%`,
-                    top: `${GRID_TOP + row * ROW_HEIGHT}%`,
-                    width: `${COL_WIDTH}%`,
-                    height: `${ROW_HEIGHT}%`,
+                    left: `${COL_BOUNDS[col]}%`,
+                    top: `${ROW_BOUNDS[row]}%`,
+                    width: `${COL_BOUNDS[col + 1] - COL_BOUNDS[col]}%`,
+                    height: `${ROW_BOUNDS[row + 1] - ROW_BOUNDS[row]}%`,
                   };
                   if (!cell) return <div key={i} className="absolute" style={box} aria-hidden="true" />;
                   return (
@@ -508,8 +532,34 @@ export function CalendarView({
                           than its content, and any excess silently
                           escapes the outer overflow-hidden instead of
                           scrolling. Only this inner area ever scrolls,
-                          never the page itself. */}
-                      <div className="mt-[0.8%] grid min-h-0 flex-1 grid-cols-4 grid-rows-3 overflow-y-auto" style={{ gap: "0.8%" }}>
+                          never the page itself.
+
+                          grid-rows-3 was previously forcing all 3
+                          rows to compress into this panel's own
+                          height (~417px of the 1954x580 asset). Since
+                          each mini-month's 7 day-columns are sized off
+                          its OWN card width (aspect-square cells), the
+                          natural content height that width demands
+                          (~5-6 square rows + label) is far taller than
+                          a forced 1/3 share of 417px — so cards were
+                          rendered squashed/stretched against their own
+                          natural proportions. Removing the fixed row
+                          count lets each row size to its natural
+                          content height instead (true, unstretched
+                          squares) and the container's existing
+                          overflow-y-auto scrolls to reveal the rest —
+                          which is explicitly the approved behaviour
+                          for Year. 4 columns (vs. the suggested 3) is
+                          kept because it needs measurably less total
+                          scroll to reach month 12: at this panel's
+                          fixed ~3.5:1 wide-short aspect, 3 columns
+                          makes each card wider, which — since a card's
+                          height is driven by its width via
+                          aspect-square cells — makes every card
+                          natural-taller too, resulting in MORE total
+                          scroll content (4 rows of taller cards), not
+                          less. */}
+                      <div className="mt-[0.8%] grid min-h-0 flex-1 grid-cols-4 overflow-y-auto" style={{ gap: "0.8%", alignContent: "start" }}>
                         {yearMonths.map((m) => (
                           <Link
                             key={m.month}
@@ -535,13 +585,13 @@ export function CalendarView({
 
                   {view === "day" && dayData && (
                     <>
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between border-b border-white/10 pb-[0.8%]">
                         <p className="font-display text-white" style={{ fontSize: "1vw" }}>{dayLabel(date)}</p>
                         <button
                           type="button"
                           onClick={handleBlockWholeDay}
                           disabled={pending}
-                          className="rounded-md border border-magenta/40 px-[1%] py-[0.4%] text-magenta transition hover:bg-magenta/10 disabled:opacity-50"
+                          className="rounded-md border border-magenta/40 px-[1%] py-[0.4%] text-magenta transition hover:bg-magenta/10 hover:shadow-[0_0_10px_-3px_rgba(255,61,154,0.6)] disabled:opacity-50"
                           style={{ fontSize: "0.68vw" }}
                         >
                           Block whole day
@@ -556,26 +606,26 @@ export function CalendarView({
                         {timeline.length === 0 ? (
                           <p className="text-white/50" style={{ fontSize: "0.85vw" }}>UNAVAILABLE — no working hours set for this day.</p>
                         ) : (
-                          <ul className="space-y-[0.5%]">
+                          <ul className="space-y-[0.6%]">
                             {timeline.map((seg, i) => (
                               <li key={i}>
                                 {seg.kind === "available" ? (
                                   <button
                                     type="button"
                                     onClick={() => setActiveSlot({ start: seg.start, end: seg.end })}
-                                    className="flex w-full items-center justify-between rounded-md border border-royal-light/25 px-[1.2%] py-[0.8%] text-left text-royal-light transition hover:bg-royal-light/10"
+                                    className="flex w-full items-center justify-between rounded-lg border border-dashed border-royal-light/30 bg-royal-light/[0.03] px-[1.2%] py-[0.9%] text-left text-royal-light transition hover:border-royal-light/60 hover:bg-royal-light/10 hover:shadow-[0_0_12px_-4px_rgba(91,155,255,0.5)]"
                                     style={{ fontSize: "0.8vw" }}
                                   >
                                     <span>
                                       {formatTime12h(seg.start)} – {formatTime12h(seg.end)}
                                     </span>
-                                    <span className="text-white/40" style={{ fontSize: "0.7vw" }}>Available</span>
+                                    <span className="tracking-wide text-white/40" style={{ fontSize: "0.68vw" }}>AVAILABLE</span>
                                   </button>
                                 ) : (
                                   <button
                                     type="button"
                                     onClick={() => setDetail(seg.booking)}
-                                    className={`flex w-full items-center justify-between rounded-md border px-[1.2%] py-[0.8%] text-left transition hover:bg-white/[0.06] ${bookingKindClass(seg.booking)}`}
+                                    className={`flex w-full items-center justify-between rounded-lg border px-[1.2%] py-[0.9%] text-left transition hover:bg-white/[0.06] ${bookingKindClass(seg.booking)}`}
                                     style={{ fontSize: "0.8vw" }}
                                   >
                                     <span>
@@ -601,40 +651,54 @@ export function CalendarView({
 
         {/* Slot action menu (Day view) */}
         {activeSlot && !modal && (
-          <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50" onClick={() => setActiveSlot(null)}>
+          <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setActiveSlot(null)}>
             <div
-              className="w-72 rounded-xl border border-royal-light/40 bg-navy-light p-4 shadow-xl"
+              className="relative w-72 rounded-xl border border-royal-light/30 bg-navy-light p-4 shadow-[0_0_32px_-6px_rgba(91,155,255,0.3)]"
               onClick={(e) => e.stopPropagation()}
             >
-              <p className="text-sm text-white">
+              <button
+                type="button"
+                onClick={() => setActiveSlot(null)}
+                aria-label="Close"
+                className="absolute right-3 top-3 text-white/40 transition hover:text-white"
+              >
+                ✕
+              </button>
+              <p className="pr-6 font-display text-sm text-white">
                 {formatTime12h(activeSlot.start)} – {formatTime12h(activeSlot.end)}
               </p>
+              <p className="text-[10px] uppercase tracking-wide text-royal-light/60">Available slot</p>
               <div className="mt-3 flex flex-col gap-2">
-                <button type="button" onClick={() => setModal("book")} className="rounded-md bg-royal px-3 py-2 text-left text-sm text-white hover:bg-royal-dark">
+                <button type="button" onClick={() => setModal("book")} className="rounded-lg bg-gradient-to-r from-royal to-royal-dark px-3 py-2 text-left text-sm font-medium text-white shadow-[0_0_10px_-4px_rgba(91,155,255,0.6)] transition hover:brightness-110">
                   Book Appointment
                 </button>
-                <button type="button" onClick={() => setModal("walkin")} className="rounded-md border border-royal-light/40 px-3 py-2 text-left text-sm text-white hover:bg-white/5">
+                <button type="button" onClick={() => setModal("walkin")} className="rounded-lg border border-royal-light/30 px-3 py-2 text-left text-sm text-white transition hover:bg-royal-light/10">
                   Add Walk-In
                 </button>
-                <button type="button" onClick={() => setModal("barter")} className="rounded-md border border-magenta/40 px-3 py-2 text-left text-sm text-magenta hover:bg-magenta/10">
+                <button type="button" onClick={() => setModal("barter")} className="rounded-lg border border-magenta/40 px-3 py-2 text-left text-sm text-magenta transition hover:bg-magenta/10">
                   Add Barter
                 </button>
-                <button type="button" onClick={() => setModal("block")} className="rounded-md border border-white/20 px-3 py-2 text-left text-sm text-white/70 hover:bg-white/5">
+                <button type="button" onClick={() => setModal("block")} className="rounded-lg border border-white/15 px-3 py-2 text-left text-sm text-white/70 transition hover:bg-white/5">
                   Block Time
                 </button>
               </div>
-              <button type="button" onClick={() => setActiveSlot(null)} className="mt-3 text-xs text-white/40 hover:text-white">
-                Cancel
-              </button>
             </div>
           </div>
         )}
 
         {/* Book / Walk-in / Barter / Block forms */}
         {activeSlot && modal && (
-          <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50" onClick={closeModal}>
-            <div className="w-96 rounded-xl border border-royal-light/40 bg-navy-light p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
-              <p className="font-display text-white" style={{ fontSize: "1.1rem" }}>
+          <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={closeModal}>
+            <div className="relative w-96 rounded-xl border border-royal-light/30 bg-navy-light p-5 shadow-[0_0_32px_-6px_rgba(91,155,255,0.3)]" onClick={(e) => e.stopPropagation()}>
+              <button
+                type="button"
+                onClick={closeModal}
+                aria-label="Close"
+                className="absolute right-3 top-3 text-white/40 transition hover:text-white"
+              >
+                ✕
+              </button>
+              <p className="pr-6 font-display text-white" style={{ fontSize: "1.1rem" }}>
                 {modal === "book" && "Book Appointment"}
                 {modal === "walkin" && "Add Walk-In"}
                 {modal === "barter" && "Add Barter"}
@@ -752,19 +816,23 @@ export function CalendarView({
                   </button>
                 </form>
               )}
-
-              <button type="button" onClick={closeModal} className="mt-3 text-xs text-white/40 hover:text-white">
-                Cancel
-              </button>
             </div>
           </div>
         )}
 
         {/* Existing appointment detail */}
         {detail && (
-          <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50" onClick={() => setDetail(null)}>
-            <div className="w-96 rounded-xl border border-royal-light/40 bg-navy-light p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
-              <p className="font-display text-white" style={{ fontSize: "1.1rem" }}>{bookingKindLabel(detail)}</p>
+          <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setDetail(null)}>
+            <div className="relative w-96 rounded-xl border border-royal-light/30 bg-navy-light p-5 shadow-[0_0_32px_-6px_rgba(91,155,255,0.3)]" onClick={(e) => e.stopPropagation()}>
+              <button
+                type="button"
+                onClick={() => setDetail(null)}
+                aria-label="Close"
+                className="absolute right-3 top-3 text-white/40 transition hover:text-white"
+              >
+                ✕
+              </button>
+              <p className="pr-6 font-display text-white" style={{ fontSize: "1.1rem" }}>{bookingKindLabel(detail)}</p>
               <p className="mt-1 text-sm text-white/70">
                 {formatTime12h(detail.startTime)} – {formatTime12h(detail.endTime)}
               </p>
@@ -784,9 +852,6 @@ export function CalendarView({
                 )}
                 <button type="button" disabled={pending} onClick={() => handleCancel(detail.id)} className="rounded border border-magenta/50 px-3 py-1.5 text-xs text-magenta hover:bg-magenta/10 disabled:opacity-50">
                   {pending ? "…" : detail.isBlocked ? (detail.isBreak ? "Remove break" : "Unblock") : "Cancel"}
-                </button>
-                <button type="button" onClick={() => setDetail(null)} className="ml-auto text-xs text-white/40 hover:text-white">
-                  Close
                 </button>
               </div>
             </div>
