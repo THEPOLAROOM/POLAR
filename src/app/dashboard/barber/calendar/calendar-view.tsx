@@ -338,7 +338,14 @@ export function CalendarView({
                 active state (POLAR cyan/magenta gradient when
                 active). */}
             <div className="absolute flex items-stretch" style={{ ...TAB_ROW_BOX, gap: "2%" }}>
-              <div className="absolute inset-0 -m-[6%] rounded-xl" style={{ backgroundColor: HEADER_FILL }} aria-hidden="true" />
+              {/* Patch sized to just this row's own footprint (a small
+                  ~1% bleed to cover anti-aliasing on the baked pill
+                  shapes) — the previous -m-[6%] margin, being a
+                  percentage of this row's OWN width, expanded ~30px+
+                  vertically for a row only ~70px tall, bleeding into
+                  the grid header below and distorting the card's top
+                  frame. */}
+              <div className="absolute -inset-[1%] rounded-xl" style={{ backgroundColor: HEADER_FILL }} aria-hidden="true" />
               {(["day", "week", "month", "year"] as ViewKind[]).map((v) => (
                 <Link
                   key={v}
@@ -355,7 +362,7 @@ export function CalendarView({
                 Next — replaces the baked static "Today" control,
                 which is patched over the same way as the tab row. */}
             <div className="absolute flex items-center" style={{ ...NAV_ROW_BOX, gap: "3%" }}>
-              <div className="absolute inset-0 -m-[6%] rounded-xl" style={{ backgroundColor: HEADER_FILL }} aria-hidden="true" />
+              <div className="absolute -inset-[1%] rounded-xl" style={{ backgroundColor: HEADER_FILL }} aria-hidden="true" />
               <Link
                 href={prevHref}
                 aria-label="Previous"
@@ -476,12 +483,15 @@ export function CalendarView({
                             className={`flex flex-col rounded-lg border border-white/10 p-[3%] transition hover:bg-white/[0.05] ${d.isFullyBooked ? "opacity-50" : ""}`}
                           >
                             <span className="text-white" style={{ fontSize: "0.75vw" }}>{d.label}</span>
-                            <span className="mt-auto text-royal-light" style={{ fontSize: "0.7vw" }}>
+                            <span
+                              className={`mt-auto ${d.count > 0 || d.hasAvailability ? "text-royal-light" : "text-white/35"}`}
+                              style={{ fontSize: "0.7vw" }}
+                            >
                               {d.count > 0
                                 ? `${d.count} booking${d.count === 1 ? "" : "s"}`
                                 : d.hasAvailability
-                                  ? "Available"
-                                  : "No availability set"}
+                                  ? "AVAILABLE"
+                                  : "UNAVAILABLE"}
                             </span>
                           </Link>
                         ))}
@@ -544,7 +554,7 @@ export function CalendarView({
                           right-hand panel never move. */}
                       <div className="mt-[1%] min-h-0 flex-1 overflow-y-auto" style={{ paddingRight: "0.5%" }}>
                         {timeline.length === 0 ? (
-                          <p className="text-white/50" style={{ fontSize: "0.85vw" }}>No availability set for this day.</p>
+                          <p className="text-white/50" style={{ fontSize: "0.85vw" }}>UNAVAILABLE — no working hours set for this day.</p>
                         ) : (
                           <ul className="space-y-[0.5%]">
                             {timeline.map((seg, i) => (
@@ -569,7 +579,7 @@ export function CalendarView({
                                     style={{ fontSize: "0.8vw" }}
                                   >
                                     <span>
-                                      {formatTime12h(seg.start)} – {formatTime12h(seg.end)} · {bookingKindLabel(seg.booking)}
+                                      {formatTime12h(seg.start)} – {formatTime12h(seg.end)} ({timeToMinutes(seg.end) - timeToMinutes(seg.start)}m) · {bookingKindLabel(seg.booking)}
                                     </span>
                                     {seg.booking.serviceName && (
                                       <span className="text-white/40" style={{ fontSize: "0.7vw" }}>{seg.booking.serviceName}</span>
