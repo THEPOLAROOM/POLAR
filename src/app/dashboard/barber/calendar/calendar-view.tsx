@@ -368,7 +368,18 @@ export function CalendarView({
                 active tab breaking out as its own raised pill — same
                 as "Month" does in the artwork. */}
             <div className="absolute" style={TAB_ROW_BOX}>
-              <div className="absolute -inset-[1%] rounded-xl" style={{ backgroundColor: HEADER_FILL }} aria-hidden="true" />
+              {/* Pixel-scanned the baked "Year" pill's true straight-
+                  edge extent across its full height (y=56-97, not
+                  just near the corner peak, which reads narrower): it
+                  runs to x=1462 of 1954, ~12px past this box's own
+                  right edge (x=1449.9). A plain -1% inset (~5.6px)
+                  left a sliver of that real border exposed, which is
+                  what read as a ghost outline right after Year. Right
+                  inset only is widened to clear x=1462 with a small
+                  margin (patch reaches ~x=1467); left/top/bottom stay
+                  at the original 1% — this box's own position/size is
+                  unchanged. */}
+              <div className="absolute -top-[1%] -bottom-[1%] -left-[1%] -right-[3.1%] rounded-xl" style={{ backgroundColor: HEADER_FILL }} aria-hidden="true" />
               <div className="relative flex h-full items-stretch overflow-hidden rounded-xl border border-royal-light/30">
                 {(["day", "week", "month", "year"] as ViewKind[]).map((v, i) => (
                   <Link
@@ -400,7 +411,16 @@ export function CalendarView({
                 Next, per the approved layout — same todayHref/action
                 as before, only its position and appearance changed. */}
             <div className="absolute flex items-center" style={{ ...NAV_ROW_BOX, gap: "4%" }}>
-              <div className="absolute -inset-[1%] rounded-xl" style={{ backgroundColor: HEADER_FILL }} aria-hidden="true" />
+              {/* Same correction, mirrored: the baked "‹" pill's true
+                  straight-edge left extent (y=56-96) runs to x=1527,
+                  ~8px left of this box's own left edge (x=1535.8). A
+                  plain -1% inset (~3.4px) left a sliver of that real
+                  border exposed just before the live ‹ control. Left
+                  inset only is widened to clear x=1527 with a small
+                  margin (patch reaches ~x=1522); top/right/bottom
+                  stay at the original 1% — this box's own position/
+                  size is unchanged. */}
+              <div className="absolute -top-[1%] -bottom-[1%] -left-[4.1%] -right-[1%] rounded-xl" style={{ backgroundColor: HEADER_FILL }} aria-hidden="true" />
               <Link
                 href={prevHref}
                 aria-label="Previous"
