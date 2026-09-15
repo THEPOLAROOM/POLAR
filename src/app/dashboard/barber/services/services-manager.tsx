@@ -393,15 +393,19 @@ export function ServicesManager({ services }: { services: ServiceWithImages[] })
             <form key={selectedId ?? "new"} onSubmit={handleSave}>
               <input type="hidden" name="service_id" value={selectedId ?? ""} />
 
-              {/* The baked title reads "ADD SERVICE" — patched with
-                  real text so it correctly reads "EDIT SERVICE" once
-                  an existing service is selected. */}
-              <div className="absolute flex items-center" style={TITLE_PATCH_BOX}>
-                <div className="absolute inset-0" style={{ backgroundColor: PATCH_FILL }} aria-hidden="true" />
-                <p className="relative font-display text-white" style={{ fontSize: "1.6vw" }}>
-                  {selected ? "EDIT SERVICE" : "ADD SERVICE"}
-                </p>
-              </div>
+              {/* The baked title already reads "ADD SERVICE", so in
+                  that (default) state nothing is drawn here at all —
+                  only when editing an existing service is the text
+                  actually different, so the patch+"EDIT SERVICE"
+                  overlay is only rendered then. */}
+              {selected && (
+                <div className="absolute flex items-center" style={TITLE_PATCH_BOX}>
+                  <div className="absolute inset-0" style={{ backgroundColor: PATCH_FILL }} aria-hidden="true" />
+                  <p className="relative font-display text-white" style={{ fontSize: "1.6vw" }}>
+                    EDIT SERVICE
+                  </p>
+                </div>
+              )}
 
               <div className="absolute flex items-center" style={SERVICE_NAME_BOX}>
                 <input
