@@ -385,15 +385,20 @@ export function CalendarView({
               </div>
             </div>
 
-            {/* Prev / dynamic period label / small Today shortcut /
-                Next — replaces the baked static "Today" control,
-                which is patched over the same way as the tab row.
-                The baked control has no separate period-label element
-                (its middle segment is just one wide "Today" pill), so
-                its exact gap can't be reused once a label is added
-                between the elements — but its arrow width (~13% of
-                the row) is reused here for consistency with the rest
-                of the shell. */}
+            {/* Prev / dynamic period label / Next / Today — replaces
+                the baked static "Today" control, which is patched
+                over the same way as the tab row. The baked control
+                has no separate period-label element (its middle
+                segment is just one wide "Today" pill), so its exact
+                gap can't be reused once a label is added between the
+                elements — but its arrow width (~13% of the row) is
+                reused here for consistency with the rest of the
+                shell.
+
+                Today is a single combined control (curved return
+                arrow above a small "TODAY" caption) positioned AFTER
+                Next, per the approved layout — same todayHref/action
+                as before, only its position and appearance changed. */}
             <div className="absolute flex items-center" style={{ ...NAV_ROW_BOX, gap: "4%" }}>
               <div className="absolute -inset-[1%] rounded-xl" style={{ backgroundColor: HEADER_FILL }} aria-hidden="true" />
               <Link
@@ -408,20 +413,21 @@ export function CalendarView({
                 {periodLabel(view, date)}
               </p>
               <Link
-                href={todayHref}
-                aria-label="Jump to today"
-                className="relative flex-none rounded-lg border border-royal-light/40 px-[6%] py-[8%] text-royal-light transition hover:bg-royal-light/10"
-                style={{ fontSize: "0.68vw" }}
-              >
-                Today
-              </Link>
-              <Link
                 href={nextHref}
                 aria-label="Next"
                 className="relative flex flex-none items-center justify-center rounded-lg border border-royal-light/30 text-white/80 transition hover:bg-white/5"
                 style={{ width: "13%", height: "100%", fontSize: "0.85vw" }}
               >
                 ›
+              </Link>
+              <Link
+                href={todayHref}
+                aria-label="Jump to today"
+                className="relative flex flex-none flex-col items-center justify-center rounded-lg border border-royal-light/40 text-royal-light transition hover:bg-royal-light/10"
+                style={{ width: "13%", height: "100%" }}
+              >
+                <span aria-hidden="true" style={{ fontSize: "0.95vw", lineHeight: 1 }}>↺</span>
+                <span style={{ fontSize: "0.45vw", letterSpacing: "0.05em" }}>TODAY</span>
               </Link>
             </div>
 
