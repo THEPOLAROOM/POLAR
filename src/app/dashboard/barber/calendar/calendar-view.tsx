@@ -38,15 +38,21 @@ const SMART_ANALYTICS_BOX = { left: "30.66%", top: "15.33%", width: "12.05%", he
 const TAB_ROW_BOX = { left: "46.95%", top: "15.33%", width: "27.27%", height: "9.47%" };
 
 // Prev/Today/Next — replaced with a real dynamic period label (Fix 2)
-// plus a small separate Today shortcut, so this whole row is patched
-// over too. The new artwork bakes these as four individually-boxed
-// controls (unlike the old single wide "Today" pill), so the prev/
-// next arrows and the Today control keep their own baked proportions
-// (10%/10%/19%, plus an 8% gap before Today) instead of three equal
-// thirds. The box's width was previously overshot by ~13px, which
-// pushed the live Today control's right edge past its baked
-// counterpart and into the outer border's own glow.
-const NAV_ROW_BOX = { left: "78.66%", top: "15.33%", width: "19.00%", height: "9.47%" };
+// plus a small separate Today shortcut, so this whole area is patched
+// over too. Each control is its OWN independently-measured box, not a
+// flex child sized by percentage-of-row assumptions — that approach
+// previously derived Prev/Next/Today's widths from an even split of
+// NAV_ROW_BOX, but measuring each button directly (at its true
+// vertical/horizontal center, away from its own rounded corners — a
+// scan taken too close to a small button's corner catches the curved
+// part of the border arc, which is narrower than the button's real
+// straight-side width, and undersizes it) showed Prev and Today are
+// each a different width and don't sit on equal thirds at all.
+const NAV_PATCH_BOX = { left: "78.34%", top: "15.35%", width: "19.83%", height: "9.45%" };
+const PREV_BOX = { left: "78.34%", top: "15.43%", width: "2.51%", height: "9.28%" };
+const NAV_LABEL_BOX = { left: "80.85%", top: "15.35%", width: "9.48%", height: "9.45%" };
+const NEXT_BOX = { left: "90.33%", top: "15.35%", width: "2.45%", height: "9.45%" };
+const TODAY_BOX = { left: "93.73%", top: "15.39%", width: "4.44%", height: "9.41%" };
 
 const GRID_AREA_BOX = { left: "3.00%", top: "27.93%", width: "73.83%", height: "57.27%" };
 
@@ -65,7 +71,16 @@ const COL_BOUNDS = [3.00, 14.18, 25.00, 35.84, 46.66, 57.36, 67.95, 76.84];
 const ROW_BOUNDS = [33.47, 44.00, 54.60, 65.13, 75.73, 85.20];
 
 const ADD_APPOINTMENT_BOX = { left: "78.65%", top: "57.20%", width: "18.02%", height: "9.33%" };
-const RIGHT_TEXT_PATCH_BOX = { left: "78.41%", top: "40.00%", width: "18.83%", height: "16.67%" };
+
+// Re-measured directly off the baked example paragraph's own text
+// bounding box (row/column text-density scan: "View your schedule...
+// No appointments today." spans x=1654-2041, y=337-417 on the 2098x750
+// asset), not a generic guess at the panel's available space — the
+// previous box was both offset from that text's true vertical center
+// and, combined with extra CSS padding, narrower than the baked
+// example's own line width, which wrapped the live copy one line
+// longer than the artwork does.
+const RIGHT_TEXT_PATCH_BOX = { left: "78.46%", top: "43.87%", width: "19.21%", height: "12.40%" };
 
 const CELL_FILL = "#001b3c";
 const PANEL_FILL = "#1a1b4a";
@@ -412,66 +427,53 @@ export function CalendarView({
             {/* Prev / dynamic period label / Next / Today — replaces
                 the baked static "September 2026" / arrow controls,
                 which are patched over the same way as the tab row.
-                Unlike the old asset, the new artwork bakes prev/next
-                as narrow square arrow buttons and Today as a wider
-                icon+caption control with a visible gap only before
-                Today — widths below (10%/flex-1/10%/19%, 8% margin
-                before Today) match those baked proportions, measured
-                directly off the baked control cluster's own edges,
-                not three equal thirds. */}
-            <div className="absolute flex items-center" style={NAV_ROW_BOX}>
-              {/* Uniform -2% inset patch, same rationale as the tab
-                  row's — not pixel-scanned for exact baked-border
-                  overflow on this new asset; widen a side if visual QA
-                  finds a ghost outline there. */}
-              <div className="absolute -top-[2%] -bottom-[2%] -left-[2%] -right-[2%] rounded-xl" style={{ backgroundColor: HEADER_FILL }} aria-hidden="true" />
-              <Link
-                href={prevHref}
-                aria-label="Previous"
-                className="relative flex flex-none items-center justify-center rounded-lg border border-royal-light/30 text-white/80 transition hover:bg-white/5"
-                style={{ width: "10%", height: "100%", fontSize: "0.85vw" }}
-              >
-                ‹
-              </Link>
-              <p className="relative flex-1 truncate text-center text-white" style={{ fontSize: "0.78vw" }}>
-                {periodLabel(view, date)}
-              </p>
-              <Link
-                href={nextHref}
-                aria-label="Next"
-                className="relative flex flex-none items-center justify-center rounded-lg border border-royal-light/30 text-white/80 transition hover:bg-white/5"
-                style={{ width: "10%", height: "100%", fontSize: "0.85vw" }}
-              >
-                ›
-              </Link>
-              {/* Baked art leaves a visibly bigger gap before Today
-                  than between the other three controls (~8% of the
-                  row vs none) — a uniform flex `gap` can't express
-                  that, so Today alone carries the extra margin. */}
-              <Link
-                href={todayHref}
-                aria-label="Jump to today"
-                className="relative flex flex-none flex-col items-center justify-center rounded-lg border border-royal-light/40 text-royal-light transition hover:bg-royal-light/10"
-                style={{ width: "19%", height: "100%", marginLeft: "8%" }}
-              >
-                <span aria-hidden="true" style={{ fontSize: "0.95vw", lineHeight: 1 }}>↺</span>
-                <span style={{ fontSize: "0.45vw", letterSpacing: "0.05em" }}>TODAY</span>
-              </Link>
-            </div>
+                Each control below sits at its own independently-
+                measured box (see PREV_BOX/NAV_LABEL_BOX/NEXT_BOX/
+                TODAY_BOX above) rather than as flex children of a
+                shared row — Prev and Today are each a different width
+                and don't divide the row evenly. */}
+            <div className="absolute rounded-xl" style={{ ...NAV_PATCH_BOX, backgroundColor: HEADER_FILL }} aria-hidden="true" />
+            <Link
+              href={prevHref}
+              aria-label="Previous"
+              className="absolute flex items-center justify-center rounded-lg border border-royal-light/30 text-white/80 transition hover:bg-white/5"
+              style={{ ...PREV_BOX, fontSize: "0.85vw" }}
+            >
+              ‹
+            </Link>
+            <p className="absolute flex items-center justify-center truncate text-center text-white" style={{ ...NAV_LABEL_BOX, fontSize: "0.78vw" }}>
+              {periodLabel(view, date)}
+            </p>
+            <Link
+              href={nextHref}
+              aria-label="Next"
+              className="absolute flex items-center justify-center rounded-lg border border-royal-light/30 text-white/80 transition hover:bg-white/5"
+              style={{ ...NEXT_BOX, fontSize: "0.85vw" }}
+            >
+              ›
+            </Link>
+            <Link
+              href={todayHref}
+              aria-label="Jump to today"
+              className="absolute flex flex-col items-center justify-center rounded-lg border border-royal-light/40 text-royal-light transition hover:bg-royal-light/10"
+              style={TODAY_BOX}
+            >
+              <span aria-hidden="true" style={{ fontSize: "0.95vw", lineHeight: 1 }}>↺</span>
+              <span style={{ fontSize: "0.45vw", letterSpacing: "0.05em" }}>TODAY</span>
+            </Link>
 
             {/* Right panel — permanent copy + real today summary
                 patched over the baked example text; the artwork's own
                 "Your Calendar At a Glance" heading and crown are left
-                untouched. overflow-hidden is a hard containment
-                backstop — this box's height was measured against the
-                fixed copy line at 0.72vw, but todaySummary's text
-                length varies with real booking data, so nothing here
-                can be allowed to visually escape into the Add
-                Appointment button below it. */}
-            <div
-              className="absolute flex flex-col justify-center overflow-hidden"
-              style={{ ...RIGHT_TEXT_PATCH_BOX, paddingLeft: "3%", paddingRight: "3%" }}
-            >
+                untouched. RIGHT_TEXT_PATCH_BOX already matches the
+                baked example text's own measured bounds with a small
+                built-in margin, so no extra CSS padding here — padding
+                on top of that box previously narrowed the live text
+                enough to wrap one line longer than the baked example.
+                overflow-hidden stays as a hard containment backstop,
+                since todaySummary's length varies with real booking
+                data and can't be hand-verified against every case. */}
+            <div className="absolute flex flex-col justify-center overflow-hidden" style={RIGHT_TEXT_PATCH_BOX}>
               <div className="absolute inset-0" style={{ backgroundColor: PANEL_FILL }} aria-hidden="true" />
               <p className="relative text-white/70" style={{ fontSize: "0.72vw", lineHeight: 1.4 }}>
                 View your schedule, manage bookings and keep your day running smoothly.
