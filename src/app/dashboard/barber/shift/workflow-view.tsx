@@ -2,7 +2,19 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
+import { Anton } from "next/font/google";
 import type { WorkflowBooking } from "@/lib/queries/barber-workflow";
+
+// Tailwind's `font-display` token (tailwind.config.ts) points at
+// `var(--font-anton)`, but nothing in this codebase actually defines
+// that variable anywhere (no next/font/localFont call exists for it
+// yet, on this page or any other), so it has always silently fallen
+// back to plain sans-serif — the "too generic/light" headings this
+// pass is meant to fix. Loading it here, scoped to just this route
+// via next/font/google, fixes Workflow's own headings without editing
+// the shared tailwind.config.ts or root layout that Calendar/Dashboard
+// also depend on.
+const anton = Anton({ weight: "400", subsets: ["latin"] });
 
 // ---------------------------------------------------------------
 // Small inline icons. No icon library is installed elsewhere in this
@@ -147,7 +159,7 @@ function PanelTitle({ text }: { text: string }) {
   const last = words[words.length - 1];
   const rest = words.slice(0, -1).join(" ");
   return (
-    <h2 className="font-display text-[clamp(0.85rem,1.2vw,1.15rem)] uppercase tracking-wide text-white">
+    <h2 className={`${anton.className} text-[clamp(0.95rem,1.3vw,1.3rem)] uppercase tracking-normal text-white`}>
       {rest ? `${rest} ` : ""}
       <span className="text-royal-light">{last}</span>
     </h2>
@@ -164,8 +176,18 @@ function GradientCard({
   contentClassName?: string;
 }) {
   return (
-    <div className={`min-h-0 rounded-2xl bg-gradient-to-br from-royal-light via-royal to-magenta p-[1.5px] shadow-[0_0_24px_-8px_rgba(91,155,255,0.5)] ${className}`}>
-      <div className={`h-full min-h-0 w-full rounded-[15px] bg-navy-light ${contentClassName}`}>{children}</div>
+    <div
+      className={`min-h-0 rounded-2xl bg-gradient-to-br from-royal-light via-royal to-magenta p-[1.5px] shadow-[0_0_30px_-4px_rgba(91,155,255,0.65),0_0_46px_-10px_rgba(255,61,154,0.45)] ${className}`}
+    >
+      {/* Subtle diagonal light sweep for panel depth, matching the
+          approved master's premium (not flat) panel fill — a fixed
+          low-opacity gradient, not per-panel imagery. */}
+      <div
+        className={`relative h-full min-h-0 w-full overflow-hidden rounded-[15px] bg-navy-light ${contentClassName}`}
+        style={{ backgroundImage: "linear-gradient(135deg, rgba(91,155,255,0.10) 0%, rgba(91,155,255,0) 32%, rgba(255,61,154,0) 68%, rgba(255,61,154,0.07) 100%)" }}
+      >
+        {children}
+      </div>
     </div>
   );
 }
@@ -176,7 +198,7 @@ function FieldRow({ icon, label, value }: { icon: React.ReactNode; label: string
       <span className="flex h-[1.6em] w-[1.6em] flex-none items-center justify-center text-royal-light">{icon}</span>
       <span className="w-[6.5em] flex-none truncate text-[clamp(0.68rem,0.85vw,0.85rem)] text-white/85 sm:w-[7.5em]">{label}</span>
       <span
-        className={`min-w-0 flex-1 truncate rounded-md border border-royal-light/25 bg-navy/70 px-2.5 py-0.5 text-[clamp(0.68rem,0.85vw,0.85rem)] ${
+        className={`min-w-0 flex-1 truncate rounded-md border border-royal-light/45 bg-navy/70 px-2.5 py-0.5 text-[clamp(0.68rem,0.85vw,0.85rem)] ${
           value ? "text-white" : "text-white/30"
         }`}
       >
@@ -344,7 +366,7 @@ export function WorkflowView({ bookings, initialIndex }: { bookings: WorkflowBoo
                   ever genuinely can't fit (e.g. a very small viewport)
                   it scrolls internally instead of pushing this
                   column, and the page, taller than the screen. */}
-              <div className="grid min-h-0 grid-rows-[3fr_2fr] gap-2">
+              <div className="grid min-h-0 grid-rows-[7fr_5fr] gap-2">
                 <GradientCard contentClassName="flex min-h-0 flex-col p-4">
                   <PanelTitle text="CLIENT PROFILE" />
                   <div className="mt-1.5 h-px bg-gradient-to-r from-royal-light/60 via-royal-light/20 to-transparent" />
@@ -399,7 +421,7 @@ export function WorkflowView({ bookings, initialIndex }: { bookings: WorkflowBoo
                 </GradientCard>
 
                 <GradientCard contentClassName="flex min-h-0 flex-col p-4">
-                  <div ref={countdownRef} className="flex min-h-0 flex-1 flex-col bg-navy-light p-1">
+                  <div ref={countdownRef} className="flex min-h-0 flex-1 flex-col bg-navy-light p-1 [&:fullscreen]:items-center [&:fullscreen]:justify-center [&:fullscreen]:bg-navy">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <ClockIcon className="h-[1.1em] w-[1.1em] text-royal-light" />
@@ -422,13 +444,13 @@ export function WorkflowView({ bookings, initialIndex }: { bookings: WorkflowBoo
                       ].map((unit, i, arr) => (
                         <div key={unit.label} className="flex items-center gap-[clamp(0.6rem,1.6vw,1.6rem)]">
                           <div className="flex flex-col items-center">
-                            <span className="font-display text-[clamp(1.8rem,5vw,4rem)] leading-none text-white">{unit.value}</span>
+                            <span className={`${anton.className} text-[clamp(2rem,5.6vw,4.4rem)] leading-none text-white`}>{unit.value}</span>
                             <span className="mt-1.5 text-[clamp(0.55rem,0.7vw,0.72rem)] uppercase tracking-widest text-white/50">
                               {unit.label}
                             </span>
                           </div>
                           {i < arr.length - 1 && (
-                            <span className="font-display text-[clamp(1.4rem,3.5vw,2.8rem)] text-royal-light/60">:</span>
+                            <span className={`${anton.className} text-[clamp(1.4rem,3.5vw,2.8rem)] text-royal-light/60`}>:</span>
                           )}
                         </div>
                       ))}
@@ -444,7 +466,7 @@ export function WorkflowView({ bookings, initialIndex }: { bookings: WorkflowBoo
                 type="button"
                 disabled={index <= 0}
                 onClick={() => setIndex((i) => Math.max(0, i - 1))}
-                className="flex items-center justify-center gap-2 rounded-xl border border-royal-light/35 bg-navy-light px-4 py-1.5 text-[clamp(0.7rem,0.95vw,0.95rem)] font-semibold uppercase tracking-wide text-white transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-35"
+                className={`${anton.className} flex items-center justify-center gap-2 rounded-xl border border-royal-light/40 bg-navy-light px-4 py-2 text-[clamp(0.8rem,1.05vw,1.05rem)] uppercase tracking-normal text-white shadow-[0_0_16px_-6px_rgba(91,155,255,0.6)] transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-35`}
               >
                 <ArrowLeftIcon className="h-[1.1em] w-[1.1em]" />
                 Previous Client
@@ -454,7 +476,7 @@ export function WorkflowView({ bookings, initialIndex }: { bookings: WorkflowBoo
                 type="button"
                 aria-label="Barber Insights (private)"
                 title="Private to this barber"
-                className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-magenta to-royal px-4 py-1.5 text-[clamp(0.7rem,0.95vw,0.95rem)] font-semibold uppercase tracking-wide text-white shadow-[0_0_18px_-4px_rgba(255,61,154,0.7)] transition hover:brightness-110"
+                className={`${anton.className} flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-magenta to-royal px-4 py-2 text-[clamp(0.8rem,1.05vw,1.05rem)] uppercase tracking-normal text-white shadow-[0_0_22px_-4px_rgba(255,61,154,0.75)] transition hover:brightness-110`}
               >
                 <LockIcon className="h-[1.1em] w-[1.1em]" />
                 Barber Insights
@@ -464,7 +486,7 @@ export function WorkflowView({ bookings, initialIndex }: { bookings: WorkflowBoo
                 type="button"
                 disabled={index >= bookings.length - 1}
                 onClick={() => setIndex((i) => Math.min(bookings.length - 1, i + 1))}
-                className="flex items-center justify-center gap-2 rounded-xl border border-royal-light/35 bg-navy-light px-4 py-1.5 text-[clamp(0.7rem,0.95vw,0.95rem)] font-semibold uppercase tracking-wide text-white transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-35"
+                className={`${anton.className} flex items-center justify-center gap-2 rounded-xl border border-royal-light/40 bg-navy-light px-4 py-2 text-[clamp(0.8rem,1.05vw,1.05rem)] uppercase tracking-normal text-white shadow-[0_0_16px_-6px_rgba(91,155,255,0.6)] transition hover:bg-white/5 disabled:cursor-not-allowed disabled:opacity-35`}
               >
                 Next Client
                 <ArrowRightIcon className="h-[1.1em] w-[1.1em]" />
