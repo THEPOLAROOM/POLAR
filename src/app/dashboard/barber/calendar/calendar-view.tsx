@@ -18,39 +18,51 @@ type Client = { id: string; fullName: string };
 // touch-up of the old one) — canvas is now 2098x750, a different
 // aspect ratio than the previous 1954x580 asset (2.7973 vs 3.3690).
 // Every box below was re-measured directly against the new asset via
-// per-pixel brightness-edge scans along the baked border strokes
-// (not visual ruler estimation, which first-pass measurement proved
-// unreliable for the toolbar row — the plain-text tabs' border is
-// much dimmer than the active-pill gradient and was easy to misjudge
-// by 100+px until scanned numerically) — not carried over or scaled
-// from the old coordinates.
+// per-pixel gradient (edge) detection along the baked border strokes,
+// clustering the detected edge pixels and taking each cluster's
+// intensity-weighted center — not a raw brightness threshold, which
+// an earlier pass proved unreliable: it mistook the sidebar's own
+// left border (and the grid's outer right border) for the wrong
+// neighboring boundary in more than one box, overshooting the
+// mastered grid's true right/bottom edges and the Today control's
+// true right edge by 10-50px. Not carried over or scaled from the
+// old 1954x580 coordinates.
 const ASSET_ASPECT = "2098 / 750";
 
-const SMART_ANALYTICS_BOX = { left: "30.27%", top: "15.47%", width: "13.58%", height: "9.33%" };
+const SMART_ANALYTICS_BOX = { left: "30.66%", top: "15.33%", width: "12.05%", height: "9.47%" };
 
 // Day/Week/Month/Year — the mastered artwork always bakes "Month" as
 // the visually active tab, which is wrong whenever another view is
 // selected. That whole row is patched over and replaced with four
 // real tab buttons carrying their own dynamic active state instead.
-const TAB_ROW_BOX = { left: "47.00%", top: "15.47%", width: "27.17%", height: "9.33%" };
+const TAB_ROW_BOX = { left: "46.95%", top: "15.33%", width: "27.27%", height: "9.47%" };
 
 // Prev/Today/Next — replaced with a real dynamic period label (Fix 2)
 // plus a small separate Today shortcut, so this whole row is patched
 // over too. The new artwork bakes these as four individually-boxed
 // controls (unlike the old single wide "Today" pill), so the prev/
 // next arrows and the Today control keep their own baked proportions
-// (9%/9%/21% of the row) instead of three equal thirds.
-const NAV_ROW_BOX = { left: "78.70%", top: "15.47%", width: "19.64%", height: "9.33%" };
+// (10%/10%/19%, plus an 8% gap before Today) instead of three equal
+// thirds. The box's width was previously overshot by ~13px, which
+// pushed the live Today control's right edge past its baked
+// counterpart and into the outer border's own glow.
+const NAV_ROW_BOX = { left: "78.66%", top: "15.33%", width: "19.00%", height: "9.47%" };
 
-const GRID_AREA_BOX = { left: "3.00%", top: "25.33%", width: "74.21%", height: "61.07%" };
+const GRID_AREA_BOX = { left: "3.00%", top: "27.93%", width: "73.83%", height: "57.27%" };
 
 // The Month grid's 7 day-columns and 5 date-rows are NOT evenly
-// spaced in the mastered asset (pixel-scanned directly off the baked
-// gridlines via a brightness-edge scan across the grid body). These
-// are the real boundaries (% of the asset's own width/height), so
-// every cell box is derived from its own two adjacent boundaries.
-const COL_BOUNDS = [3.00, 14.16, 24.98, 35.84, 46.66, 57.34, 67.92, 79.12];
-const ROW_BOUNDS = [33.60, 44.13, 54.67, 65.20, 75.87, 86.40];
+// spaced in the mastered asset (measured via gradient-edge clustering
+// across the grid body, averaged over many rows/columns to reject
+// text-glyph noise). These are the real boundaries (% of the asset's
+// own width/height), so every cell box is derived from its own two
+// adjacent boundaries. The previous last COL_BOUNDS/ROW_BOUNDS values
+// (79.12/86.40) were measured off the wrong nearby line — the
+// sidebar's own left border and the card's outer bottom edge,
+// respectively, not the grid's own right/bottom gridline — which let
+// the SUN column and row-5 cell patches overshoot the real grid by
+// ~48px and ~9px.
+const COL_BOUNDS = [3.00, 14.18, 25.00, 35.84, 46.66, 57.36, 67.95, 76.84];
+const ROW_BOUNDS = [33.47, 44.00, 54.60, 65.13, 75.73, 85.20];
 
 const ADD_APPOINTMENT_BOX = { left: "78.65%", top: "57.20%", width: "18.02%", height: "9.33%" };
 const RIGHT_TEXT_PATCH_BOX = { left: "78.41%", top: "40.00%", width: "18.83%", height: "16.67%" };
@@ -402,9 +414,11 @@ export function CalendarView({
                 which are patched over the same way as the tab row.
                 Unlike the old asset, the new artwork bakes prev/next
                 as narrow square arrow buttons and Today as a wider
-                icon+caption control with small gaps between all four
-                — widths below (14%/flex-1/14%/20%, gap 3%) match those
-                baked proportions instead of three equal thirds. */}
+                icon+caption control with a visible gap only before
+                Today — widths below (10%/flex-1/10%/19%, 8% margin
+                before Today) match those baked proportions, measured
+                directly off the baked control cluster's own edges,
+                not three equal thirds. */}
             <div className="absolute flex items-center" style={NAV_ROW_BOX}>
               {/* Uniform -2% inset patch, same rationale as the tab
                   row's — not pixel-scanned for exact baked-border
@@ -415,7 +429,7 @@ export function CalendarView({
                 href={prevHref}
                 aria-label="Previous"
                 className="relative flex flex-none items-center justify-center rounded-lg border border-royal-light/30 text-white/80 transition hover:bg-white/5"
-                style={{ width: "9%", height: "100%", fontSize: "0.85vw" }}
+                style={{ width: "10%", height: "100%", fontSize: "0.85vw" }}
               >
                 ‹
               </Link>
@@ -426,19 +440,19 @@ export function CalendarView({
                 href={nextHref}
                 aria-label="Next"
                 className="relative flex flex-none items-center justify-center rounded-lg border border-royal-light/30 text-white/80 transition hover:bg-white/5"
-                style={{ width: "9%", height: "100%", fontSize: "0.85vw" }}
+                style={{ width: "10%", height: "100%", fontSize: "0.85vw" }}
               >
                 ›
               </Link>
               {/* Baked art leaves a visibly bigger gap before Today
-                  than between the other three controls (~9% of the
+                  than between the other three controls (~8% of the
                   row vs none) — a uniform flex `gap` can't express
                   that, so Today alone carries the extra margin. */}
               <Link
                 href={todayHref}
                 aria-label="Jump to today"
                 className="relative flex flex-none flex-col items-center justify-center rounded-lg border border-royal-light/40 text-royal-light transition hover:bg-royal-light/10"
-                style={{ width: "21%", height: "100%", marginLeft: "9%" }}
+                style={{ width: "19%", height: "100%", marginLeft: "8%" }}
               >
                 <span aria-hidden="true" style={{ fontSize: "0.95vw", lineHeight: 1 }}>↺</span>
                 <span style={{ fontSize: "0.45vw", letterSpacing: "0.05em" }}>TODAY</span>
@@ -448,8 +462,16 @@ export function CalendarView({
             {/* Right panel — permanent copy + real today summary
                 patched over the baked example text; the artwork's own
                 "Your Calendar At a Glance" heading and crown are left
-                untouched. */}
-            <div className="absolute flex flex-col justify-center" style={{ ...RIGHT_TEXT_PATCH_BOX, paddingLeft: "3%" }}>
+                untouched. overflow-hidden is a hard containment
+                backstop — this box's height was measured against the
+                fixed copy line at 0.72vw, but todaySummary's text
+                length varies with real booking data, so nothing here
+                can be allowed to visually escape into the Add
+                Appointment button below it. */}
+            <div
+              className="absolute flex flex-col justify-center overflow-hidden"
+              style={{ ...RIGHT_TEXT_PATCH_BOX, paddingLeft: "3%", paddingRight: "3%" }}
+            >
               <div className="absolute inset-0" style={{ backgroundColor: PANEL_FILL }} aria-hidden="true" />
               <p className="relative text-white/70" style={{ fontSize: "0.72vw", lineHeight: 1.4 }}>
                 View your schedule, manage bookings and keep your day running smoothly.
