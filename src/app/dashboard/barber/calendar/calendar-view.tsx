@@ -14,44 +14,50 @@ export type MonthCell = { date: string; day: number; count: number; isFullyBooke
 type Service = { id: string; name: string; durationMinutes: number; price: number };
 type Client = { id: string; fullName: string };
 
-// Asset replaced (checkerboard-noise cleanup) — its canvas is now
-// 1954x580; every box below was re-measured against it (the original
-// coordinates were re-derived via the exact crop-offset transform
-// between the old and new canvases, not re-eyeballed).
-const ASSET_ASPECT = "1954 / 580";
+// Asset fully replaced with a new mastered UI (new artwork, not a
+// touch-up of the old one) — canvas is now 2098x750, a different
+// aspect ratio than the previous 1954x580 asset (2.7973 vs 3.3690).
+// Every box below was re-measured directly against the new asset via
+// per-pixel brightness-edge scans along the baked border strokes
+// (not visual ruler estimation, which first-pass measurement proved
+// unreliable for the toolbar row — the plain-text tabs' border is
+// much dimmer than the active-pill gradient and was easy to misjudge
+// by 100+px until scanned numerically) — not carried over or scaled
+// from the old coordinates.
+const ASSET_ASPECT = "2098 / 750";
 
-const SMART_ANALYTICS_BOX = { left: "29.83%", top: "8.28%", width: "12.44%", height: "10.68%" };
+const SMART_ANALYTICS_BOX = { left: "30.27%", top: "15.47%", width: "13.58%", height: "9.33%" };
 
 // Day/Week/Month/Year — the mastered artwork always bakes "Month" as
 // the visually active tab, which is wrong whenever another view is
 // selected. That whole row is patched over and replaced with four
 // real tab buttons carrying their own dynamic active state instead.
-const TAB_ROW_BOX = { left: "45.6%", top: "7.6%", width: "28.6%", height: "12%" };
+const TAB_ROW_BOX = { left: "47.00%", top: "15.47%", width: "27.17%", height: "9.33%" };
 
 // Prev/Today/Next — replaced with a real dynamic period label (Fix 2)
 // plus a small separate Today shortcut, so this whole row is patched
-// over too.
-const NAV_ROW_BOX = { left: "78.6%", top: "7.6%", width: "17.4%", height: "12%" };
+// over too. The new artwork bakes these as four individually-boxed
+// controls (unlike the old single wide "Today" pill), so the prev/
+// next arrows and the Today control keep their own baked proportions
+// (9%/9%/21% of the row) instead of three equal thirds.
+const NAV_ROW_BOX = { left: "78.70%", top: "15.47%", width: "19.64%", height: "9.33%" };
 
-const GRID_AREA_BOX = { left: "2.05%", top: "21.55%", width: "74.77%", height: "71.90%" };
+const GRID_AREA_BOX = { left: "3.00%", top: "25.33%", width: "74.21%", height: "61.07%" };
 
 // The Month grid's 7 day-columns and 5 date-rows are NOT evenly
 // spaced in the mastered asset (pixel-scanned directly off the baked
-// gridlines: column widths range ~166-220px of the 1954px-wide
-// canvas). A single uniform COL_WIDTH/ROW_HEIGHT multiplier drifted
-// up to ~40px by the later columns, which is what left unpatched
-// baked fragments and visibly offset cell-fill rectangles. These are
-// the real boundaries (% of the asset's own width/height), so every
-// cell box is derived from its own two adjacent boundaries instead.
-const COL_BOUNDS = [2.098, 13.332, 24.489, 35.541, 46.489, 57.334, 68.229, 76.741];
-const ROW_BOUNDS = [30.431, 43.362, 56.293, 69.224, 82.155, 93.276];
+// gridlines via a brightness-edge scan across the grid body). These
+// are the real boundaries (% of the asset's own width/height), so
+// every cell box is derived from its own two adjacent boundaries.
+const COL_BOUNDS = [3.00, 14.16, 24.98, 35.84, 46.66, 57.34, 67.92, 79.12];
+const ROW_BOUNDS = [33.60, 44.13, 54.67, 65.20, 75.87, 86.40];
 
-const ADD_APPOINTMENT_BOX = { left: "79.02%", top: "59.83%", width: "16.89%", height: "7.75%" };
-const RIGHT_TEXT_PATCH_BOX = { left: "79.02%", top: "42.24%", width: "16.89%", height: "16.39%" };
+const ADD_APPOINTMENT_BOX = { left: "78.65%", top: "57.20%", width: "18.02%", height: "9.33%" };
+const RIGHT_TEXT_PATCH_BOX = { left: "78.41%", top: "40.00%", width: "18.83%", height: "16.67%" };
 
-const CELL_FILL = "#011530";
-const PANEL_FILL = "#00102c";
-const HEADER_FILL = "#050f37";
+const CELL_FILL = "#001b3c";
+const PANEL_FILL = "#1a1b4a";
+const HEADER_FILL = "#00173a";
 
 const HIT_AREA_CLASS =
   "absolute rounded-2xl bg-transparent transition duration-200 ease-out hover:shadow-[0_0_18px_4px_rgba(91,155,255,0.4),0_0_26px_8px_rgba(255,61,154,0.22)]";
@@ -368,18 +374,13 @@ export function CalendarView({
                 active tab breaking out as its own raised pill — same
                 as "Month" does in the artwork. */}
             <div className="absolute" style={TAB_ROW_BOX}>
-              {/* Pixel-scanned the baked "Year" pill's true straight-
-                  edge extent across its full height (y=56-97, not
-                  just near the corner peak, which reads narrower): it
-                  runs to x=1462 of 1954, ~12px past this box's own
-                  right edge (x=1449.9). A plain -1% inset (~5.6px)
-                  left a sliver of that real border exposed, which is
-                  what read as a ghost outline right after Year. Right
-                  inset only is widened to clear x=1462 with a small
-                  margin (patch reaches ~x=1467); left/top/bottom stay
-                  at the original 1% — this box's own position/size is
-                  unchanged. */}
-              <div className="absolute -top-[1%] -bottom-[1%] -left-[1%] -right-[3.1%] rounded-xl" style={{ backgroundColor: HEADER_FILL }} aria-hidden="true" />
+              {/* Uniform -2% inset patch covering the baked strip
+                  (including its own border) in every direction, sized
+                  against the new asset's TAB_ROW_BOX measurement. Not
+                  pixel-scanned for exact baked-border overflow the way
+                  the previous asset's patch was — if visual QA finds a
+                  ghost outline on any edge, widen that side's inset. */}
+              <div className="absolute -top-[2%] -bottom-[2%] -left-[2%] -right-[2%] rounded-xl" style={{ backgroundColor: HEADER_FILL }} aria-hidden="true" />
               <div className="relative flex h-full items-stretch overflow-hidden rounded-xl border border-royal-light/30">
                 {(["day", "week", "month", "year"] as ViewKind[]).map((v, i) => (
                   <Link
@@ -397,35 +398,24 @@ export function CalendarView({
             </div>
 
             {/* Prev / dynamic period label / Next / Today — replaces
-                the baked static "Today" control, which is patched
-                over the same way as the tab row. The baked control
-                has no separate period-label element (its middle
-                segment is just one wide "Today" pill), so its exact
-                gap can't be reused once a label is added between the
-                elements — but its arrow width (~13% of the row) is
-                reused here for consistency with the rest of the
-                shell.
-
-                Today is a single combined control (curved return
-                arrow above a small "TODAY" caption) positioned AFTER
-                Next, per the approved layout — same todayHref/action
-                as before, only its position and appearance changed. */}
-            <div className="absolute flex items-center" style={{ ...NAV_ROW_BOX, gap: "4%" }}>
-              {/* Same correction, mirrored: the baked "‹" pill's true
-                  straight-edge left extent (y=56-96) runs to x=1527,
-                  ~8px left of this box's own left edge (x=1535.8). A
-                  plain -1% inset (~3.4px) left a sliver of that real
-                  border exposed just before the live ‹ control. Left
-                  inset only is widened to clear x=1527 with a small
-                  margin (patch reaches ~x=1522); top/right/bottom
-                  stay at the original 1% — this box's own position/
-                  size is unchanged. */}
-              <div className="absolute -top-[1%] -bottom-[1%] -left-[4.1%] -right-[1%] rounded-xl" style={{ backgroundColor: HEADER_FILL }} aria-hidden="true" />
+                the baked static "September 2026" / arrow controls,
+                which are patched over the same way as the tab row.
+                Unlike the old asset, the new artwork bakes prev/next
+                as narrow square arrow buttons and Today as a wider
+                icon+caption control with small gaps between all four
+                — widths below (14%/flex-1/14%/20%, gap 3%) match those
+                baked proportions instead of three equal thirds. */}
+            <div className="absolute flex items-center" style={NAV_ROW_BOX}>
+              {/* Uniform -2% inset patch, same rationale as the tab
+                  row's — not pixel-scanned for exact baked-border
+                  overflow on this new asset; widen a side if visual QA
+                  finds a ghost outline there. */}
+              <div className="absolute -top-[2%] -bottom-[2%] -left-[2%] -right-[2%] rounded-xl" style={{ backgroundColor: HEADER_FILL }} aria-hidden="true" />
               <Link
                 href={prevHref}
                 aria-label="Previous"
                 className="relative flex flex-none items-center justify-center rounded-lg border border-royal-light/30 text-white/80 transition hover:bg-white/5"
-                style={{ width: "13%", height: "100%", fontSize: "0.85vw" }}
+                style={{ width: "9%", height: "100%", fontSize: "0.85vw" }}
               >
                 ‹
               </Link>
@@ -436,15 +426,19 @@ export function CalendarView({
                 href={nextHref}
                 aria-label="Next"
                 className="relative flex flex-none items-center justify-center rounded-lg border border-royal-light/30 text-white/80 transition hover:bg-white/5"
-                style={{ width: "13%", height: "100%", fontSize: "0.85vw" }}
+                style={{ width: "9%", height: "100%", fontSize: "0.85vw" }}
               >
                 ›
               </Link>
+              {/* Baked art leaves a visibly bigger gap before Today
+                  than between the other three controls (~9% of the
+                  row vs none) — a uniform flex `gap` can't express
+                  that, so Today alone carries the extra margin. */}
               <Link
                 href={todayHref}
                 aria-label="Jump to today"
                 className="relative flex flex-none flex-col items-center justify-center rounded-lg border border-royal-light/40 text-royal-light transition hover:bg-royal-light/10"
-                style={{ width: "13%", height: "100%" }}
+                style={{ width: "21%", height: "100%", marginLeft: "9%" }}
               >
                 <span aria-hidden="true" style={{ fontSize: "0.95vw", lineHeight: 1 }}>↺</span>
                 <span style={{ fontSize: "0.45vw", letterSpacing: "0.05em" }}>TODAY</span>
@@ -455,7 +449,7 @@ export function CalendarView({
                 patched over the baked example text; the artwork's own
                 "Your Calendar At a Glance" heading and crown are left
                 untouched. */}
-            <div className="absolute flex flex-col justify-center" style={RIGHT_TEXT_PATCH_BOX}>
+            <div className="absolute flex flex-col justify-center" style={{ ...RIGHT_TEXT_PATCH_BOX, paddingLeft: "3%" }}>
               <div className="absolute inset-0" style={{ backgroundColor: PANEL_FILL }} aria-hidden="true" />
               <p className="relative text-white/70" style={{ fontSize: "0.72vw", lineHeight: 1.4 }}>
                 View your schedule, manage bookings and keep your day running smoothly.
