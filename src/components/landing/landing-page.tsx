@@ -2,8 +2,8 @@ import { Anton, Geist } from "next/font/google";
 import { Header } from "./header";
 import { Carousel } from "./carousel";
 import { PanelWelcome } from "./panels/panel-01-welcome";
+import { PanelWhy } from "./panels/panel-02-why";
 import { Footer } from "./footer";
-import { CAROUSEL_ARTWORK_ASPECT_RATIO } from "./artwork";
 
 // Fonts are loaded and scoped here only (via CSS variables on this
 // subtree's wrapper), not in the root layout — dashboards keep their
@@ -11,15 +11,16 @@ import { CAROUSEL_ARTWORK_ASPECT_RATIO } from "./artwork";
 const anton = Anton({ subsets: ["latin"], weight: "400", variable: "--font-anton" });
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
 
-// Old slides 2-6 (Why/Card/Workflow/How/Ready) are deliberately removed
-// from this live configuration — Pages 2-5 are being redesigned and
-// will be supplied individually, one at a time, into this same shell.
-// Their component files and image assets are untouched on disk (see
+// Old slides 3-6 (Card/Workflow/How/Ready) are deliberately removed
+// from this live configuration — they are being redesigned and will be
+// supplied individually, one at a time, into this same shell. Their
+// component files and image assets are untouched on disk (see
 // src/components/landing/panels/) and can be re-added here later; the
 // carousel engine itself (src/components/landing/carousel.tsx)
 // requires no changes to accept them when that happens.
 const SLIDES = [
   { id: "welcome", label: "Welcome to POLAR", content: <PanelWelcome /> },
+  { id: "why", label: "Why POLAR?", content: <PanelWhy /> },
 ];
 
 // Single-screen desktop shell: header/global UI is an overlay (not its
@@ -40,23 +41,21 @@ export function LandingPage() {
           grid row's default min-height is `auto` (its content's
           intrinsic size), which would otherwise prevent this row from
           ever shrinking below the artwork's natural size and defeat
-          the whole "fit inside 100dvh" goal. */}
+          the whole "fit inside 100dvh" goal.
+
+          Carousel and Header are plain h-full/w-full siblings here —
+          neither this row nor either child locks a single shared
+          aspect ratio for every slide. Each <CarouselImageSlide> (see
+          carousel-image-slide.tsx) already letterboxes itself against
+          its own natural/intrinsic dimensions via object-contain, so
+          slides with different native ratios (Page 1 vs Page 2) each
+          render correctly without one forcing its shape onto the
+          other. Header independently locks to Page 1's specific ratio
+          internally (see header.tsx) purely so its percentage-based
+          hit-areas keep landing on Page 1's still-baked buttons. */}
       <div className="relative flex min-h-0 items-center justify-center overflow-hidden">
-        {/* The one shared box every carousel page sizes itself against:
-            locked to the master artwork's own aspect ratio, capped by
-            the available height first (so wide/ultrawide viewports
-            don't stretch it unnecessarily) with max-w-full as a safety
-            net for any untested extreme window shape. Carousel and
-            Header are both plain siblings that simply fill this
-            already-sized box — neither duplicates this aspect-ratio
-            calculation itself. */}
-        <div
-          className="relative h-full max-w-full"
-          style={{ aspectRatio: CAROUSEL_ARTWORK_ASPECT_RATIO }}
-        >
-          <Carousel slides={SLIDES} />
-          <Header />
-        </div>
+        <Carousel slides={SLIDES} />
+        <Header />
       </div>
 
       <Footer />
