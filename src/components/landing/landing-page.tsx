@@ -1,8 +1,6 @@
 import { Anton, Geist } from "next/font/google";
 import { CarouselRow } from "./carousel-row";
 import type { Slide } from "./carousel";
-import { PanelWelcome } from "./panels/panel-01-welcome";
-import { PanelWhy } from "./panels/panel-02-why";
 import { Footer } from "./footer";
 
 // Fonts are loaded and scoped here only (via CSS variables on this
@@ -11,35 +9,18 @@ import { Footer } from "./footer";
 const anton = Anton({ subsets: ["latin"], weight: "400", variable: "--font-anton" });
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
 
-// Old slides 3-6 (Card/Workflow/How/Ready) are deliberately removed
-// from this live configuration — they are being redesigned and will be
-// supplied individually, one at a time, into this same shell. Their
-// component files and image assets are untouched on disk (see
-// src/components/landing/panels/) and can be re-added here later; the
-// carousel engine itself (src/components/landing/carousel.tsx)
-// requires no changes to accept them when that happens.
-//
-// Page 1 has no lockAspectRatio and no logoVariant: it keeps the
-// original behavior exactly as before (row fills all remaining
-// height, artwork letterboxes within it via object-contain, Header
-// renders its legacy invisible hit-areas over Page 1's own baked
-// controls) — deliberately left unchanged, per the calibration-page
-// plan. Page 2's artwork is exactly 13:6 (16250x7500, an exact match
-// for the locked master contract, supplied as-is, not modified) and
-// its own top-left corner measures ~253/255 brightness — near-white —
-// so it takes the dark logo variant. Setting logoVariant also switches
-// Header into permanent-shell mode for this slide: real, visible,
-// artwork-independent Logo/Login/Sign Up controls (see header.tsx).
-const SLIDES: Slide[] = [
-  { id: "welcome", label: "Welcome to POLAR", content: <PanelWelcome /> },
-  {
-    id: "why",
-    label: "Why POLAR?",
-    content: <PanelWhy />,
-    lockAspectRatio: "13 / 6",
-    logoVariant: "dark",
-  },
-];
+// Carousel intentionally emptied — both Page 1 and Page 2 were removed
+// from the live carousel while the owner redesigns them as pure
+// artwork (no baked UI) against the locked 13:6 / 5200x2400 contract.
+// Their component files (panels/panel-01-welcome.tsx,
+// panels/panel-02-why.tsx) and every image asset are untouched on
+// disk, simply unreferenced here — re-add a slide entry (with its
+// `lockAspectRatio`/`logoVariant`) to bring a page back once its new
+// artwork is ready. The permanent shell (CarouselRow/Header/Carousel)
+// requires no changes to accept them when that happens — see
+// carousel-row.tsx for how it stays fully visible and functional with
+// this array empty.
+const SLIDES: Slide[] = [];
 
 // Single-screen desktop shell: header/global UI is an overlay inside
 // CarouselRow (not its own row), footer is a real, compact, independent

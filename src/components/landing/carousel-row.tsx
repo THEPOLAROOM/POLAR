@@ -35,7 +35,15 @@ import { Header } from "./header";
 export function CarouselRow({ slides }: { slides: Slide[] }) {
   const [active, setActive] = useState(0);
   const lockRatio = slides[active]?.lockAspectRatio;
-  const logoVariant = slides[active]?.logoVariant;
+  // Zero-slide fallback only: with no slides at all, slides[active] is
+  // undefined, which would otherwise fall through to Header's legacy
+  // baked-artwork mode (invisible hit-areas, no visible controls) —
+  // exactly the wrong thing to show over an empty carousel. Forcing
+  // "dark" here keeps the permanent shell visible and fully functional
+  // against the plain page background while no artwork is loaded. Any
+  // slide that does specify its own logoVariant is unaffected — this
+  // only fires when the array itself is empty.
+  const logoVariant = slides.length === 0 ? "dark" : slides[active]?.logoVariant;
 
   return (
     <div
