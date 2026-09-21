@@ -1,55 +1,32 @@
 import Link from "next/link";
 
-// "Contact" and "Support" have no real destination yet (no approved
-// email/page exists) — placeholder "#" links pending real destinations
-// being provided. Privacy Policy / Terms & Conditions reuse the
-// existing, already-built /legal routes.
+// "Contact" has no real destination yet (no approved email/page
+// exists) — a placeholder "#" link pending a real destination.
+// "About POLAR" points at an in-page anchor that no longer exists
+// (the section it used to jump to was removed from the homepage in an
+// earlier pass, and there is no standalone About POLAR route yet
+// either) — both are known, pre-existing gaps, preserved exactly as
+// they were rather than addressed here. Privacy Policy / Terms &
+// Conditions reuse the existing, already-built /legal routes.
 const FOOTER_LINKS = [
   { href: "/#about", label: "About POLAR" },
   { href: "/legal/privacy", label: "Privacy Policy" },
   { href: "/legal/terms", label: "Terms & Conditions" },
   { href: "#", label: "Contact" },
-  { href: "#", label: "Support" },
 ];
 
-const SOCIALS = ["Instagram", "TikTok", "Facebook"];
-
+// Compact treatment per the approved Page 1 direction: just the four
+// links, centred, on a shallow solid navy bar — no brand column, no
+// social icons, no copyright line (all part of the old, larger
+// footer this replaces).
 export function Footer() {
   return (
-    <footer className="bg-navy px-6 py-14 text-white sm:px-12">
-      <div className="mx-auto flex max-w-5xl flex-col gap-8 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <p className="font-display text-lg tracking-wide">
-            THE<span className="text-royal-light">POLAR</span>ROOM
-          </p>
-          <p className="mt-2 text-xs text-white/50">London, UK</p>
-        </div>
-
-        <nav className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-white/70">
-          {FOOTER_LINKS.map((link) => (
-            <Link key={link.label} href={link.href} className="hover:text-white">
-              {link.label}
-            </Link>
-          ))}
-        </nav>
-
-        <div className="flex gap-3">
-          {SOCIALS.map((label) => (
-            <span
-              key={label}
-              aria-label={label}
-              title={label}
-              className="flex h-9 w-9 items-center justify-center rounded-full border border-white/20 text-xs text-white/70"
-            >
-              {label.charAt(0)}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      <p className="mx-auto mt-10 max-w-5xl text-xs text-white/40">
-        © 2026 POLAR. London, UK.
-      </p>
+    <footer className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 bg-navy px-6 py-4 text-sm font-bold tracking-wide text-magenta sm:text-base">
+      {FOOTER_LINKS.map((link) => (
+        <Link key={link.label} href={link.href} className="transition hover:text-white">
+          {link.label.toUpperCase()}
+        </Link>
+      ))}
     </footer>
   );
 }

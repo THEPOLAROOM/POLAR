@@ -7,6 +7,13 @@ import Image from "next/image";
 // with object-fit: contain, so the full design (text, mascot, borders,
 // crystalline effects already baked into the PNG) is always shown in
 // full, never cropped or distorted.
+//
+// Fills the height it's given (h-full) rather than a fixed px ladder —
+// the actual box this ends up inside is sized by landing-page.tsx's
+// shared aspect-ratio wrapper (locked to the approved artwork's own
+// aspect ratio), not by this component. object-contain stays as a
+// safety net for any sub-pixel rounding, not as the primary sizing
+// mechanism.
 export function CarouselImageSlide({
   src,
   alt,
@@ -17,7 +24,7 @@ export function CarouselImageSlide({
   priority?: boolean;
 }) {
   return (
-    <section className="relative h-[420px] w-full bg-ice-50 sm:h-[560px] md:h-[720px]">
+    <section className="relative h-full w-full bg-ice-50">
       <Image
         src={src}
         alt={alt}
