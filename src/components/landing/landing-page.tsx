@@ -3,6 +3,7 @@ import { Header } from "./header";
 import { Carousel } from "./carousel";
 import { PanelWelcome } from "./panels/panel-01-welcome";
 import { Footer } from "./footer";
+import { CAROUSEL_ARTWORK_ASPECT_RATIO } from "./artwork";
 
 // Fonts are loaded and scoped here only (via CSS variables on this
 // subtree's wrapper), not in the root layout — dashboards keep their
@@ -40,21 +41,19 @@ export function LandingPage() {
           intrinsic size), which would otherwise prevent this row from
           ever shrinking below the artwork's natural size and defeat
           the whole "fit inside 100dvh" goal. */}
-      <div className="relative min-h-0 overflow-hidden">
-        {/* WIDTH-FILL TEST (temporary, not yet the approved default):
-            the artwork's own aspect ratio is no longer locked here —
-            this box is simply the full carousel row (100% width, 100%
-            of the unchanged row height). CarouselImageSlide now uses
-            object-fill instead of object-contain, so the image
-            stretches horizontally to fill this full-width box while
-            its height stays exactly what the row already gives it —
-            no letterboxing, no proportional height increase, no crop.
-            Header's hit-area percentages still land correctly on the
-            baked artwork: percentage-based positions are preserved
-            under independent per-axis scaling, so stretching the image
-            horizontally moves its baked buttons by the same factor as
-            the percentage boxes measured against them. */}
-        <div className="relative h-full w-full">
+      <div className="relative flex min-h-0 items-center justify-center overflow-hidden">
+        {/* The one shared box every carousel page sizes itself against:
+            locked to the master artwork's own aspect ratio, capped by
+            the available height first (so wide/ultrawide viewports
+            don't stretch it unnecessarily) with max-w-full as a safety
+            net for any untested extreme window shape. Carousel and
+            Header are both plain siblings that simply fill this
+            already-sized box — neither duplicates this aspect-ratio
+            calculation itself. */}
+        <div
+          className="relative h-full max-w-full"
+          style={{ aspectRatio: CAROUSEL_ARTWORK_ASPECT_RATIO }}
+        >
           <Carousel slides={SLIDES} />
           <Header />
         </div>
