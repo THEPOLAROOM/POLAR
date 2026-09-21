@@ -11,6 +11,15 @@ export type Slide = {
   // see carousel-row.tsx. Slides without this keep today's fill
   // behavior untouched.
   lockAspectRatio?: string;
+  // Optional: which POLAR logo to show against this slide's own
+  // top-left brightness, AND which Header render mode to use — see
+  // header.tsx. Leaving this unset (Page 1 only) keeps Header's
+  // original legacy behavior: invisible hit-areas locked to Page 1's
+  // own baked-artwork coordinates, unchanged. Setting it (every page
+  // from Page 2 onward) switches Header to the permanent-shell mode:
+  // real, visible, artwork-independent Logo/Login/Sign Up controls
+  // fixed to the row's own corners.
+  logoVariant?: "dark" | "light";
 };
 
 // Lightweight, dependency-free carousel: native horizontal scroll-snap

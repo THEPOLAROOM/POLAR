@@ -35,6 +35,7 @@ import { Header } from "./header";
 export function CarouselRow({ slides }: { slides: Slide[] }) {
   const [active, setActive] = useState(0);
   const lockRatio = slides[active]?.lockAspectRatio;
+  const logoVariant = slides[active]?.logoVariant;
 
   return (
     <div
@@ -46,7 +47,7 @@ export function CarouselRow({ slides }: { slides: Slide[] }) {
       style={lockRatio ? { aspectRatio: lockRatio } : undefined}
     >
       <Carousel slides={slides} onActiveChange={setActive} />
-      <Header />
+      <Header logoVariant={logoVariant} />
     </div>
   );
 }

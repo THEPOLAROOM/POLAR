@@ -1,5 +1,6 @@
 import { Anton, Geist } from "next/font/google";
 import { CarouselRow } from "./carousel-row";
+import type { Slide } from "./carousel";
 import { PanelWelcome } from "./panels/panel-01-welcome";
 import { PanelWhy } from "./panels/panel-02-why";
 import { Footer } from "./footer";
@@ -18,17 +19,26 @@ const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
 // carousel engine itself (src/components/landing/carousel.tsx)
 // requires no changes to accept them when that happens.
 //
-// Page 1 has no lockAspectRatio: it keeps the original fill behavior
-// exactly as before (row fills all remaining height, artwork
-// letterboxes within it via object-contain) — deliberately left
-// unchanged. Page 2's artwork is exactly 13:6 (5200x2400, supplied
-// as-is, not modified) and matches the carousel's master format, so
-// locking the row itself to that ratio when Page 2 is active gives it
-// a zero-gap fit — see carousel-row.tsx for how this reactive sizing
-// works and why it's scoped to Page 2 only.
-const SLIDES = [
+// Page 1 has no lockAspectRatio and no logoVariant: it keeps the
+// original behavior exactly as before (row fills all remaining
+// height, artwork letterboxes within it via object-contain, Header
+// renders its legacy invisible hit-areas over Page 1's own baked
+// controls) — deliberately left unchanged, per the calibration-page
+// plan. Page 2's artwork is exactly 13:6 (16250x7500, an exact match
+// for the locked master contract, supplied as-is, not modified) and
+// its own top-left corner measures ~253/255 brightness — near-white —
+// so it takes the dark logo variant. Setting logoVariant also switches
+// Header into permanent-shell mode for this slide: real, visible,
+// artwork-independent Logo/Login/Sign Up controls (see header.tsx).
+const SLIDES: Slide[] = [
   { id: "welcome", label: "Welcome to POLAR", content: <PanelWelcome /> },
-  { id: "why", label: "Why POLAR?", content: <PanelWhy />, lockAspectRatio: "13 / 6" },
+  {
+    id: "why",
+    label: "Why POLAR?",
+    content: <PanelWhy />,
+    lockAspectRatio: "13 / 6",
+    logoVariant: "dark",
+  },
 ];
 
 // Single-screen desktop shell: header/global UI is an overlay inside

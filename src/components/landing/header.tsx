@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import { CAROUSEL_ARTWORK_ASPECT_RATIO } from "./artwork";
 
@@ -72,16 +73,86 @@ const SIGNUP_BOX = { left: "89.35%", top: "4.76%", width: "8.20%", height: "5.76
 const HIT_AREA_CLASS =
   "pointer-events-auto absolute rounded-full bg-transparent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal";
 
-export function Header() {
+// Permanent-shell button styling — mirrors the pill look already baked
+// into Page 1's own artwork (solid magenta Login, magenta-outlined
+// Sign Up) so the visual language stays consistent between the
+// legacy baked page and every real, artwork-independent page from
+// here on, rather than inventing a new style.
+// border-2 border-transparent on Login (which has no visible border)
+// matches Sign Up's box model exactly, so both buttons render at the
+// identical height instead of Sign Up being 4px taller from its border.
+const LOGIN_BUTTON_CLASS =
+  "pointer-events-auto rounded-full border-2 border-transparent bg-magenta px-4 py-1.5 text-sm font-bold text-white shadow-ice transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal sm:px-5 sm:py-2 sm:text-base";
+const SIGNUP_BUTTON_CLASS =
+  "pointer-events-auto rounded-full border-2 border-magenta px-4 py-1.5 text-sm font-bold text-magenta transition hover:bg-magenta/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal sm:px-5 sm:py-2 sm:text-base";
+
+const LOGO_SRC = {
+  dark: "/landing/polar-logo-dark.png",
+  light: "/login/login-logo.png",
+} as const;
+
+// Persistent global header — POLAR logo/Home, Login, Sign Up.
+//
+// Two render modes, chosen per active slide (see carousel-row.tsx):
+//
+// 1. Legacy/baked mode (logoVariant unset — Page 1 only): unchanged
+//    from before. Page 1's artwork still has its own logo/Login/Sign
+//    Up baked in; this renders only invisible hit-areas, locked to
+//    Page 1's own aspect-ratio box, at percentages measured directly
+//    against that artwork's pixels. Do not extend this mode to any
+//    other page — it only stays correct for the one artwork it was
+//    measured against.
+//
+// 2. Permanent-shell mode (logoVariant set — every page from Page 2
+//    onward): real, visible, styled Logo/Login/Sign Up, positioned
+//    with fixed spacing from the row's own corners — completely
+//    independent of whatever artwork ratio or composition is
+//    underneath. This is the artwork contract's whole point: new
+//    carousel pages never need their controls re-measured, because
+//    these controls no longer look at the artwork at all. `logoVariant`
+//    only ever swaps which logo image renders (dark text for a
+//    light-background slide, light/white text for a dark-background
+//    slide) — position, size and behavior stay identical either way.
+export function Header({ logoVariant }: { logoVariant?: "dark" | "light" }) {
+  if (!logoVariant) {
+    return (
+      <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
+        <div
+          className="relative w-full max-h-full"
+          style={{ aspectRatio: CAROUSEL_ARTWORK_ASPECT_RATIO }}
+        >
+          <Link href="/" aria-label="POLAR Home" className={HIT_AREA_CLASS} style={LOGO_BOX} />
+          <Link href="/login" aria-label="Log In" className={HIT_AREA_CLASS} style={LOGIN_BOX} />
+          <Link href="/signup" aria-label="Sign Up" className={HIT_AREA_CLASS} style={SIGNUP_BOX} />
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
-      <div
-        className="relative w-full max-h-full"
-        style={{ aspectRatio: CAROUSEL_ARTWORK_ASPECT_RATIO }}
+    <div className="pointer-events-none absolute inset-0 z-30">
+      <Link
+        href="/"
+        aria-label="POLAR Home"
+        className="pointer-events-auto absolute left-4 top-4 sm:left-6 sm:top-6"
       >
-        <Link href="/" aria-label="POLAR Home" className={HIT_AREA_CLASS} style={LOGO_BOX} />
-        <Link href="/login" aria-label="Log In" className={HIT_AREA_CLASS} style={LOGIN_BOX} />
-        <Link href="/signup" aria-label="Sign Up" className={HIT_AREA_CLASS} style={SIGNUP_BOX} />
+        <Image
+          src={LOGO_SRC[logoVariant]}
+          alt="POLAR London"
+          width={160}
+          height={80}
+          className="h-9 w-auto sm:h-11"
+          priority
+        />
+      </Link>
+
+      <div className="pointer-events-none absolute right-4 top-4 flex items-center gap-2 sm:right-6 sm:top-6 sm:gap-3">
+        <Link href="/login" aria-label="Log In" className={LOGIN_BUTTON_CLASS}>
+          Login
+        </Link>
+        <Link href="/signup" aria-label="Sign Up" className={SIGNUP_BUTTON_CLASS}>
+          Sign Up
+        </Link>
       </div>
     </div>
   );
