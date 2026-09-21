@@ -1,19 +1,34 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
-type Slide = {
+export type Slide = {
   id: string;
   label: string;
   content: React.ReactNode;
+  // Optional: when this slide is active, CarouselRow shrinks the whole
+  // row to this exact ratio instead of filling all available height —
+  // see carousel-row.tsx. Slides without this keep today's fill
+  // behavior untouched.
+  lockAspectRatio?: string;
 };
 
 // Lightweight, dependency-free carousel: native horizontal scroll-snap
 // (works with touch swipe on mobile for free) plus explicit prev/next
 // arrows and dot navigation for manual control on desktop.
-export function Carousel({ slides }: { slides: Slide[] }) {
+export function Carousel({
+  slides,
+  onActiveChange,
+}: {
+  slides: Slide[];
+  onActiveChange?: (index: number) => void;
+}) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
+
+  useEffect(() => {
+    onActiveChange?.(active);
+  }, [active, onActiveChange]);
 
   function goTo(index: number) {
     const clamped = Math.max(0, Math.min(slides.length - 1, index));

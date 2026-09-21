@@ -1,6 +1,5 @@
 import { Anton, Geist } from "next/font/google";
-import { Header } from "./header";
-import { Carousel } from "./carousel";
+import { CarouselRow } from "./carousel-row";
 import { PanelWelcome } from "./panels/panel-01-welcome";
 import { PanelWhy } from "./panels/panel-02-why";
 import { Footer } from "./footer";
@@ -18,46 +17,47 @@ const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
 // src/components/landing/panels/) and can be re-added here later; the
 // carousel engine itself (src/components/landing/carousel.tsx)
 // requires no changes to accept them when that happens.
+//
+// Page 1 has no lockAspectRatio: it keeps the original fill behavior
+// exactly as before (row fills all remaining height, artwork
+// letterboxes within it via object-contain) — deliberately left
+// unchanged. Page 2's artwork is exactly 13:6 (5200x2400, supplied
+// as-is, not modified) and matches the carousel's master format, so
+// locking the row itself to that ratio when Page 2 is active gives it
+// a zero-gap fit — see carousel-row.tsx for how this reactive sizing
+// works and why it's scoped to Page 2 only.
 const SLIDES = [
   { id: "welcome", label: "Welcome to POLAR", content: <PanelWelcome /> },
-  { id: "why", label: "Why POLAR?", content: <PanelWhy /> },
+  { id: "why", label: "Why POLAR?", content: <PanelWhy />, lockAspectRatio: "13 / 6" },
 ];
 
-// Single-screen desktop shell: header/global UI is an overlay (not its
-// own row — see below), carousel gets exactly the remaining height,
-// footer is a real, compact, independent row. h-dvh + overflow-hidden
-// enforces "no homepage scrolling" as a hard constraint rather than a
-// hope; if any child ever miscalculates, this reveals it as clipped
-// content during testing instead of silently allowing a scrollbar.
+// Single-screen desktop shell: header/global UI is an overlay inside
+// CarouselRow (not its own row), footer is a real, compact, independent
+// row directly beneath it. h-dvh + overflow-hidden enforces "no
+// homepage scrolling" as a hard constraint rather than a hope; if any
+// child ever miscalculates, this reveals it as clipped content during
+// testing instead of silently allowing a scrollbar.
+//
+// flex-col + justify-center (rather than the previous CSS grid) is
+// what lets CarouselRow's reactive height work: when the active slide
+// fills all available height (Page 1, default), the column's content
+// already equals 100% of the viewport and centering has no visible
+// effect — identical to the old grid's minmax(0,1fr) behavior. When
+// the active slide is intrinsically sized instead (Page 2's locked
+// 13:6 row), the column's content is shorter than 100dvh, and
+// justify-center automatically distributes the leftover space evenly
+// above and below the whole [row + footer] block, with zero gap
+// between the row and the footer themselves (footer is just the next
+// sibling). No manual margin math needed in either case.
+//
 // Scoped entirely to this component — root layout/globals.css are
 // untouched, so dashboards and every other route are unaffected.
 export function LandingPage() {
   return (
     <div
-      className={`${anton.variable} ${geist.variable} grid h-dvh grid-rows-[minmax(0,1fr)_auto] overflow-hidden bg-ice-50 font-body text-navy`}
+      className={`${anton.variable} ${geist.variable} flex h-dvh flex-col justify-center overflow-hidden bg-ice-50 font-body text-navy`}
     >
-      {/* Carousel row — gets whatever height remains once the footer's
-          own (auto) height is subtracted. min-h-0 is required here: a
-          grid row's default min-height is `auto` (its content's
-          intrinsic size), which would otherwise prevent this row from
-          ever shrinking below the artwork's natural size and defeat
-          the whole "fit inside 100dvh" goal.
-
-          Carousel and Header are plain h-full/w-full siblings here —
-          neither this row nor either child locks a single shared
-          aspect ratio for every slide. Each <CarouselImageSlide> (see
-          carousel-image-slide.tsx) already letterboxes itself against
-          its own natural/intrinsic dimensions via object-contain, so
-          slides with different native ratios (Page 1 vs Page 2) each
-          render correctly without one forcing its shape onto the
-          other. Header independently locks to Page 1's specific ratio
-          internally (see header.tsx) purely so its percentage-based
-          hit-areas keep landing on Page 1's still-baked buttons. */}
-      <div className="relative flex min-h-0 items-center justify-center overflow-hidden">
-        <Carousel slides={SLIDES} />
-        <Header />
-      </div>
-
+      <CarouselRow slides={SLIDES} />
       <Footer />
     </div>
   );

@@ -9,11 +9,11 @@ import Image from "next/image";
 // full, never cropped or distorted.
 //
 // Fills the height it's given (h-full) rather than a fixed px ladder —
-// the actual box this ends up inside is sized by landing-page.tsx's
-// shared aspect-ratio wrapper (locked to the approved artwork's own
-// aspect ratio), not by this component. object-contain stays as a
-// safety net for any sub-pixel rounding, not as the primary sizing
-// mechanism.
+// the actual box this ends up inside is sized by carousel-row.tsx
+// (either filled to all remaining height, or intrinsically locked to a
+// specific slide's aspectRatio — see that file), not by this
+// component. object-contain does the real letterboxing work whenever
+// this box's shape doesn't exactly match the image's own ratio.
 export function CarouselImageSlide({
   src,
   alt,
