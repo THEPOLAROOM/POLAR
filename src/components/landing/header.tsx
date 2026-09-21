@@ -73,18 +73,24 @@ const SIGNUP_BOX = { left: "89.35%", top: "4.76%", width: "8.20%", height: "5.76
 const HIT_AREA_CLASS =
   "pointer-events-auto absolute rounded-full bg-transparent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal";
 
-// Permanent-shell button styling — mirrors the pill look already baked
-// into Page 1's own artwork (solid magenta Login, magenta-outlined
-// Sign Up) so the visual language stays consistent between the
-// legacy baked page and every real, artwork-independent page from
-// here on, rather than inventing a new style.
+// Permanent-shell button styling — matches the owner-approved shell
+// reference (WWW.THEPOLAROOM.COM-UI.zip, 1.png), measured directly:
+// solid magenta Login pill with navy text, magenta-outlined Sign Up
+// pill with magenta text, both set in the site's display font (Anton,
+// the same bold condensed caps face used in headlines) to match the
+// reference's chunky all-caps look. Colours reuse the existing
+// `magenta`/`navy` design tokens rather than hardcoding pixel-sampled
+// hex values, since sampling the reference lands within a couple of
+// RGB points of those tokens anyway (PNG/anti-aliasing noise, not an
+// intentional different colour).
+//
 // border-2 border-transparent on Login (which has no visible border)
 // matches Sign Up's box model exactly, so both buttons render at the
 // identical height instead of Sign Up being 4px taller from its border.
 const LOGIN_BUTTON_CLASS =
-  "pointer-events-auto rounded-full border-2 border-transparent bg-magenta px-4 py-1.5 text-sm font-bold text-white shadow-ice transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal sm:px-5 sm:py-2 sm:text-base";
+  "pointer-events-auto rounded-full border-2 border-transparent bg-magenta px-5 py-1.5 font-display text-sm uppercase tracking-wide text-navy shadow-ice transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal sm:px-7 sm:py-2 sm:text-lg";
 const SIGNUP_BUTTON_CLASS =
-  "pointer-events-auto rounded-full border-2 border-magenta px-4 py-1.5 text-sm font-bold text-magenta transition hover:bg-magenta/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal sm:px-5 sm:py-2 sm:text-base";
+  "pointer-events-auto rounded-full border-2 border-magenta px-5 py-1.5 font-display text-sm uppercase tracking-wide text-magenta transition hover:bg-magenta/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal sm:px-7 sm:py-2 sm:text-lg";
 
 const LOGO_SRC = {
   dark: "/landing/polar-logo-dark.png",
@@ -151,7 +157,7 @@ export function Header({ logoVariant }: { logoVariant?: "dark" | "light" }) {
           Login
         </Link>
         <Link href="/signup" aria-label="Sign Up" className={SIGNUP_BUTTON_CLASS}>
-          Sign Up
+          Sign up
         </Link>
       </div>
     </div>

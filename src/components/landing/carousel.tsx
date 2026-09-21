@@ -76,34 +76,60 @@ export function Carousel({
 
       {hasMultipleSlides && (
         <>
+          {/* Bare chevron glyphs (no button/circle background) matching
+              the owner-approved shell reference (1.png) — a rounded-cap,
+              rounded-join stroke rather than a sharp angular character,
+              which is why this is an inline SVG rather than the ‹/›
+              text glyphs used before. */}
           <button
             type="button"
             aria-label="Previous panel"
             onClick={() => goTo(active - 1)}
             disabled={active === 0}
-            className="absolute left-3 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-royal/30 bg-white/85 text-lg text-royal shadow-ice backdrop-blur transition disabled:opacity-30 sm:flex"
+            className="absolute left-3 top-1/2 z-20 hidden -translate-y-1/2 text-magenta transition disabled:opacity-30 sm:block"
           >
-            ‹
+            <svg viewBox="0 0 24 24" className="h-9 w-9 sm:h-11 sm:w-11" fill="none">
+              <polyline
+                points="15 4 7 12 15 20"
+                stroke="currentColor"
+                strokeWidth="3.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </button>
           <button
             type="button"
             aria-label="Next panel"
             onClick={() => goTo(active + 1)}
             disabled={active === slides.length - 1}
-            className="absolute right-3 top-1/2 z-20 hidden h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-royal/30 bg-white/85 text-lg text-royal shadow-ice backdrop-blur transition disabled:opacity-30 sm:flex"
+            className="absolute right-3 top-1/2 z-20 hidden -translate-y-1/2 text-magenta transition disabled:opacity-30 sm:block"
           >
-            ›
+            <svg viewBox="0 0 24 24" className="h-9 w-9 sm:h-11 sm:w-11" fill="none">
+              <polyline
+                points="9 4 17 12 9 20"
+                stroke="currentColor"
+                strokeWidth="3.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </button>
 
-          <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 gap-2">
+          {/* Single magenta pill containing all the dots (not
+              freestanding dots) — matches the reference. Slide count is
+              read from `slides.length`, so this automatically shows 2
+              indicators today and however many once more pages are
+              added, with no changes needed here. */}
+          <div className="absolute bottom-4 left-1/2 z-20 flex -translate-x-1/2 items-center gap-2 rounded-full bg-magenta px-3 py-2 sm:gap-2.5 sm:px-4 sm:py-2.5">
             {slides.map((slide, index) => (
               <button
                 key={slide.id}
                 type="button"
                 aria-label={`Go to ${slide.label}`}
                 onClick={() => goTo(index)}
-                className={`h-2.5 rounded-full transition-all ${
-                  index === active ? "w-6 bg-royal" : "w-2.5 bg-royal/30"
+                className={`rounded-full transition-all ${
+                  index === active ? "h-3 w-3 bg-white sm:h-3.5 sm:w-3.5" : "h-2.5 w-2.5 bg-white/55 sm:h-3 sm:w-3"
                 }`}
               />
             ))}
