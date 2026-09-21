@@ -6,12 +6,19 @@ import { CarouselImageSlide } from "../carousel-image-slide";
 // remaining image are temporarily still visible underneath the real
 // Header overlay (see landing-page.tsx) — Page 2 onward will be
 // exported without them, per the approved direction.
+//
+// fit="fill" — WIDTH-FILL TEST, not yet the approved default: stretches
+// the artwork horizontally to remove the letterbox gaps on wide
+// viewports, at the cost of allowing proportion distortion. Revert to
+// the default ("contain") by removing this prop if the test isn't
+// approved.
 export function PanelWelcome() {
   return (
     <CarouselImageSlide
       src="/landing/carousel/page-01-hero.png"
       alt="More than just a booking app. Meet POLAR, your personal booking assistant."
       priority
+      fit="fill"
     />
   );
 }
