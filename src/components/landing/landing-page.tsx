@@ -4,6 +4,7 @@ import type { Slide } from "./carousel";
 import { PanelWelcome } from "./panels/panel-01-welcome";
 import { PanelWhy } from "./panels/panel-02-why";
 import { PanelPolarId } from "./panels/panel-03-card";
+import { PanelWorkflow } from "./panels/panel-04-workflow";
 import { Footer } from "./footer";
 
 // Fonts are loaded and scoped here only (via CSS variables on this
@@ -12,17 +13,18 @@ import { Footer } from "./footer";
 const anton = Anton({ subsets: ["latin"], weight: "400", variable: "--font-anton" });
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
 
-// All three pages are pure artwork (no baked UI) against the locked
+// All four pages are pure artwork (no baked UI) against the locked
 // 13:6 / 5200x2400 contract — each export measures 16250x7500, an
-// exact match, 0% deviation. All three use the identical
+// exact match, 0% deviation. All four use the identical
 // permanent-shell sizing method (CarouselRow/Header — see
 // carousel-row.tsx and header.tsx), unmodified between them; only
 // `content` (the artwork) and `logoVariant` differ per slide. Pages 1
 // and 2's top-left brightness (250/255, 249/255) are both near-white,
-// so both take the dark logo variant. Page 3's top-left is dark
-// instead (48.3/255 — the artwork's barbershop scene sits top-left
-// there, not a light background), so it takes the light logo variant
-// — the shell's position/size/behavior stay identical either way.
+// so both take the dark logo variant. Pages 3 and 4's top-left are
+// dark instead (48.3/255 and 1.1/255 respectively — each artwork's
+// own dark corner, not a light background there), so both take the
+// light logo variant — the shell's position/size/behavior stay
+// identical regardless of which variant a slide uses.
 const SLIDES: Slide[] = [
   {
     id: "welcome",
@@ -40,6 +42,12 @@ const SLIDES: Slide[] = [
     id: "polar-id",
     label: "Your POLAR ID",
     content: <PanelPolarId />,
+    logoVariant: "light",
+  },
+  {
+    id: "workflow",
+    label: "Workflow Mode",
+    content: <PanelWorkflow />,
     logoVariant: "light",
   },
 ];
