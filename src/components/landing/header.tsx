@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { CAROUSEL_ARTWORK_ASPECT_RATIO } from "./artwork";
+import { CAROUSEL_ARTWORK_ASPECT_RATIO, LOCKED_ARTWORK_RATIO } from "./artwork";
 
 // Persistent global header — POLAR logo/Home, Login, Sign Up. Rendered
 // as an absolute-fill overlay sibling of <Carousel> (see
@@ -87,10 +87,41 @@ const HIT_AREA_CLASS =
 // border-2 border-transparent on Login (which has no visible border)
 // matches Sign Up's box model exactly, so both buttons render at the
 // identical height instead of Sign Up being 4px taller from its border.
+//
+// Sized compact/usable rather than matching the reference's literal
+// scale: at short browser viewports the artwork itself shrinks (see
+// the ARTWORK_BOX_STYLE comment below), so these need to stay legible
+// and tappable without dominating a much smaller header area.
 const LOGIN_BUTTON_CLASS =
-  "pointer-events-auto rounded-full border-2 border-transparent bg-magenta px-5 py-1.5 font-display text-sm uppercase tracking-wide text-navy shadow-ice transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal sm:px-7 sm:py-2 sm:text-lg";
+  "pointer-events-auto rounded-full border-2 border-transparent bg-magenta px-3 py-1 font-display text-xs uppercase tracking-wide text-navy shadow-ice transition hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal sm:px-4 sm:py-1.5 sm:text-sm";
 const SIGNUP_BUTTON_CLASS =
-  "pointer-events-auto rounded-full border-2 border-magenta px-5 py-1.5 font-display text-sm uppercase tracking-wide text-magenta transition hover:bg-magenta/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal sm:px-7 sm:py-2 sm:text-lg";
+  "pointer-events-auto rounded-full border-2 border-magenta px-3 py-1 font-display text-xs uppercase tracking-wide text-magenta transition hover:bg-magenta/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal sm:px-4 sm:py-1.5 sm:text-sm";
+
+// Replicates object-contain's own sizing formula in pure CSS via
+// container query units, so this box always matches exactly where the
+// active slide's own <Image object-contain> renders within the row —
+// bounded correctly by BOTH the row's width and height, whichever is
+// the binding constraint. Requires the row itself to declare
+// `container-type: size` (see carousel-row.tsx) so `cqw`/`cqh` resolve
+// against it.
+//
+// Previously this box only ever used width:100% (assumed the artwork
+// is always wider than the row, i.e. always width-constrained) — that
+// broke at short browser viewports, where the row is shorter relative
+// to its width than the artwork's own ratio, making it
+// height-constrained instead: width stayed pinned at 100% while
+// max-h-full silently clamped the height without recomputing width,
+// so the box (and everything positioned inside it) overshot the
+// row's real height. The two independent formulas below are
+// mathematically consistent with each other (both derived from the
+// same ratio), so exactly one of the max-width/max-height clamps
+// engages depending on which axis actually binds — this works
+// correctly for both cases without knowing in advance which one that
+// is.
+const ARTWORK_BOX_STYLE: React.CSSProperties = {
+  width: `calc(100cqh * ${LOCKED_ARTWORK_RATIO})`,
+  height: `calc(100cqw / ${LOCKED_ARTWORK_RATIO})`,
+};
 
 const LOGO_SRC = {
   dark: "/landing/polar-logo-dark.png",
@@ -111,11 +142,14 @@ const LOGO_SRC = {
 //
 // 2. Permanent-shell mode (logoVariant set — every page from Page 2
 //    onward): real, visible, styled Logo/Login/Sign Up, positioned
-//    with fixed spacing from the row's own corners — completely
-//    independent of whatever artwork ratio or composition is
-//    underneath. This is the artwork contract's whole point: new
-//    carousel pages never need their controls re-measured, because
-//    these controls no longer look at the artwork at all. `logoVariant`
+//    with fixed spacing from an aspect-locked box that matches
+//    wherever the active slide's own artwork actually renders (see
+//    ARTWORK_BOX_STYLE) — not the row's raw corners, since the row can
+//    now be letterboxed with side margins at short/narrow viewports.
+//    This is the artwork contract's whole point: new carousel pages
+//    never need their controls re-measured, because these controls
+//    don't look at any specific artwork's pixels, only its shared
+//    locked ratio. `logoVariant`
 //    only ever swaps which logo image renders (dark text for a
 //    light-background slide, light/white text for a dark-background
 //    slide) — position, size and behavior stay identical either way.
@@ -136,29 +170,37 @@ export function Header({ logoVariant }: { logoVariant?: "dark" | "light" }) {
   }
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-30">
-      <Link
-        href="/"
-        aria-label="POLAR Home"
-        className="pointer-events-auto absolute left-4 top-4 sm:left-6 sm:top-6"
-      >
-        <Image
-          src={LOGO_SRC[logoVariant]}
-          alt="POLAR London"
-          width={160}
-          height={80}
-          className="h-9 w-auto sm:h-11"
-          priority
-        />
-      </Link>
+    <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center">
+      {/* Aspect-locked to the artwork's own ratio and clamped by
+          max-w-full/max-h-full — this always resolves to the exact
+          same box the active slide's artwork renders into (see
+          ARTWORK_BOX_STYLE above), so the controls below stay
+          anchored to the artwork's real bounds instead of the row's
+          raw (possibly letterboxed) edges. */}
+      <div className="relative max-h-full max-w-full" style={ARTWORK_BOX_STYLE}>
+        <Link
+          href="/"
+          aria-label="POLAR Home"
+          className="pointer-events-auto absolute left-2 top-2 sm:left-4 sm:top-4"
+        >
+          <Image
+            src={LOGO_SRC[logoVariant]}
+            alt="POLAR London"
+            width={160}
+            height={80}
+            className="h-7 w-auto sm:h-9"
+            priority
+          />
+        </Link>
 
-      <div className="pointer-events-none absolute right-4 top-4 flex items-center gap-2 sm:right-6 sm:top-6 sm:gap-3">
-        <Link href="/login" aria-label="Log In" className={LOGIN_BUTTON_CLASS}>
-          Login
-        </Link>
-        <Link href="/signup" aria-label="Sign Up" className={SIGNUP_BUTTON_CLASS}>
-          Sign up
-        </Link>
+        <div className="pointer-events-none absolute right-2 top-2 flex items-center gap-1.5 sm:right-4 sm:top-4 sm:gap-2">
+          <Link href="/login" aria-label="Log In" className={LOGIN_BUTTON_CLASS}>
+            Login
+          </Link>
+          <Link href="/signup" aria-label="Sign Up" className={SIGNUP_BUTTON_CLASS}>
+            Sign up
+          </Link>
+        </div>
       </div>
     </div>
   );

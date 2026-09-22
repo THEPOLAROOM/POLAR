@@ -23,7 +23,6 @@ const SLIDES: Slide[] = [
     id: "welcome",
     label: "Welcome to POLAR",
     content: <PanelWelcome />,
-    lockAspectRatio: "13 / 6",
     logoVariant: "dark",
   },
 ];
@@ -35,24 +34,25 @@ const SLIDES: Slide[] = [
 // child ever miscalculates, this reveals it as clipped content during
 // testing instead of silently allowing a scrollbar.
 //
-// flex-col + justify-center (rather than the previous CSS grid) is
-// what lets CarouselRow's reactive height work: whenever the active
-// slide sets lockAspectRatio (every slide currently in SLIDES), the
-// row sizes itself intrinsically to that exact ratio instead of
-// filling all available height, and justify-center automatically
-// distributes any leftover viewport space evenly above and below the
-// whole [row + footer] block, with zero gap between the row and the
-// footer themselves (footer is just the next sibling). A slide with no
-// lockAspectRatio would instead fall back to the row filling all
-// remaining height (today's SLIDES has no such entry) — see
-// carousel-row.tsx. No manual margin math needed in either case.
+// grid-rows-[minmax(0,1fr)_auto] is what guarantees the footer's own
+// (auto) height is reserved first, on every render, at every viewport
+// size — the carousel row then gets exactly whatever's left via 1fr,
+// and can never claim more than that. min-h-0 on the 1fr track is
+// required: a grid row's default min-height is `auto` (its content's
+// intrinsic size), which would otherwise refuse to shrink the row
+// below the artwork's natural size and defeat the whole "always fit
+// inside the real viewport" goal. CarouselRow fills that track exactly
+// (both axes) and lets each slide's own object-contain do the actual
+// letterboxing within it — see carousel-row.tsx for why this replaced
+// an earlier per-slide reactive-sizing approach that could let the row
+// overshoot the space actually available at short viewports.
 //
 // Scoped entirely to this component — root layout/globals.css are
 // untouched, so dashboards and every other route are unaffected.
 export function LandingPage() {
   return (
     <div
-      className={`${anton.variable} ${geist.variable} flex h-dvh flex-col justify-center overflow-hidden bg-ice-50 font-body text-navy`}
+      className={`${anton.variable} ${geist.variable} grid h-dvh grid-rows-[minmax(0,1fr)_auto] overflow-hidden bg-ice-50 font-body text-navy`}
     >
       <CarouselRow slides={SLIDES} />
       <Footer />

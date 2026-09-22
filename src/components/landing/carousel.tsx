@@ -6,19 +6,15 @@ export type Slide = {
   id: string;
   label: string;
   content: React.ReactNode;
-  // Optional: when this slide is active, CarouselRow shrinks the whole
-  // row to this exact ratio instead of filling all available height —
-  // see carousel-row.tsx. Slides without this keep today's fill
-  // behavior untouched.
-  lockAspectRatio?: string;
   // Optional: which POLAR logo to show against this slide's own
   // top-left brightness, AND which Header render mode to use — see
-  // header.tsx. Leaving this unset (Page 1 only) keeps Header's
-  // original legacy behavior: invisible hit-areas locked to Page 1's
-  // own baked-artwork coordinates, unchanged. Setting it (every page
-  // from Page 2 onward) switches Header to the permanent-shell mode:
-  // real, visible, artwork-independent Logo/Login/Sign Up controls
-  // fixed to the row's own corners.
+  // header.tsx. Leaving this unset (Page 1 only, legacy) keeps
+  // Header's original legacy behavior: invisible hit-areas locked to
+  // Page 1's old baked-artwork coordinates, unchanged. Setting it
+  // (every current/future page under the locked artwork contract)
+  // switches Header to the permanent-shell mode: real, visible
+  // Logo/Login/Sign Up controls anchored to an aspect-locked box that
+  // matches wherever this slide's own artwork actually renders.
   logoVariant?: "dark" | "light";
 };
 

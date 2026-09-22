@@ -4,37 +4,41 @@ import { useState } from "react";
 import { Carousel, type Slide } from "./carousel";
 import { Header } from "./header";
 
-// Wraps Carousel + Header in the one box they both need to share, and
-// makes that box's own height reactive to which slide is currently
-// active — this is what lets a single slide (e.g. Page 2) get a tight,
-// gap-free fit without changing how any other slide (e.g. Page 1)
-// renders, since they're normally forced to share one fixed-height row.
+// Wraps Carousel + Header in the one box they both need to share.
 //
-// Default (no lockAspectRatio on the active slide): row behaves exactly
-// as before — flex-1 fills all remaining height in the parent's h-dvh
-// flex column, letting each slide's own <CarouselImageSlide
-// object-contain> do the letterboxing, same as today.
+// This row always simply fills its entire allotted grid track — both
+// width and height (see landing-page.tsx's grid-rows-[minmax(0,1fr)_
+// auto], which reserves the footer's real height first and gives this
+// row exactly whatever's left, never more). That's what guarantees the
+// complete artwork and the complete footer both always fit inside the
+// real browser viewport: this row can never grow larger than the
+// space actually available, at any viewport size.
 //
-// When the active slide sets lockAspectRatio: the row instead sizes
-// itself intrinsically to that exact ratio (width:100% with height
-// derived — the same width-first pattern proven correct for Header's
-// own box, not h-full, which over-constrains and silently ignores the
-// ratio once max-width clamps it). The parent's `justify-center` then
-// centers this now-shorter row (with the footer directly beneath it,
-// since footer is just the next sibling) within the leftover space —
-// so slides that exactly match their locked ratio render with zero
-// internal gap, and any leftover viewport space becomes a symmetric
-// margin above/below the whole composition instead of an internal
-// band hugging the artwork.
+// An earlier version tried to size this row intrinsically to the
+// active slide's own aspect ratio (via `aspectRatio` + `shrink-0`) to
+// get a tight, zero-internal-gap fit. That broke at short browser
+// viewports: `max-h-full` there resolved against the *entire* h-dvh
+// container, not the space actually left after the footer, so the row
+// could claim the full viewport height with nothing reserved for the
+// footer — and because `width` stayed pinned at 100% while `max-h-full`
+// silently clamped only the height, the row's box stopped matching the
+// artwork's real ratio too, throwing Header's controls out of position
+// along with it. Letting the row simply fill its (correctly bounded)
+// track, and letting each slide's own <CarouselImageSlide
+// object-contain> do the actual letterboxing within it, avoids all of
+// that — object-contain is bounded by both axes by construction, so it
+// can never overflow the row, and centred side margins are now an
+// expected, allowed outcome when the row is relatively taller/narrower
+// than the artwork's own ratio (previously treated as a bug to
+// eliminate; that constraint has been superseded).
 //
-// Trade-off, by design: switching between a locked-ratio slide and a
-// fill-behavior slide changes the row's (and therefore the footer's)
-// on-screen height and vertical position — this is the only way to
-// give one slide a tight fit while leaving another slide's rendering
-// completely unchanged, since they share one physical row element.
+// `container-type: size` here is what lets Header's own aspect-locked
+// sub-box (see header.tsx's ARTWORK_BOX_STYLE) use cqw/cqh units to
+// replicate object-contain's sizing formula in pure CSS, so its
+// controls stay anchored to wherever the artwork actually renders
+// rather than the row's raw (possibly letterboxed) corners.
 export function CarouselRow({ slides }: { slides: Slide[] }) {
   const [active, setActive] = useState(0);
-  const lockRatio = slides[active]?.lockAspectRatio;
   // Zero-slide fallback only: with no slides at all, slides[active] is
   // undefined, which would otherwise fall through to Header's legacy
   // baked-artwork mode (invisible hit-areas, no visible controls) —
@@ -46,14 +50,7 @@ export function CarouselRow({ slides }: { slides: Slide[] }) {
   const logoVariant = slides.length === 0 ? "dark" : slides[active]?.logoVariant;
 
   return (
-    <div
-      className={
-        lockRatio
-          ? "relative w-full max-h-full shrink-0 overflow-hidden"
-          : "relative min-h-0 flex-1 overflow-hidden"
-      }
-      style={lockRatio ? { aspectRatio: lockRatio } : undefined}
-    >
+    <div className="relative h-full min-h-0 w-full overflow-hidden" style={{ containerType: "size" }}>
       <Carousel slides={slides} onActiveChange={setActive} />
       <Header logoVariant={logoVariant} />
     </div>

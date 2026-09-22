@@ -22,3 +22,14 @@
 // only Header's Page-1-specific alignment still depends on this
 // constant.
 export const CAROUSEL_ARTWORK_ASPECT_RATIO = "16250 / 6750";
+
+// The locked artwork contract every current and future carousel page
+// is exported at (5200x2400 Canva master / 16250x7500 actual exports —
+// both reduce to this same ratio). Used by header.tsx's permanent-
+// shell mode to compute an aspect-locked sub-box that matches
+// wherever the active slide's own <Image object-contain> actually
+// renders, WITHOUT assuming which axis (width or height) is the
+// binding constraint — unlike CAROUSEL_ARTWORK_ASPECT_RATIO above,
+// this ratio is genuinely shared across every page under the locked
+// contract, so it doesn't need to be recomputed per slide.
+export const LOCKED_ARTWORK_RATIO = 13 / 6;
