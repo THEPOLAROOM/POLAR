@@ -5,6 +5,7 @@ import { PanelWelcome } from "./panels/panel-01-welcome";
 import { PanelWhy } from "./panels/panel-02-why";
 import { PanelPolarId } from "./panels/panel-03-card";
 import { PanelWorkflow } from "./panels/panel-04-workflow";
+import { PanelReady } from "./panels/panel-07-ready";
 import { Footer } from "./footer";
 
 // Fonts are loaded and scoped here only (via CSS variables on this
@@ -13,9 +14,9 @@ import { Footer } from "./footer";
 const anton = Anton({ subsets: ["latin"], weight: "400", variable: "--font-anton" });
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
 
-// All four pages are pure artwork (no baked UI) against the locked
+// All five pages are pure artwork (no baked UI) against the locked
 // 13:6 / 5200x2400 contract — each export measures 16250x7500, an
-// exact match, 0% deviation. All four use the identical
+// exact match, 0% deviation. All five use the identical
 // permanent-shell sizing method (CarouselRow/Header — see
 // carousel-row.tsx and header.tsx), unmodified between them; only
 // `content` (the artwork) and `logoVariant` differ per slide. Pages 1
@@ -23,8 +24,12 @@ const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
 // so both take the dark logo variant. Pages 3 and 4's top-left are
 // dark instead (48.3/255 and 1.1/255 respectively — each artwork's
 // own dark corner, not a light background there), so both take the
-// light logo variant — the shell's position/size/behavior stay
-// identical regardless of which variant a slide uses.
+// light logo variant. Page 5's top-left is a soft gradient rather
+// than a clean extreme — the exact spot the logo renders measures
+// 140.5/255, brighter-leaning overall — so it takes the dark variant,
+// same as Pages 1-2. The shell's position/size/behavior stay
+// identical regardless of which variant a slide uses. This is the
+// final slide of the carousel.
 const SLIDES: Slide[] = [
   {
     id: "welcome",
@@ -49,6 +54,12 @@ const SLIDES: Slide[] = [
     label: "Workflow Mode",
     content: <PanelWorkflow />,
     logoVariant: "light",
+  },
+  {
+    id: "ready",
+    label: "You're Ready",
+    content: <PanelReady />,
+    logoVariant: "dark",
   },
 ];
 
