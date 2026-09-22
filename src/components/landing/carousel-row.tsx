@@ -6,37 +6,36 @@ import { Header } from "./header";
 
 // Wraps Carousel + Header in the one box they both need to share.
 //
-// This row always simply fills its entire allotted grid track — both
-// width and height (see landing-page.tsx's grid-rows-[minmax(0,1fr)_
-// auto], which reserves the footer's real height first and gives this
-// row exactly whatever's left, never more). That's what guarantees the
-// complete artwork and the complete footer both always fit inside the
-// real browser viewport: this row can never grow larger than the
-// space actually available, at any viewport size.
+// This row is always sized to width:100% (of the page, always full —
+// this is what guarantees zero left/right gaps) with its height purely
+// derived from the locked 13:6 ratio, uncapped by any max-height. That
+// means the row IS the artwork's exact displayed box by construction
+// — CarouselImageSlide's object-contain inside it has nothing to
+// letterbox (container ratio == image ratio exactly), and Header can
+// simply fill this same box with plain `inset-0` (see header.tsx) with
+// no separate box computation of its own needed.
 //
-// An earlier version tried to size this row intrinsically to the
-// active slide's own aspect ratio (via `aspectRatio` + `shrink-0`) to
-// get a tight, zero-internal-gap fit. That broke at short browser
-// viewports: `max-h-full` there resolved against the *entire* h-dvh
-// container, not the space actually left after the footer, so the row
-// could claim the full viewport height with nothing reserved for the
-// footer — and because `width` stayed pinned at 100% while `max-h-full`
-// silently clamped only the height, the row's box stopped matching the
-// artwork's real ratio too, throwing Header's controls out of position
-// along with it. Letting the row simply fill its (correctly bounded)
-// track, and letting each slide's own <CarouselImageSlide
-// object-contain> do the actual letterboxing within it, avoids all of
-// that — object-contain is bounded by both axes by construction, so it
-// can never overflow the row, and centred side margins are now an
-// expected, allowed outcome when the row is relatively taller/narrower
-// than the artwork's own ratio (previously treated as a bug to
-// eliminate; that constraint has been superseded).
+// Two earlier approaches were tried and replaced:
+// 1) Locking the row intrinsically via `aspectRatio` + `shrink-0` +
+//    `max-h-full`: `max-h-full` resolved against the *entire* h-dvh
+//    container rather than the space left after the footer, so the
+//    row could claim the full viewport with nothing reserved for the
+//    footer — while `width` stayed pinned at 100% and never
+//    recomputed when `max-h-full` clamped the height, breaking the
+//    box's actual ratio too. That clipped the footer and threw
+//    Header's controls out of position.
+// 2) Filling the row to its exact grid-track box (both axes) and
+//    letting object-contain do the letterboxing: this correctly fit
+//    everything inside the real viewport, but introduced visible
+//    left/right gaps whenever the track was proportionally wider than
+//    13:6 (a short real browser window) — ruled out now in favour of
+//    always-full-width.
 //
-// `container-type: size` here is what lets Header's own aspect-locked
-// sub-box (see header.tsx's ARTWORK_BOX_STYLE) use cqw/cqh units to
-// replicate object-contain's sizing formula in pure CSS, so its
-// controls stay anchored to wherever the artwork actually renders
-// rather than the row's raw (possibly letterboxed) corners.
+// This version accepts the one remaining trade-off explicitly: on an
+// unusually short real browser window, the row's intrinsic height can
+// exceed the viewport, and rather than reintroducing clipping (1) or
+// gaps (2), landing-page.tsx now allows the page to grow taller than
+// the viewport and scroll in that specific case.
 export function CarouselRow({ slides }: { slides: Slide[] }) {
   const [active, setActive] = useState(0);
   // Zero-slide fallback only: with no slides at all, slides[active] is
@@ -50,7 +49,7 @@ export function CarouselRow({ slides }: { slides: Slide[] }) {
   const logoVariant = slides.length === 0 ? "dark" : slides[active]?.logoVariant;
 
   return (
-    <div className="relative h-full min-h-0 w-full overflow-hidden" style={{ containerType: "size" }}>
+    <div className="relative w-full shrink-0" style={{ aspectRatio: "13 / 6" }}>
       <Carousel slides={slides} onActiveChange={setActive} />
       <Header logoVariant={logoVariant} />
     </div>

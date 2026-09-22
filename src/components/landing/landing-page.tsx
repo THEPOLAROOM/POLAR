@@ -29,30 +29,36 @@ const SLIDES: Slide[] = [
 
 // Single-screen desktop shell: header/global UI is an overlay inside
 // CarouselRow (not its own row), footer is a real, compact, independent
-// row directly beneath it. h-dvh + overflow-hidden enforces "no
-// homepage scrolling" as a hard constraint rather than a hope; if any
-// child ever miscalculates, this reveals it as clipped content during
-// testing instead of silently allowing a scrollbar.
+// row directly beneath it.
 //
-// grid-rows-[minmax(0,1fr)_auto] is what guarantees the footer's own
-// (auto) height is reserved first, on every render, at every viewport
-// size — the carousel row then gets exactly whatever's left via 1fr,
-// and can never claim more than that. min-h-0 on the 1fr track is
-// required: a grid row's default min-height is `auto` (its content's
-// intrinsic size), which would otherwise refuse to shrink the row
-// below the artwork's natural size and defeat the whole "always fit
-// inside the real viewport" goal. CarouselRow fills that track exactly
-// (both axes) and lets each slide's own object-contain do the actual
-// letterboxing within it — see carousel-row.tsx for why this replaced
-// an earlier per-slide reactive-sizing approach that could let the row
-// overshoot the space actually available at short viewports.
+// min-h-dvh + flex-col + justify-center (not a fixed h-dvh, and no
+// overflow-hidden on the vertical axis): the carousel row is always
+// sized to width:100% with its height purely derived from the locked
+// 13:6 ratio (see carousel-row.tsx) — never shrunk to fit, never
+// letterboxed — so the artwork always fills the full width with zero
+// left/right gaps, at every viewport size. When that intrinsic height
+// plus the footer's own height fits within the viewport (true at
+// every one of the 5 required desktop resolutions, and at ordinary
+// maximized real browser windows), min-h-dvh's floor is exactly met
+// and justify-center distributes the small leftover as a symmetric
+// margin above/below the whole [row + footer] block, same as before.
+// When it doesn't fit — an unusually short real browser window, where
+// real chrome eats enough vertical space that full-width + intrinsic
+// height would otherwise force cropping or squeezed proportions — the
+// container is allowed to grow taller than the viewport instead, and
+// the page scrolls vertically to reveal the rest. That trade (scroll,
+// only in that specific case, instead of side gaps or clipping) was
+// an explicit choice: full-width/no-gaps was prioritised over the
+// earlier "never scroll" rule for that one edge case.
 //
 // Scoped entirely to this component — root layout/globals.css are
-// untouched, so dashboards and every other route are unaffected.
+// untouched (verified neither imposes a height/overflow constraint
+// that would block this scroll), so dashboards and every other route
+// are unaffected.
 export function LandingPage() {
   return (
     <div
-      className={`${anton.variable} ${geist.variable} grid h-dvh grid-rows-[minmax(0,1fr)_auto] overflow-hidden bg-ice-50 font-body text-navy`}
+      className={`${anton.variable} ${geist.variable} flex min-h-dvh flex-col justify-center overflow-x-hidden bg-ice-50 font-body text-navy`}
     >
       <CarouselRow slides={SLIDES} />
       <Footer />
