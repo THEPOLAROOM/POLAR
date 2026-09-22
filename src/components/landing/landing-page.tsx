@@ -3,6 +3,7 @@ import { CarouselRow } from "./carousel-row";
 import type { Slide } from "./carousel";
 import { PanelWelcome } from "./panels/panel-01-welcome";
 import { PanelWhy } from "./panels/panel-02-why";
+import { PanelPolarId } from "./panels/panel-03-card";
 import { Footer } from "./footer";
 
 // Fonts are loaded and scoped here only (via CSS variables on this
@@ -11,14 +12,17 @@ import { Footer } from "./footer";
 const anton = Anton({ subsets: ["latin"], weight: "400", variable: "--font-anton" });
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
 
-// Both pages are pure artwork (no baked UI) against the locked 13:6 /
-// 5200x2400 contract — each export measures 16250x7500, an exact
-// match, 0% deviation. Both use the identical permanent-shell sizing
-// method (CarouselRow/Header — see carousel-row.tsx and header.tsx),
-// unmodified between them; only `content` (the artwork) and
-// `logoVariant` differ per slide. Page 1's top-left brightness
-// (250/255) and Page 2's (249/255) are both near-white, so both take
-// the dark logo variant.
+// All three pages are pure artwork (no baked UI) against the locked
+// 13:6 / 5200x2400 contract — each export measures 16250x7500, an
+// exact match, 0% deviation. All three use the identical
+// permanent-shell sizing method (CarouselRow/Header — see
+// carousel-row.tsx and header.tsx), unmodified between them; only
+// `content` (the artwork) and `logoVariant` differ per slide. Pages 1
+// and 2's top-left brightness (250/255, 249/255) are both near-white,
+// so both take the dark logo variant. Page 3's top-left is dark
+// instead (48.3/255 — the artwork's barbershop scene sits top-left
+// there, not a light background), so it takes the light logo variant
+// — the shell's position/size/behavior stay identical either way.
 const SLIDES: Slide[] = [
   {
     id: "welcome",
@@ -31,6 +35,12 @@ const SLIDES: Slide[] = [
     label: "Why POLAR?",
     content: <PanelWhy />,
     logoVariant: "dark",
+  },
+  {
+    id: "polar-id",
+    label: "Your POLAR ID",
+    content: <PanelPolarId />,
+    logoVariant: "light",
   },
 ];
 
