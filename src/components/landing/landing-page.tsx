@@ -15,21 +15,22 @@ const anton = Anton({ subsets: ["latin"], weight: "400", variable: "--font-anton
 const geist = Geist({ subsets: ["latin"], variable: "--font-geist" });
 
 // All five pages are pure artwork (no baked UI) against the locked
-// 13:6 / 5200x2400 contract — each export measures 16250x7500, an
-// exact match, 0% deviation. All five use the identical
-// permanent-shell sizing method (CarouselRow/Header — see
-// carousel-row.tsx and header.tsx), unmodified between them; only
-// `content` (the artwork) and `logoVariant` differ per slide. Pages 1
-// and 2's top-left brightness (250/255, 249/255) are both near-white,
-// so both take the dark logo variant. Pages 3 and 4's top-left are
-// dark instead (48.3/255 and 1.1/255 respectively — each artwork's
-// own dark corner, not a light background there), so both take the
-// light logo variant. Page 5's top-left is a soft gradient rather
-// than a clean extreme — the exact spot the logo renders measures
-// 140.5/255, brighter-leaning overall — so it takes the dark variant,
-// same as Pages 1-2. The shell's position/size/behavior stay
-// identical regardless of which variant a slide uses. This is the
-// final slide of the carousel.
+// 13:6 / 5200x2400 contract, 0% ratio deviation. Pages 1-4 export at
+// 16250x7500 (scaled up); Page 5's current asset is the native
+// 5200x2400 Canva master. All five use the identical permanent-shell
+// sizing method (CarouselRow/Header — see carousel-row.tsx and
+// header.tsx), unmodified between them; only `content` (the artwork)
+// and `logoVariant` differ per slide. Pages 1 and 2's top-left
+// brightness (250/255, 249/255) are both near-white, so both take the
+// dark logo variant. Pages 3 and 4's top-left are dark instead
+// (48.3/255 and 1.1/255 respectively — each artwork's own dark
+// corner, not a light background there), so both take the light logo
+// variant. Page 5's top-left is a soft gradient rather than a clean
+// extreme — the exact spot the logo renders measures 140.5/255,
+// brighter-leaning overall — so it takes the dark variant, same as
+// Pages 1-2. The shell's position/size/behavior stay identical
+// regardless of which variant a slide uses. This is the final slide
+// of the carousel.
 const SLIDES: Slide[] = [
   {
     id: "welcome",
