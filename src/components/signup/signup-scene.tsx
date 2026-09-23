@@ -32,18 +32,19 @@ const CANVAS_ASPECT = "1672 / 941";
 export const PANEL_BOX = { left: "23.33%", top: "9.35%", width: "53.89%", height: "83.64%" };
 const PANEL_FILL = "#04070f";
 
-// Barber-only alternative panel mode (`sizing="content"` below) —
-// added specifically to fix a real production defect: with the
-// default fixed-height PANEL_BOX (still used unchanged by Client,
-// which fills nearly all of that measured height anyway), Barber's
-// collapsed accordions left a large dead black area under the content,
-// because the outer fill div was always exactly 83.64% of the canvas
-// tall regardless of how much content it actually held. This mode
-// keeps the same LEFT/TOP/WIDTH (still the mockup's own measured
-// panel position — unchanged) but lets height be intrinsic to content,
-// capped at that same 83.64% ceiling so an all-expanded state still
-// respects the original approved boundary. Client's own rendering path
-// (no `sizing` prop) is completely untouched by this addition.
+// Barber-only alternative panel mode (`sizing="content"` below).
+// Barber's artwork (unlike Client's) is a blank-interior plate — the
+// splatter/glow/gradient frame is baked in, but the panel interior is
+// empty, approved art with nothing left to occlude. So this mode
+// renders a fully transparent container at the same LEFT/TOP/WIDTH
+// (still the artwork's own measured panel position — unchanged) with
+// height intrinsic to content, capped at that same 83.64% ceiling
+// (the frame's own baked inner-bottom edge) so scrolling/expanded
+// content is contained by the real frame instead of spilling past it.
+// No fill colour, no CSS-drawn border — the approved baked frame does
+// that job, unmodified, in every accordion state. Client's own
+// rendering path (no `sizing` prop, still occluding a content-baked
+// reference panel) is completely untouched by this.
 const PANEL_LEFT = PANEL_BOX.left;
 const PANEL_TOP = PANEL_BOX.top;
 const PANEL_WIDTH = PANEL_BOX.width;
@@ -58,11 +59,11 @@ export function SignupScene({
   src: string;
   alt: string;
   children: React.ReactNode;
-  /** "fixed" (default, unchanged) = Client's original exact-box panel.
-   *  "content" = Barber's content-sized panel, capped at the same
-   *  height ceiling, with a real CSS gradient border (not a reveal of
-   *  the baked reference border, which only lined up correctly when
-   *  the box was always the same fixed size). */
+  /** "fixed" (default, unchanged) = Client's exact-box panel, occluding
+   *  a content-baked reference panel with an opaque fill.
+   *  "content" = Barber's transparent, content-sized panel over a
+   *  blank-interior artwork plate — no fill, no CSS border, capped at
+   *  the same height ceiling as the frame's own baked interior. */
   sizing?: "fixed" | "content";
 }) {
   return (
@@ -79,12 +80,10 @@ export function SignupScene({
             </div>
           ) : (
             <div
-              className="absolute flex flex-col overflow-hidden rounded-2xl bg-gradient-to-br from-royal-light via-royal to-magenta shadow-[0_25px_60px_-15px_rgba(0,0,0,0.6)]"
-              style={{ left: PANEL_LEFT, top: PANEL_TOP, width: PANEL_WIDTH, maxHeight: PANEL_MAX_HEIGHT, padding: "0.15vw" }}
+              className="absolute flex flex-col overflow-hidden rounded-[3%]"
+              style={{ left: PANEL_LEFT, top: PANEL_TOP, width: PANEL_WIDTH, maxHeight: PANEL_MAX_HEIGHT }}
             >
-              <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1rem]" style={{ backgroundColor: PANEL_FILL }}>
-                {children}
-              </div>
+              {children}
             </div>
           )}
         </div>

@@ -286,19 +286,19 @@ export default function BarberSignupPage() {
         </p>
       </main>
 
-      {/* Desktop — new approved scene. Panel is now content-sized
-          (SignupScene sizing="content"): its outer height matches its
-          actual content, capped at the mockup's own measured ceiling,
-          instead of always being that full height regardless of how
-          much content is actually showing — fixes the large dead
-          black area a fixed-height panel produced whenever the
-          accordions were collapsed. Fixed header (logo/title/
-          subtitle) + a single internally-scrollable region holding
-          every section, consent and the submit button — that region
-          only actually scrolls once expanded content exceeds the
-          panel's height cap. The panel shell/position and the room
+      {/* Desktop — new blank-interior artwork (v3): the splatter/glow
+          panel frame is baked, approved art; the interior is empty, so
+          SignupScene's "content" mode renders this transparently over
+          it — no fill colour, no CSS-drawn border, nothing occluding
+          or recreating the frame. Panel height is intrinsic to content,
+          capped at the frame's own baked interior ceiling, so it never
+          extends past the real frame's bottom edge. Fixed header
+          (logo/title/subtitle) + a single internally-scrollable region
+          holding every section, consent and the submit button — that
+          region only actually scrolls once expanded content exceeds
+          the panel's height cap. The panel shell/position and the room
           around it never move; only this inner region scrolls. */}
-      <SignupScene src="/signup/create-account-barber-v2.webp" alt="POLAR — Barber Portal. Create your account." sizing="content">
+      <SignupScene src="/signup/create-account-barber-v3.webp" alt="POLAR — Barber Portal. Create your account." sizing="content">
         <div className="shrink-0" style={{ padding: "6% 9% 0 9%" }}>
           <div className="relative mx-auto" style={{ width: "19%", aspectRatio: "1774 / 887" }}>
             <Image src="/login/login-logo.png" alt="POLAR London" fill className="object-contain" priority />
