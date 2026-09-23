@@ -18,10 +18,16 @@ export function CarouselImageSlide({
   src,
   alt,
   priority = false,
+  overlay,
 }: {
   src: string;
   alt: string;
   priority?: boolean;
+  // Optional extra layer rendered on top of the artwork, inside this
+  // same relative box — e.g. a real clickable control positioned over
+  // a baked graphic that has no hit-area of its own. Absent by
+  // default so every other slide is completely unaffected.
+  overlay?: React.ReactNode;
 }) {
   return (
     <section className="relative h-full w-full bg-ice-50">
@@ -33,6 +39,7 @@ export function CarouselImageSlide({
         className="object-contain"
         priority={priority}
       />
+      {overlay}
     </section>
   );
 }
