@@ -22,23 +22,44 @@ export default function SignupPortalPage() {
     <main className="relative min-h-screen overflow-hidden bg-navy sm:h-screen">
       {/* Desktop / tablet artwork — new mastered artwork
           (WWW.THEPOLAROOM.COM-SIGNUP-PAGE.png, converted to WebP), an
-          exact 3840x2160 (16:9), replacing the earlier 1672x941 asset.
-          `width: min(100%, calc(100dvh * 16/9))` (not the old
-          `w-full max-h-screen`) — CSS aspect-ratio only derives the
-          dimension that ISN'T already explicit, so pairing an explicit
-          `width:100%` with a separate `max-height` cap lets the two
-          disagree the moment the cap actually bites: height gets
-          clamped but width silently stays at 100%, breaking the box's
-          own ratio and reintroducing exactly the navy side-gap bug
-          this file's mobile section already fixed once before (see
-          that comment below) — confirmed live at 1920x1080, where a
-          real browser's actual content viewport (chrome/tabs eat
-          vertical space) is measurably wider-than-16:9, not narrower.
-          `min(...)` picks the true binding constraint up front, so the
-          box's rendered shape is always exactly 16:9, on every screen,
-          with no separate cap needed. */}
-      <div className="hidden h-full w-full items-center justify-center sm:flex">
-        <div className="relative aspect-[16/9]" style={{ width: "min(100%, calc(100dvh * 16 / 9))" }}>
+          exact 3840x2160 (16:9). `width: max(100%, calc(100dvh * 16/9))`
+          — the crop-to-fill counterpart of the mobile section's own
+          `max(100%, calc(100dvh * 1024/1536))` formula below, generalised
+          to whichever axis actually needs to grow. On the common real
+          desktop case (measured live: an ordinary, non-fullscreen
+          browser window's actual content viewport — after tabs/address
+          bar — is wider-than-16:9, e.g. 1920x1080 → ~1890x985,
+          ratio ~1.92), `calc(100dvh*16/9)` resolves smaller than 100%,
+          so max() picks 100% width, height is then derived from that
+          same 100% via aspect-ratio and comes out taller than 100dvh —
+          it's allowed to overflow and gets cropped symmetrically
+          top/bottom by this row's own `overflow-hidden` + centering
+          (the exact technique /login's tablet composition already
+          uses). On the rarer narrower-than-16:9 case (e.g. 1440x900 at
+          ~1410x805, ratio ~1.75 — previously a real top/bottom GAP
+          under the old `min(...)` formula), `calc(100dvh*16/9)` now
+          resolves LARGER than 100%, so max() switches strategy: width
+          overflows instead, cropped symmetrically left/right, height
+          exactly fills 100dvh. Either way the box's rendered shape
+          stays true, undistorted 16:9 — never gaps, never stretches —
+          and the door hit-boxes below (positioned as % of this same
+          box, which always represents the FULL uncropped artwork, just
+          partially off-screen on whichever axis overflows) stay
+          correctly aligned with zero recalibration needed, for the
+          same reason the mobile hit-boxes already didn't need it. */}
+      <div className="hidden h-full w-full items-center justify-center overflow-hidden sm:flex">
+        {/* shrink-0 is load-bearing: this box is a flex child, and a
+            flex item's default flex-shrink:1 uses its own `width` as a
+            flex-basis it's then allowed to compress back down to fit
+            the container — silently undoing the max() overflow above
+            and reproducing the exact same gap this fix exists to
+            remove (confirmed live: without shrink-0, the 1440x900 case
+            still showed an 11.9px top/bottom gap despite the correct
+            max() value, because flex-shrink was quietly re-shrinking
+            the box to 100% width behind the scenes). Mobile's
+            equivalent box never needed this because it's positioned
+            `absolute`, not a flex child. */}
+        <div className="relative aspect-[16/9] shrink-0" style={{ width: "max(100%, calc(100dvh * 16 / 9))" }}>
           <Image
             src="/signup/portal-desktop-v2.webp"
             alt="POLAR — Join the Room. Two doors: I'm a Client, I'm a Barber."
