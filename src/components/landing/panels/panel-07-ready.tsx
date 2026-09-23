@@ -31,12 +31,23 @@ import { CarouselImageSlide } from "../carousel-image-slide";
 // so it completely occludes the old baked pill beneath it at this
 // size/position — nothing from the original artwork shows through.
 //
-// Nudged +0.3% top / +0.3% left after live production review found a
-// faint doubled border (the old baked pill's edge peeking out
-// bottom-left of the new one) — owner-confirmed direction/fix via a
-// zoomed screenshot of the corner, not re-derived from a fresh pixel
-// scan.
-const CTA_BOX = { left: "4.8%", top: "63.6%", width: "30.4%", height: "14.4%" };
+// A live review after the first pass still found a faint doubled
+// border. Re-measured precisely rather than nudging blindly again:
+// scanned the base artwork for the old pill's own tight border
+// centerline (per-column bright-pixel run within the confirmed
+// y=1584-1824 border band) — left/right strips centre at x=295 and
+// x=1759.5 of 5200, i.e. 5.673%/33.837% — and independently derived
+// where this overlay's own core border lands at a given CTA_BOX via
+// its cropped asset's measured alpha bbox + the object-contain
+// scaling math. Result: the +0.3% top shift from the first pass was
+// correct and fully closes the bottom gap, but the +0.3% left shift
+// was the wrong direction — it was already close to correct at the
+// original 4.5%, and moving it right opened a small gap on the LEFT
+// edge instead (confirmed in a live screenshot: two distinct bright
+// peaks ~5px apart at the left border, the fainter one being the old
+// pill showing through to the left of this overlay's own edge). Left
+// reverted to 4.5%; top keeps the +0.3% correction.
+const CTA_BOX = { left: "4.5%", top: "63.6%", width: "30.4%", height: "14.4%" };
 
 export function PanelReady() {
   return (
