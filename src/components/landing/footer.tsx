@@ -1,15 +1,15 @@
 import Link from "next/link";
 
 // "Contact" has no real destination yet (no approved email/page
-// exists) — a placeholder "#" link pending a real destination.
-// "About POLAR" points at an in-page anchor that no longer exists
-// (the section it used to jump to was removed from the homepage in an
-// earlier pass, and there is no standalone About POLAR route yet
-// either) — both are known, pre-existing gaps, preserved exactly as
-// they were rather than addressed here. Privacy Policy / Terms &
-// Conditions reuse the existing, already-built /legal routes.
+// exists) — a placeholder "#" link pending a real destination, left
+// as-is (out of scope for this pass). "About POLAR" now routes to the
+// real /about page (src/app/about/page.tsx), replacing the old
+// /#about anchor, which pointed at a homepage section that no longer
+// exists. Privacy Policy / Terms & Conditions reuse the existing
+// /legal routes (their content was reset to a shared background-only
+// shell in this same pass — see those page files).
 const FOOTER_LINKS = [
-  { href: "/#about", label: "About POLAR" },
+  { href: "/about", label: "About POLAR" },
   { href: "/legal/privacy", label: "Privacy Policy" },
   { href: "/legal/terms", label: "Terms & Conditions" },
   { href: "#", label: "Contact" },
