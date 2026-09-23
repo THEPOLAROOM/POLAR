@@ -30,7 +30,13 @@ import { CarouselImageSlide } from "../carousel-image-slide";
 // The new image is fully opaque across the pill's solid fill/border,
 // so it completely occludes the old baked pill beneath it at this
 // size/position — nothing from the original artwork shows through.
-const CTA_BOX = { left: "4.5%", top: "63.3%", width: "30.4%", height: "14.4%" };
+//
+// Nudged +0.3% top / +0.3% left after live production review found a
+// faint doubled border (the old baked pill's edge peeking out
+// bottom-left of the new one) — owner-confirmed direction/fix via a
+// zoomed screenshot of the corner, not re-derived from a fresh pixel
+// scan.
+const CTA_BOX = { left: "4.8%", top: "63.6%", width: "30.4%", height: "14.4%" };
 
 export function PanelReady() {
   return (
