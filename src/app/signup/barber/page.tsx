@@ -53,7 +53,7 @@ const INPUT_CLASS =
 function ChevronDown({ open }: { open: boolean }) {
   return (
     <ChevronDownIcon
-      className={`h-[1vw] w-[1vw] shrink-0 text-royal-light transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+      className={`h-[1.2vw] w-[1.2vw] shrink-0 text-royal-light transition-transform duration-200 ${open ? "rotate-180" : ""}`}
     />
   );
 }
@@ -74,20 +74,20 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="overflow-hidden rounded-lg border border-white/10 bg-white/[0.03]">
+    <div className="overflow-hidden rounded-xl border border-white/10 bg-white/[0.03]">
       <button
         type="button"
         onClick={onToggle}
         aria-expanded={open}
-        className="flex w-full items-center text-left transition hover:bg-white/[0.03]"
-        style={{ gap: "0.9vw", padding: "0.85vw 1vw" }}
+        className="flex w-full items-center text-left transition hover:bg-white/[0.04]"
+        style={{ gap: "1.1vw", padding: "1.15vw 1.3vw" }}
       >
-        <span className="block shrink-0 text-royal-light" style={{ height: "1.3vw", width: "1.3vw" }}>
+        <span className="block shrink-0 text-royal-light" style={{ height: "1.7vw", width: "1.7vw" }}>
           {icon}
         </span>
         <span className="flex-1">
-          <span className="block text-white" style={{ fontSize: "0.85vw" }}>{title}</span>
-          <span className="block text-white/50" style={{ fontSize: "0.68vw" }}>{subtitle}</span>
+          <span className="block text-white" style={{ fontSize: "1.05vw" }}>{title}</span>
+          <span className="block text-white/50" style={{ fontSize: "0.8vw" }}>{subtitle}</span>
         </span>
         <ChevronDown open={open} />
       </button>
@@ -97,7 +97,7 @@ function Section({
           present in the form's layout, not removed from it. */}
       <div className="grid transition-[grid-template-rows] duration-300 ease-out" style={{ gridTemplateRows: open ? "1fr" : "0fr" }}>
         <div className="overflow-hidden">
-          <div className="flex flex-col" style={{ padding: "0 1vw 1vw 1vw", gap: "0.7vw" }}>
+          <div className="flex flex-col" style={{ padding: "0 1.3vw 1.3vw 1.3vw", gap: "0.9vw" }}>
             {children}
           </div>
         </div>
@@ -125,7 +125,7 @@ function TextField({
 }) {
   return (
     <label className="block">
-      <span className="mb-[0.3vw] block text-white/70" style={{ fontSize: "0.68vw" }}>
+      <span className="mb-[0.35vw] block text-white/70" style={{ fontSize: "0.8vw" }}>
         {label}
         {required && <span className="text-magenta"> *</span>}
       </span>
@@ -137,7 +137,7 @@ function TextField({
         placeholder={placeholder}
         onInvalid={onInvalid}
         className={INPUT_CLASS}
-        style={{ padding: "0.6vw 0.8vw", fontSize: "0.78vw" }}
+        style={{ padding: "0.75vw 0.9vw", fontSize: "0.92vw" }}
       />
     </label>
   );
@@ -286,27 +286,56 @@ export default function BarberSignupPage() {
         </p>
       </main>
 
-      {/* Desktop — new approved scene. Fixed header (logo/title/
+      {/* Desktop — new approved scene. Panel is now content-sized
+          (SignupScene sizing="content"): its outer height matches its
+          actual content, capped at the mockup's own measured ceiling,
+          instead of always being that full height regardless of how
+          much content is actually showing — fixes the large dead
+          black area a fixed-height panel produced whenever the
+          accordions were collapsed. Fixed header (logo/title/
           subtitle) + a single internally-scrollable region holding
-          every section, consent and the submit button. The panel
-          shell/position (SignupScene) and the room around it never
-          move; only this inner region scrolls, and only when its
-          content genuinely doesn't fit. */}
-      <SignupScene src="/signup/create-account-barber-v2.webp" alt="POLAR — Barber Portal. Create your account.">
-        <div className="flex h-full w-full flex-col">
-          <div className="shrink-0 px-[8%] pt-[5%]">
-            <div className="relative mx-auto" style={{ width: "14%", aspectRatio: "1774 / 887" }}>
-              <Image src="/login/login-logo.png" alt="POLAR London" fill className="object-contain" priority />
-            </div>
-            <p className="mt-[0.7vw] font-display text-[0.8vw] tracking-[0.25em] text-royal-light">BARBER PORTAL</p>
-            <h1 className="mt-[0.35vw] font-display text-[1.8vw] leading-none tracking-wide text-white">
-              Create <span className="text-royal-light">your</span> account
-            </h1>
-            <p className="mt-[0.4vw] text-[0.78vw] text-white/60">Join POLAR. Be part of something bigger.</p>
+          every section, consent and the submit button — that region
+          only actually scrolls once expanded content exceeds the
+          panel's height cap. The panel shell/position and the room
+          around it never move; only this inner region scrolls. */}
+      <SignupScene src="/signup/create-account-barber-v2.webp" alt="POLAR — Barber Portal. Create your account." sizing="content">
+        <div className="shrink-0" style={{ padding: "6% 9% 0 9%" }}>
+          <div className="relative mx-auto" style={{ width: "19%", aspectRatio: "1774 / 887" }}>
+            <Image src="/login/login-logo.png" alt="POLAR London" fill className="object-contain" priority />
           </div>
+          <p className="mt-[0.9vw] text-center font-display text-[1vw] tracking-[0.25em] text-royal-light">BARBER PORTAL</p>
+          <h1 className="mt-[0.4vw] text-center font-display text-[2.3vw] leading-none tracking-wide text-white">
+            Create <span className="text-royal-light">your</span> account
+          </h1>
+          <p className="mt-[0.5vw] text-center text-[0.95vw] text-white/60">Join POLAR. Be part of something bigger.</p>
+        </div>
 
-          <div className="mt-[1vw] min-h-0 flex-1 overflow-y-auto overscroll-contain" style={{ padding: "0 8% 6% 8%" }}>
-            <form onSubmit={handleSubmit} className="flex flex-col" style={{ gap: "0.7vw" }}>
+        {/* barber-scroll: a thin POLAR-tinted scrollbar instead of the
+            browser's thick default white one — scroll itself (wheel,
+            touch, keyboard via focus) is completely unaffected, only
+            its visual chrome changes. Firefox via scrollbar-width/
+            scrollbar-color, Chromium/WebKit via the pseudo-elements. */}
+        <style jsx global>{`
+          .barber-scroll {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(91, 155, 255, 0.5) transparent;
+          }
+          .barber-scroll::-webkit-scrollbar {
+            width: 6px;
+          }
+          .barber-scroll::-webkit-scrollbar-track {
+            background: transparent;
+          }
+          .barber-scroll::-webkit-scrollbar-thumb {
+            background-color: rgba(91, 155, 255, 0.5);
+            border-radius: 999px;
+          }
+          .barber-scroll::-webkit-scrollbar-thumb:hover {
+            background-color: rgba(91, 155, 255, 0.75);
+          }
+        `}</style>
+        <div className="barber-scroll mt-[1.3vw] min-h-0 flex-auto overflow-y-auto overscroll-contain" style={{ padding: "0 9% 7% 9%" }}>
+            <form onSubmit={handleSubmit} className="flex flex-col" style={{ gap: "1vw" }}>
               <Section
                 icon={<UserIcon className="h-full w-full" />}
                 title="Personal Details"
@@ -318,7 +347,7 @@ export default function BarberSignupPage() {
                 <TextField name="phone" label="Phone Number" type="tel" required onInvalid={() => openSection("personal")} />
                 <TextField name="email" label="Email" type="email" required onInvalid={() => openSection("personal")} />
                 <label className="block">
-                  <span className="mb-[0.3vw] block text-white/70" style={{ fontSize: "0.68vw" }}>
+                  <span className="mb-[0.35vw] block text-white/70" style={{ fontSize: "0.8vw" }}>
                     Password <span className="text-magenta">*</span>
                   </span>
                   <div className="relative">
@@ -330,7 +359,7 @@ export default function BarberSignupPage() {
                       placeholder="Minimum 12 characters"
                       onInvalid={() => openSection("personal")}
                       className={INPUT_CLASS}
-                      style={{ padding: "0.6vw 0.8vw", fontSize: "0.78vw", paddingRight: "10%" }}
+                      style={{ padding: "0.75vw 0.9vw", fontSize: "0.92vw", paddingRight: "10%" }}
                     />
                     <button
                       type="button"
@@ -338,7 +367,7 @@ export default function BarberSignupPage() {
                       aria-label={showPassword ? "Hide password" : "Show password"}
                       className="absolute inset-y-0 right-[3%] flex items-center text-white/50 hover:text-white"
                     >
-                      {showPassword ? <EyeOffIcon className="h-[0.9vw] w-[0.9vw]" /> : <EyeIcon className="h-[0.9vw] w-[0.9vw]" />}
+                      {showPassword ? <EyeOffIcon className="h-[1.05vw] w-[1.05vw]" /> : <EyeIcon className="h-[1.05vw] w-[1.05vw]" />}
                     </button>
                   </div>
                 </label>
@@ -351,7 +380,7 @@ export default function BarberSignupPage() {
                 open={openSections.professional}
                 onToggle={() => toggleSection("professional")}
               >
-                <p className="text-white/40" style={{ fontSize: "0.62vw" }}>
+                <p className="text-white/40" style={{ fontSize: "0.78vw" }}>
                   Optional — you can fill this in later from your dashboard instead.
                 </p>
                 <TextField name="barber_name" label="Barber / Stylist Name" />
@@ -359,7 +388,7 @@ export default function BarberSignupPage() {
                 <TextField name="years_experience" label="Years of Experience" type="number" />
                 <div>
                   <TextField name="work_location" label="Work Location" />
-                  <p className="text-white/40" style={{ marginTop: "0.3vw", fontSize: "0.6vw" }}>
+                  <p className="text-white/40" style={{ marginTop: "0.35vw", fontSize: "0.75vw" }}>
                     A short description for your profile — e.g. &quot;Central London&quot; or &quot;Mobile barber&quot;. Not your address.
                   </p>
                 </div>
@@ -372,8 +401,8 @@ export default function BarberSignupPage() {
                 open={openSections.addresses}
                 onToggle={() => toggleSection("addresses")}
               >
-                <p className="font-medium text-white/80" style={{ fontSize: "0.72vw" }}>Personal / Home Address</p>
-                <p className="text-white/40" style={{ fontSize: "0.62vw", marginTop: "-0.4vw" }}>Always private. Never shown to clients.</p>
+                <p className="font-medium text-white/80" style={{ fontSize: "0.9vw" }}>Personal / Home Address</p>
+                <p className="text-white/40" style={{ fontSize: "0.78vw", marginTop: "-0.3vw" }}>Always private. Never shown to clients.</p>
                 <TextField name="home_address_line_1" label="Address Line 1" required onInvalid={() => openSection("addresses")} />
                 <TextField name="home_address_line_2" label="Address Line 2 (optional)" />
                 <TextField name="home_town_city" label="Town / City" required onInvalid={() => openSection("addresses")} />
@@ -381,18 +410,18 @@ export default function BarberSignupPage() {
                 <TextField name="home_postcode" label="Postcode" required onInvalid={() => openSection("addresses")} />
                 <TextField name="home_country" label="Country" required onInvalid={() => openSection("addresses")} />
 
-                <p className="font-medium text-white/80" style={{ fontSize: "0.72vw", marginTop: "0.3vw" }}>Work / Commercial Address</p>
-                <p className="text-white/40" style={{ fontSize: "0.62vw", marginTop: "-0.4vw" }}>
+                <p className="font-medium text-white/80" style={{ fontSize: "0.9vw", marginTop: "0.4vw" }}>Work / Commercial Address</p>
+                <p className="text-white/40" style={{ fontSize: "0.78vw", marginTop: "-0.3vw" }}>
                   Where you provide services from. May be shown to clients with a confirmed appointment.
                 </p>
-                <label className="flex items-center text-white/70" style={{ gap: "0.5vw", fontSize: "0.7vw" }}>
+                <label className="flex items-center text-white/70" style={{ gap: "0.6vw", fontSize: "0.85vw" }}>
                   <input
                     type="checkbox"
                     name="work_same_as_home"
                     checked={workSameAsHome}
                     onChange={(e) => setWorkSameAsHome(e.target.checked)}
                     className="rounded border-white/30 bg-white/5"
-                    style={{ height: "0.9vw", width: "0.9vw" }}
+                    style={{ height: "1.1vw", width: "1.1vw" }}
                   />
                   Same as my Personal/Home Address
                 </label>
@@ -408,13 +437,13 @@ export default function BarberSignupPage() {
                 )}
               </Section>
 
-              <label className="flex items-start text-white/70" style={{ gap: "0.5vw", fontSize: "0.68vw" }}>
+              <label className="flex items-start text-white/70" style={{ gap: "0.7vw", fontSize: "0.85vw" }}>
                 <input
                   type="checkbox"
                   required
                   onChange={handleConsentChange}
                   className="rounded border-white/30 bg-white/5"
-                  style={{ marginTop: "0.15vw", height: "1vw", width: "1vw" }}
+                  style={{ marginTop: "0.2vw", height: "1.25vw", width: "1.25vw" }}
                 />
                 <span>
                   I agree to the{" "}
@@ -429,7 +458,7 @@ export default function BarberSignupPage() {
               <input type="checkbox" name="age_confirmed" className="hidden" />
 
               {error && (
-                <p className="text-magenta" style={{ fontSize: "0.72vw" }}>
+                <p className="text-magenta" style={{ fontSize: "0.88vw" }}>
                   {error}
                 </p>
               )}
@@ -437,18 +466,17 @@ export default function BarberSignupPage() {
               <button
                 type="submit"
                 disabled={pending}
-                className="w-full rounded-lg bg-royal text-center font-display tracking-wide text-white shadow-ice transition hover:bg-royal-dark disabled:opacity-60"
-                style={{ padding: "0.8vw", fontSize: "0.8vw" }}
+                className="w-full rounded-xl bg-royal text-center font-display font-semibold tracking-wide text-white shadow-[0_10px_30px_-6px_rgba(91,155,255,0.55)] transition hover:bg-royal-dark hover:shadow-[0_12px_36px_-6px_rgba(91,155,255,0.7)] disabled:opacity-60"
+                style={{ padding: "1vw", fontSize: "1vw" }}
               >
                 {pending ? "Creating account…" : "Create Account"}
               </button>
 
-              <p className="text-center text-white/50" style={{ fontSize: "0.68vw" }}>
+              <p className="text-center text-white/50" style={{ fontSize: "0.85vw" }}>
                 Already have an account?{" "}
                 <Link href="/login" className="text-royal-light underline">Log in</Link>
               </p>
             </form>
-          </div>
         </div>
       </SignupScene>
     </>
