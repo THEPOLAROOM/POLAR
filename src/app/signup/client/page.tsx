@@ -84,11 +84,10 @@ const STAGE_STYLE = {
 // panel's frame layer, with the reference's own baked text/controls
 // masked out (display mask only) and the real form in their place.
 // PANEL_BOX maps the frame's opaque extent (x237-1167, y61-1075 in
-// reference px) to x585-1125, y200-789 of the background — identical to
-// /signup/barber, so both panels render at the same scale. Width is
-// capped by clearance to POLAR's cape (left edge x~1138). Uniform scale
-// 0.5806, no distortion.
-const PANEL_BOX = { left: "26.76%", top: "17.49%", width: "48.58%" };
+// reference px) to x507-1127, y156-833 of the background — same scale
+// as /signup/barber (+15%, uniform 0.6677, no distortion), nudged 38px
+// left of the wall centre so it clears POLAR's cape (left edge x~1138).
+const PANEL_BOX = { left: "20.83%", top: "12.23%", width: "55.87%" };
 
 // Panel sizes are written in the reference's own pixels and converted
 // to cqw of the panel box (reference width = 100cqw).

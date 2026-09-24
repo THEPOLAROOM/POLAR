@@ -80,11 +80,11 @@ const STAGE_STYLE = {
 // PNG, losslessly converted, pixel-identical, native 1399x1124). Its
 // painted splatter/glow frame is the panel's frame layer. PANEL_BOX
 // maps the frame's opaque extent (x237-1167, y61-1075 in reference px)
-// to x585-1125, y200-789 of the 1672x941 background: centred on the
-// wall (x~855), top just under the ceiling light bar, extending onto the
-// open floor. Width is capped by clearance to POLAR (right edge x~540)
-// and the chair (left edge x~1198). Uniform scale 0.5806, no distortion.
-const PANEL_BOX = { left: "26.76%", top: "17.49%", width: "48.58%" };
+// to x560-1181, y156-833 of the 1672x941 background: the approved size
+// +15% (uniform scale 0.6677, no distortion), nudged 15px right of the
+// wall centre so it clears POLAR (right edge x~545) and the chair (left
+// edge x~1198).
+const PANEL_BOX = { left: "24.00%", top: "12.23%", width: "55.87%" };
 
 // Every desktop panel size below is written in the reference's own
 // pixels and converted to cqw of the panel box (reference width =
