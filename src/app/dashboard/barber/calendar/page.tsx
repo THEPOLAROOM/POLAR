@@ -4,11 +4,14 @@ import {
   getAvailabilityForDate,
   getDayBookings,
   getDaySummaries,
+  type CalendarBooking,
   type DaySummary,
 } from "@/lib/queries/barber-calendar";
 import { CalendarView, type MonthCell, type ViewKind } from "./calendar-view";
 
-const VALID_VIEWS: ViewKind[] = ["day", "week", "month", "year"];
+// Focus Mode tabs are Day / Week / Month / List; "year" is still served
+// for existing links but no longer has a tab.
+const VALID_VIEWS: ViewKind[] = ["day", "week", "month", "list", "year"];
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 function toDateStr(d: Date): string {
@@ -31,12 +34,11 @@ function buildMonthCells(year: number, month: number, summaries: Map<string, Day
   const cells: MonthCell[] = [];
   for (let i = 0; i < mondayIndex; i++) cells.push(null);
   for (let day = 1; day <= daysInMonth; day++) {
-    if (cells.length >= 35) break; // the mastered grid has exactly 5 rows x 7 cols
     const date = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
     const summary = summaries.get(date) ?? { count: 0, isFullyBooked: false, hasAvailability: false };
     cells.push({ date, day, count: summary.count, isFullyBooked: summary.isFullyBooked });
   }
-  while (cells.length < 35) cells.push(null);
+  while (cells.length % 7 !== 0) cells.push(null);
   return cells;
 }
 
@@ -96,7 +98,8 @@ export default async function BarberCalendarPage({
 
   let monthCells: MonthCell[] | null = null;
   let dayData: { availability: { startTime: string; endTime: string }[]; bookings: Awaited<ReturnType<typeof getDayBookings>> } | null = null;
-  let weekDays: { date: string; label: string; count: number; isFullyBooked: boolean; hasAvailability: boolean }[] | null = null;
+  let weekDays: { date: string; label: string; count: number; isFullyBooked: boolean; hasAvailability: boolean; bookings: CalendarBooking[] }[] | null = null;
+  let listDays: { date: string; bookings: CalendarBooking[] }[] | null = null;
   let yearMonths: { month: number; label: string; cells: MonthCell[] }[] | null = null;
 
   if (view === "month") {
@@ -120,19 +123,37 @@ export default async function BarberCalendarPage({
     weekEnd.setUTCDate(weekEnd.getUTCDate() + 6);
     const summaries = await getDaySummaries(supabase, user.id, toDateStr(weekStart), toDateStr(weekEnd));
     const labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-    weekDays = labels.map((label, i) => {
+    const dates = labels.map((_, i) => {
       const d = new Date(weekStart);
       d.setUTCDate(d.getUTCDate() + i);
-      const dateStr = toDateStr(d);
+      return toDateStr(d);
+    });
+    const perDay = await Promise.all(
+      dates.map((d) => ((summaries.get(d)?.count ?? 0) > 0 ? getDayBookings(supabase, user.id, d) : Promise.resolve([] as CalendarBooking[])))
+    );
+    weekDays = labels.map((label, i) => {
+      const dateStr = dates[i];
       const summary = summaries.get(dateStr) ?? { count: 0, isFullyBooked: false, hasAvailability: false };
       return {
         date: dateStr,
-        label: `${label} ${d.getUTCDate()}`,
+        label: `${label} ${Number(dateStr.slice(8))}`,
         count: summary.count,
         isFullyBooked: summary.isFullyBooked,
         hasAvailability: summary.hasAvailability,
+        bookings: perDay[i],
       };
     });
+  } else if (view === "list") {
+    const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+    const summaries = await getDaySummaries(
+      supabase,
+      user.id,
+      `${year}-${String(month).padStart(2, "0")}-01`,
+      `${year}-${String(month).padStart(2, "0")}-${String(daysInMonth).padStart(2, "0")}`
+    );
+    const busy = [...summaries.entries()].filter(([, v]) => v.count > 0).map(([d]) => d).sort();
+    const perDay = await Promise.all(busy.map((d) => getDayBookings(supabase, user.id, d)));
+    listDays = busy.map((d, i) => ({ date: d, bookings: perDay[i] })).filter((d) => d.bookings.length > 0);
   } else if (view === "year") {
     const summaries = await getDaySummaries(supabase, user.id, `${year}-01-01`, `${year}-12-31`);
     const monthLabels = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -154,6 +175,7 @@ export default async function BarberCalendarPage({
       monthCells={monthCells}
       dayData={dayData}
       weekDays={weekDays}
+      listDays={listDays}
       yearMonths={yearMonths}
     />
   );

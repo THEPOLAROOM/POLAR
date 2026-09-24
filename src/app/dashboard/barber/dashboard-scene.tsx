@@ -54,24 +54,41 @@ const zoneStyle = ([x, y, w, h]: readonly number[]): React.CSSProperties => ({
 const ZONE_CLASS =
   "absolute rounded-2xl bg-transparent transition duration-200 ease-out hover:bg-white/[0.05] hover:shadow-[0_0_0_2px_rgba(91,155,255,0.55),0_0_28px_6px_rgba(91,155,255,0.45)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-light";
 
-export function BarberDashboardScene() {
+/**
+ * The POLAR Room itself — artwork + responsive stage, filling its
+ * positioned parent. Shared by the dashboard (with its destination
+ * click targets as children) and by the Focus Mode pages (darkened,
+ * no children), so every screen shows the exact same room with the
+ * exact same crop behaviour.
+ */
+export function BarberRoom({ children, decorative = false }: { children?: React.ReactNode; decorative?: boolean }) {
   return (
-    <main className="relative hidden overflow-hidden sm:block" style={{ height: "100dvh", background: EDGE_FILL }}>
+    <div className="absolute inset-0 overflow-hidden" style={{ background: EDGE_FILL }} aria-hidden={decorative || undefined}>
       <div className="absolute" style={STAGE_STYLE}>
         <Image
           src="/dashboard/barber-dashboard-v3.webp"
-          alt="POLAR's barber shop: Clients tablet, Calendar board, Workflow Mode chair, POLAR for My Profile, and the My Services workstation."
+          alt={decorative ? "" : "POLAR's barber shop: Clients tablet, Calendar board, Workflow Mode chair, POLAR for My Profile, and the My Services workstation."}
           fill
           unoptimized
           priority
           className="object-contain"
         />
+        {children}
+      </div>
+    </div>
+  );
+}
+
+export function BarberDashboardScene() {
+  return (
+    <main className="relative hidden overflow-hidden sm:block" style={{ height: "100dvh" }}>
+      <BarberRoom>
         <nav aria-label="Barber dashboard">
           {DESTINATIONS.map(({ href, label, zone }) => (
             <Link key={href} href={href} aria-label={label} title={label} className={ZONE_CLASS} style={zoneStyle(zone)} />
           ))}
         </nav>
-      </div>
+      </BarberRoom>
     </main>
   );
 }

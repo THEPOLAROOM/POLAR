@@ -1,106 +1,33 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { formatTime12h } from "@/lib/dates";
 import type { CalendarBooking } from "@/lib/queries/barber-calendar";
 import { createWalkIn } from "@/lib/actions/walk-ins";
 import { cancelBookingAsBarber } from "@/lib/actions/barber-bookings";
 import { createBookingAsBarber, createBarterBooking, createBlockedTime } from "@/lib/actions/barber-calendar-actions";
+import { FocusModeShell, ACCENTS } from "@/components/focus-mode/focus-mode-shell";
+import { BarberRoom } from "../dashboard-scene";
 
-export type ViewKind = "day" | "week" | "month" | "year";
+export type ViewKind = "day" | "week" | "month" | "list" | "year";
 export type MonthCell = { date: string; day: number; count: number; isFullyBooked: boolean } | null;
 type Service = { id: string; name: string; durationMinutes: number; price: number };
 type Client = { id: string; fullName: string };
 
-// Asset fully replaced with a new mastered UI (new artwork, not a
-// touch-up of the old one) — canvas is now 2098x750, a different
-// aspect ratio than the previous 1954x580 asset (2.7973 vs 3.3690).
-// Every box below was re-measured directly against the new asset via
-// per-pixel gradient (edge) detection along the baked border strokes,
-// clustering the detected edge pixels and taking each cluster's
-// intensity-weighted center — not a raw brightness threshold, which
-// an earlier pass proved unreliable: it mistook the sidebar's own
-// left border (and the grid's outer right border) for the wrong
-// neighboring boundary in more than one box, overshooting the
-// mastered grid's true right/bottom edges and the Today control's
-// true right edge by 10-50px. Not carried over or scaled from the
-// old 1954x580 coordinates.
-const ASSET_ASPECT = "2098 / 750";
-
-const SMART_ANALYTICS_BOX = { left: "30.66%", top: "15.33%", width: "12.05%", height: "9.47%" };
-
-// Day/Week/Month/Year — the mastered artwork always bakes "Month" as
-// the visually active tab, which is wrong whenever another view is
-// selected. That whole row is patched over and replaced with four
-// real tab buttons carrying their own dynamic active state instead.
-const TAB_ROW_BOX = { left: "46.95%", top: "15.33%", width: "27.27%", height: "9.47%" };
-
-// Prev/Today/Next — replaced with a real dynamic period label (Fix 2)
-// plus a small separate Today shortcut, so this whole area is patched
-// over too. Each control is its OWN independently-measured box, not a
-// flex child sized by percentage-of-row assumptions — that approach
-// previously derived Prev/Next/Today's widths from an even split of
-// NAV_ROW_BOX, but measuring each button directly (at its true
-// vertical/horizontal center, away from its own rounded corners — a
-// scan taken too close to a small button's corner catches the curved
-// part of the border arc, which is narrower than the button's real
-// straight-side width, and undersizes it) showed Prev and Today are
-// each a different width and don't sit on equal thirds at all.
-const NAV_PATCH_BOX = { left: "78.34%", top: "15.35%", width: "19.83%", height: "9.45%" };
-const PREV_BOX = { left: "78.34%", top: "15.43%", width: "2.51%", height: "9.28%" };
-const NAV_LABEL_BOX = { left: "80.85%", top: "15.35%", width: "9.48%", height: "9.45%" };
-const NEXT_BOX = { left: "90.33%", top: "15.35%", width: "2.45%", height: "9.45%" };
-const TODAY_BOX = { left: "93.73%", top: "15.39%", width: "4.44%", height: "9.41%" };
-
-const GRID_AREA_BOX = { left: "3.00%", top: "27.93%", width: "73.83%", height: "57.27%" };
-
-// The Month grid's 7 day-columns and 5 date-rows are NOT evenly
-// spaced in the mastered asset (measured via gradient-edge clustering
-// across the grid body, averaged over many rows/columns to reject
-// text-glyph noise). These are the real boundaries (% of the asset's
-// own width/height), so every cell box is derived from its own two
-// adjacent boundaries. The previous last COL_BOUNDS/ROW_BOUNDS values
-// (79.12/86.40) were measured off the wrong nearby line — the
-// sidebar's own left border and the card's outer bottom edge,
-// respectively, not the grid's own right/bottom gridline — which let
-// the SUN column and row-5 cell patches overshoot the real grid by
-// ~48px and ~9px.
-const COL_BOUNDS = [3.00, 14.18, 25.00, 35.84, 46.66, 57.36, 67.95, 76.84];
-const ROW_BOUNDS = [33.47, 44.00, 54.60, 65.13, 75.73, 85.20];
-
-const ADD_APPOINTMENT_BOX = { left: "78.65%", top: "57.20%", width: "18.02%", height: "9.33%" };
-
-// Re-measured directly off the baked example paragraph's own text
-// bounding box (row/column text-density scan: "View your schedule...
-// No appointments today." spans x=1654-2041, y=337-417 on the 2098x750
-// asset), not a generic guess at the panel's available space — the
-// previous box was both offset from that text's true vertical center
-// and, combined with extra CSS padding, narrower than the baked
-// example's own line width, which wrapped the live copy one line
-// longer than the artwork does.
-const RIGHT_TEXT_PATCH_BOX = { left: "78.46%", top: "43.87%", width: "19.21%", height: "12.40%" };
-
-const CELL_FILL = "#001b3c";
-const PANEL_FILL = "#1a1b4a";
-const HEADER_FILL = "#00173a";
-
-const HIT_AREA_CLASS =
-  "absolute rounded-2xl bg-transparent transition duration-200 ease-out hover:shadow-[0_0_18px_4px_rgba(91,155,255,0.4),0_0_26px_8px_rgba(255,61,154,0.22)]";
-
-// The active tab previously carried `m-[6%]` — a percentage margin on
-// a flex child resolves against the CONTAINING STRIP's own width/
-// height, not the tab's own ~1/4 share of it. On a strip only ~70px
-// tall, a 6% margin (≈33px) top AND bottom nearly cancelled out the
-// entire visible height, which is why the active tab looked dull/dark
-// (mostly showing the dark strip fill behind a collapsed sliver of
-// gradient) and visibly smaller than its neighbours. It must render
-// at the exact same flex-1 footprint as every inactive tab — no
-// margin, no resize — with only its background/border/glow differing.
-const TAB_ACTIVE_CLASS =
-  "rounded-lg bg-gradient-to-r from-royal to-magenta text-white shadow-[0_0_14px_-2px_rgba(255,61,154,0.75)] hover:brightness-110";
-const TAB_INACTIVE_CLASS = "text-white/70 hover:bg-white/5 hover:text-white";
+// Calendar Focus Mode (desktop): the old layered calendar artwork and its
+// measured patch boxes are gone — the calendar is now real HTML inside
+// the reusable FocusModeShell, over the darkened POLAR Room. All booking
+// data, actions and modals below are unchanged.
+const PINK = ACCENTS.magenta;
+const TABS: { view: ViewKind; label: string }[] = [
+  { view: "day", label: "Day" },
+  { view: "week", label: "Week" },
+  { view: "month", label: "Month" },
+  { view: "list", label: "List" },
+];
+const WEEKDAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
+const CTRL = "flex h-9 items-center rounded-lg border border-white/[0.14] text-white/80 transition hover:bg-white/5 hover:text-white";
 
 function pad(n: number): string {
   return String(n).padStart(2, "0");
@@ -162,7 +89,7 @@ function periodLabel(view: ViewKind, dateStr: string): string {
   if (view === "day") return fullDateLabel(dateStr);
   if (view === "week") return weekRangeLabel(dateStr);
   if (view === "year") return dateStr.slice(0, 4);
-  return monthLabel(dateStr);
+  return monthLabel(dateStr); // month + list
 }
 function money(n: number): string {
   return `£${n.toFixed(2)}`;
@@ -256,6 +183,7 @@ export function CalendarView({
   monthCells,
   dayData,
   weekDays,
+  listDays,
   yearMonths,
 }: {
   view: ViewKind;
@@ -266,7 +194,8 @@ export function CalendarView({
   todaySummary: { count: number; nextTime: string | null };
   monthCells: MonthCell[] | null;
   dayData: { availability: { startTime: string; endTime: string }[]; bookings: CalendarBooking[] } | null;
-  weekDays: { date: string; label: string; count: number; isFullyBooked: boolean; hasAvailability: boolean }[] | null;
+  weekDays: { date: string; label: string; count: number; isFullyBooked: boolean; hasAvailability: boolean; bookings: CalendarBooking[] }[] | null;
+  listDays: { date: string; bookings: CalendarBooking[] }[] | null;
   yearMonths: { month: number; label: string; cells: MonthCell[] }[] | null;
 }) {
   const [activeSlot, setActiveSlot] = useState<{ start: string; end: string } | null>(null);
@@ -279,13 +208,13 @@ export function CalendarView({
     if (view === "day") return `?view=day&date=${addDays(date, -1)}`;
     if (view === "week") return `?view=week&date=${addDays(date, -7)}`;
     if (view === "year") return `?view=year&date=${addYears(date, -1)}`;
-    return `?view=month&date=${addMonths(date, -1)}`;
+    return `?view=${view}&date=${addMonths(date, -1)}`;
   }, [view, date]);
   const nextHref = useMemo(() => {
     if (view === "day") return `?view=day&date=${addDays(date, 1)}`;
     if (view === "week") return `?view=week&date=${addDays(date, 7)}`;
     if (view === "year") return `?view=year&date=${addYears(date, 1)}`;
-    return `?view=month&date=${addMonths(date, 1)}`;
+    return `?view=${view}&date=${addMonths(date, 1)}`;
   }, [view, date]);
   const todayHref = `?view=${view}&date=${today}`;
 
@@ -354,563 +283,470 @@ export function CalendarView({
         </p>
       </main>
 
-      {/* Desktop */}
-      <main className="relative hidden overflow-hidden bg-navy sm:block" style={{ height: "100dvh" }}>
-        <Image
-          src="/dashboard/polar-barber-dashboard-background.png"
-          alt=""
-          fill
-          priority
-          className="object-cover"
-          aria-hidden="true"
-        />
-
-        <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
-          <div
-            className="relative"
-            style={{ width: `min(94%, calc(100dvh * ${ASSET_ASPECT}))`, aspectRatio: ASSET_ASPECT }}
-          >
-            <Image
-              src="/dashboard/polar-barber-calendar-ui-mastered.png"
-              alt="Calendar"
-              fill
-              priority
-              className="object-contain"
-            />
-
-            {/* Smart Analytics — navigation is wired; the page itself
-                is intentionally not built yet (out of scope). */}
-            <Link href="/dashboard/barber/calendar/analytics" className={HIT_AREA_CLASS} style={SMART_ANALYTICS_BOX} aria-label="Smart Analytics" />
-
-            {/* Day/Week/Month/Year — the baked artwork always shows
-                "Month" as active regardless of the real selected
-                view, so this whole row is patched over and replaced
-                with real tab buttons carrying their own dynamic
-                active state (POLAR cyan/magenta gradient when
-                active).
-
-                The mastered art renders these as ONE continuous
-                outer-rounded strip with thin dividers between
-                segments — not four independently-bordered pills. The
-                previous version gave every tab its own full border,
-                which (measured against the baked strip) produced two
-                close-together border lines at each seam and read as a
-                ghost/double outline. This now matches the baked
-                structure: one shared border+rounding on the strip,
-                plain dividers between inactive tabs, and only the
-                active tab breaking out as its own raised pill — same
-                as "Month" does in the artwork. */}
-            <div className="absolute" style={TAB_ROW_BOX}>
-              {/* Uniform -2% inset patch covering the baked strip
-                  (including its own border) in every direction, sized
-                  against the new asset's TAB_ROW_BOX measurement. Not
-                  pixel-scanned for exact baked-border overflow the way
-                  the previous asset's patch was — if visual QA finds a
-                  ghost outline on any edge, widen that side's inset. */}
-              <div className="absolute -top-[2%] -bottom-[2%] -left-[2%] -right-[2%] rounded-xl" style={{ backgroundColor: HEADER_FILL }} aria-hidden="true" />
-              <div className="relative flex h-full items-stretch overflow-hidden rounded-xl border border-royal-light/30">
-                {(["day", "week", "month", "year"] as ViewKind[]).map((v, i) => (
-                  <Link
-                    key={v}
-                    href={`?view=${v}&date=${date}`}
-                    className={`flex flex-1 items-center justify-center font-body capitalize transition ${
-                      view === v ? TAB_ACTIVE_CLASS : `${TAB_INACTIVE_CLASS} ${i > 0 ? "border-l border-royal-light/20" : ""}`
-                    }`}
-                    style={{ fontSize: "0.85vw" }}
-                  >
-                    {v}
-                  </Link>
-                ))}
-              </div>
+      {/* Desktop — Calendar Focus Mode: the POLAR Room with its lights
+          off, and one large magenta Calendar panel on top. */}
+      <FocusModeShell
+        id="calendar"
+        accent="magenta"
+        room={<BarberRoom decorative />}
+        title="CALENDAR"
+        controls={
+          <>
+            <Link href={todayHref} className={`${CTRL} px-3.5 text-sm font-semibold ${date === today ? "text-white" : "text-white/80"}`} style={{ borderColor: `rgba(${PINK.rgb},0.45)` }}>
+              Today
+            </Link>
+            <div className="flex items-center gap-1">
+              <Link href={prevHref} aria-label="Previous" className={`${CTRL} w-9 justify-center text-lg`}>
+                ‹
+              </Link>
+              <Link href={nextHref} aria-label="Next" className={`${CTRL} w-9 justify-center text-lg`}>
+                ›
+              </Link>
             </div>
-
-            {/* Prev / dynamic period label / Next / Today — replaces
-                the baked static "September 2026" / arrow controls,
-                which are patched over the same way as the tab row.
-                Each control below sits at its own independently-
-                measured box (see PREV_BOX/NAV_LABEL_BOX/NEXT_BOX/
-                TODAY_BOX above) rather than as flex children of a
-                shared row — Prev and Today are each a different width
-                and don't divide the row evenly. */}
-            <div className="absolute rounded-xl" style={{ ...NAV_PATCH_BOX, backgroundColor: HEADER_FILL }} aria-hidden="true" />
-            <Link
-              href={prevHref}
-              aria-label="Previous"
-              className="absolute flex items-center justify-center rounded-lg border border-royal-light/30 text-white/80 transition hover:bg-white/5"
-              style={{ ...PREV_BOX, fontSize: "0.85vw" }}
-            >
-              ‹
-            </Link>
-            <p className="absolute flex items-center justify-center truncate text-center text-white" style={{ ...NAV_LABEL_BOX, fontSize: "0.78vw" }}>
-              {periodLabel(view, date)}
-            </p>
-            <Link
-              href={nextHref}
-              aria-label="Next"
-              className="absolute flex items-center justify-center rounded-lg border border-royal-light/30 text-white/80 transition hover:bg-white/5"
-              style={{ ...NEXT_BOX, fontSize: "0.85vw" }}
-            >
-              ›
-            </Link>
-            <Link
-              href={todayHref}
-              aria-label="Jump to today"
-              className="absolute flex flex-col items-center justify-center rounded-lg border border-royal-light/40 text-royal-light transition hover:bg-royal-light/10"
-              style={TODAY_BOX}
-            >
-              <span aria-hidden="true" style={{ fontSize: "0.95vw", lineHeight: 1 }}>↺</span>
-              <span style={{ fontSize: "0.45vw", letterSpacing: "0.05em" }}>TODAY</span>
-            </Link>
-
-            {/* Right panel — permanent copy + real today summary
-                patched over the baked example text; the artwork's own
-                "Your Calendar At a Glance" heading and crown are left
-                untouched. RIGHT_TEXT_PATCH_BOX already matches the
-                baked example text's own measured bounds with a small
-                built-in margin, so no extra CSS padding here — padding
-                on top of that box previously narrowed the live text
-                enough to wrap one line longer than the baked example.
-                overflow-hidden stays as a hard containment backstop,
-                since todaySummary's length varies with real booking
-                data and can't be hand-verified against every case. */}
-            <div className="absolute flex flex-col justify-center overflow-hidden" style={RIGHT_TEXT_PATCH_BOX}>
-              <div className="absolute inset-0" style={{ backgroundColor: PANEL_FILL }} aria-hidden="true" />
-              <p className="relative text-white/70" style={{ fontSize: "0.72vw", lineHeight: 1.4 }}>
-                View your schedule, manage bookings and keep your day running smoothly.
-              </p>
-              <p className="relative mt-[0.5vw] text-white" style={{ fontSize: "0.78vw" }}>
-                {todaySummary.count === 0
-                  ? "No appointments today"
-                  : `${todaySummary.count} appointment${todaySummary.count === 1 ? "" : "s"} today${
-                      todaySummary.nextTime ? ` · next ${formatTime12h(todaySummary.nextTime)}` : ""
-                    }`}
-              </p>
-            </div>
-            <Link href={`?view=day&date=${today}`} className={HIT_AREA_CLASS} style={ADD_APPOINTMENT_BOX} aria-label="Add appointment" />
-
-            {/* MONTH VIEW — real day numbers patched over the baked
-                grid's own generic 1..31 layout (which only matches
-                one specific month/year), plus real per-day
-                availability. Gridlines/weekday headers stay baked. */}
-            {view === "month" && monthCells && (
-              <>
-                {monthCells.map((cell, i) => {
-                  const row = Math.floor(i / 7);
-                  const col = i % 7;
-                  const box = {
-                    left: `${COL_BOUNDS[col]}%`,
-                    top: `${ROW_BOUNDS[row]}%`,
-                    width: `${COL_BOUNDS[col + 1] - COL_BOUNDS[col]}%`,
-                    height: `${ROW_BOUNDS[row + 1] - ROW_BOUNDS[row]}%`,
-                  };
-                  if (!cell) return <div key={i} className="absolute" style={box} aria-hidden="true" />;
+            <p className="min-w-0 truncate text-xl font-extrabold tracking-tight text-white">{periodLabel(view, date)}</p>
+            <div className="ml-auto flex items-center gap-3">
+              <Link href="/dashboard/barber/calendar/analytics" className="text-sm text-white/50 transition hover:text-white">
+                Analytics
+              </Link>
+              <div role="tablist" aria-label="Calendar view" className="flex rounded-lg border border-white/[0.12] bg-white/[0.02] p-0.5">
+                {TABS.map(({ view: v, label }) => {
+                  const active = view === v;
                   return (
                     <Link
-                      key={i}
-                      href={`?view=day&date=${cell.date}`}
-                      className="absolute overflow-hidden transition hover:bg-white/[0.04]"
-                      style={box}
+                      key={v}
+                      role="tab"
+                      aria-selected={active}
+                      href={`?view=${v}&date=${date}`}
+                      className={`rounded-md px-3.5 py-1.5 text-sm font-semibold transition ${active ? "text-white" : "text-white/60 hover:bg-white/5 hover:text-white"}`}
+                      style={active ? { background: `rgba(${PINK.rgb},0.22)`, boxShadow: `inset 0 0 0 1px rgba(${PINK.rgb},0.7), 0 0 14px -4px rgba(${PINK.rgb},0.7)` } : undefined}
                     >
-                      {/* Patches the cell's entire interior (inset
-                          just enough to leave the baked gridline
-                          border itself visible) — not just a corner
-                          — so there is categorically nothing baked
-                          left underneath the real date: no example
-                          number, no fragment of one, regardless of
-                          how far its glow actually extends. The real
-                          date is then drawn at a fixed, identical
-                          inset in every cell, derived purely from
-                          this cell's own geometry. */}
-                      <div
-                        className="absolute inset-[3%]"
-                        style={{ backgroundColor: CELL_FILL }}
-                        aria-hidden="true"
-                      />
-                      <p
-                        className={`absolute font-body ${cell.isFullyBooked ? "text-white/35" : "text-white"}`}
-                        style={{ left: "8%", top: "9%", fontSize: "0.85vw", lineHeight: 1 }}
-                      >
-                        {cell.day}
-                      </p>
-                      {cell.isFullyBooked && <div className="absolute inset-[3%] bg-black/35" aria-hidden="true" />}
+                      {label}
                     </Link>
                   );
                 })}
-              </>
-            )}
+              </div>
+            </div>
+          </>
+        }
+      >
+        {/* MONTH */}
+        {view === "month" && monthCells && (
+          <div className="flex min-h-0 flex-1 flex-col">
+            <div className="grid shrink-0 grid-cols-7 pb-2 text-[11px] font-bold tracking-[0.16em] text-white/45">
+              {WEEKDAYS.map((d, i) => (
+                <div key={d} className="px-2" style={i >= 5 ? { color: `rgba(${PINK.rgb},0.75)` } : undefined}>
+                  {d}
+                </div>
+              ))}
+            </div>
+            <div
+              className="grid min-h-0 flex-1 grid-cols-7 border-l border-t border-white/[0.08]"
+              style={{ gridTemplateRows: `repeat(${Math.ceil(monthCells.length / 7)}, minmax(0, 1fr))` }}
+            >
+              {monthCells.map((cell, i) => {
+                if (!cell) return <div key={i} className="border-b border-r border-white/[0.08] bg-white/[0.012]" aria-hidden="true" />;
+                const isToday = cell.date === today;
+                const isSelected = cell.date === date && !isToday;
+                return (
+                  <Link
+                    key={i}
+                    href={`?view=day&date=${cell.date}`}
+                    aria-label={`${dayLabel(cell.date)}${cell.count > 0 ? `, ${cell.count} booking${cell.count === 1 ? "" : "s"}` : ""}`}
+                    className="relative flex min-h-0 flex-col border-b border-r border-white/[0.08] p-2 transition hover:bg-white/[0.04]"
+                    style={isSelected ? { boxShadow: `inset 0 0 0 1px rgba(${PINK.rgb},0.6)` } : undefined}
+                  >
+                    <span
+                      className={`flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold ${isToday ? "text-white" : cell.isFullyBooked ? "text-white/35" : "text-white/85"}`}
+                      style={isToday ? { background: PINK.hex, boxShadow: `0 0 12px rgba(${PINK.rgb},0.7)` } : undefined}
+                    >
+                      {cell.day}
+                    </span>
+                    {cell.count > 0 && (
+                      <span className="mt-auto flex items-center gap-1.5 truncate text-xs font-semibold" style={{ color: cell.isFullyBooked ? "rgba(255,255,255,0.45)" : PINK.hex }}>
+                        <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: cell.isFullyBooked ? "rgba(255,255,255,0.4)" : PINK.hex }} aria-hidden="true" />
+                        {cell.isFullyBooked ? "Fully booked" : `${cell.count} booking${cell.count === 1 ? "" : "s"}`}
+                      </span>
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
-            {/* WEEK / YEAR / DAY — no mastered artwork exists for
-                these (only Month was supplied), so the shared grid
-                area is patched with the surrounding fill and replaced
-                with a real, consistently-styled panel. */}
-            {view !== "month" && (
-              <div className="absolute overflow-hidden rounded-xl" style={GRID_AREA_BOX}>
-                <div className="absolute inset-0" style={{ backgroundColor: CELL_FILL }} aria-hidden="true" />
-                <div className="relative flex h-full w-full flex-col" style={{ padding: "1.2%" }}>
-                  {view === "week" && weekDays && (
-                    <>
-                      <p className="font-display text-white" style={{ fontSize: "1vw" }}>
-                        Week of {dayLabel(weekDays[0].date)}
-                      </p>
-                      <div className="mt-[0.8%] grid flex-1 grid-cols-7" style={{ gap: "0.6%" }}>
-                        {weekDays.map((d) => (
-                          <Link
-                            key={d.date}
-                            href={`?view=day&date=${d.date}`}
-                            className={`flex flex-col rounded-lg border border-white/10 p-[3%] transition hover:bg-white/[0.05] ${d.isFullyBooked ? "opacity-50" : ""}`}
-                          >
-                            <span className="text-white" style={{ fontSize: "0.75vw" }}>{d.label}</span>
-                            <span
-                              className={`mt-auto ${d.count > 0 || d.hasAvailability ? "text-royal-light" : "text-white/35"}`}
-                              style={{ fontSize: "0.7vw" }}
-                            >
-                              {d.count > 0
-                                ? `${d.count} booking${d.count === 1 ? "" : "s"}`
-                                : d.hasAvailability
-                                  ? "AVAILABLE"
-                                  : "UNAVAILABLE"}
-                            </span>
-                          </Link>
-                        ))}
-                      </div>
-                    </>
-                  )}
+        {/* WEEK */}
+        {view === "week" && weekDays && (
+          <div className="grid min-h-0 flex-1 grid-cols-7 border-l border-t border-white/[0.08]">
+            {weekDays.map((d, i) => {
+              const isToday = d.date === today;
+              return (
+                <div key={d.date} className="flex min-h-0 flex-col border-b border-r border-white/[0.08]">
+                  <Link
+                    href={`?view=day&date=${d.date}`}
+                    className="flex shrink-0 items-center justify-between border-b border-white/[0.08] px-3 py-2.5 transition hover:bg-white/[0.04]"
+                  >
+                    <span className="text-[11px] font-bold tracking-[0.16em]" style={{ color: i >= 5 ? `rgba(${PINK.rgb},0.75)` : "rgba(255,255,255,0.45)" }}>
+                      {WEEKDAYS[i]}
+                    </span>
+                    <span
+                      className={`flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold ${isToday ? "text-white" : "text-white/85"}`}
+                      style={isToday ? { background: PINK.hex, boxShadow: `0 0 12px rgba(${PINK.rgb},0.7)` } : undefined}
+                    >
+                      {Number(d.date.slice(8))}
+                    </span>
+                  </Link>
+                  <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto p-2">
+                    {d.bookings.length === 0 ? (
+                      <p className="px-1 pt-1 text-xs text-white/30">{d.hasAvailability ? "Available" : "Unavailable"}</p>
+                    ) : (
+                      d.bookings.map((b) => (
+                        <button
+                          key={b.id}
+                          type="button"
+                          onClick={() => setDetail(b)}
+                          className={`block w-full rounded-md border px-2 py-1.5 text-left transition hover:bg-white/[0.06] ${bookingKindClass(b)}`}
+                        >
+                          <span className="block text-[11px] opacity-70">{formatTime12h(b.startTime)} – {formatTime12h(b.endTime)}</span>
+                          <span className="block truncate text-xs font-semibold">{bookingKindLabel(b)}</span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
 
-                  {view === "year" && yearMonths && (
-                    <>
-                      <p className="font-display text-white" style={{ fontSize: "1vw" }}>{date.slice(0, 4)}</p>
-                      {/* min-h-0 lets this flex child actually shrink
-                          so overflow-y-auto can engage — otherwise a
-                          flex item defaults to never being smaller
-                          than its content, and any excess silently
-                          escapes the outer overflow-hidden instead of
-                          scrolling. Only this inner area ever scrolls,
-                          never the page itself.
-
-                          grid-rows-3 was previously forcing all 3
-                          rows to compress into this panel's own
-                          height (~417px of the 1954x580 asset). Since
-                          each mini-month's 7 day-columns are sized off
-                          its OWN card width (aspect-square cells), the
-                          natural content height that width demands
-                          (~5-6 square rows + label) is far taller than
-                          a forced 1/3 share of 417px — so cards were
-                          rendered squashed/stretched against their own
-                          natural proportions. Removing the fixed row
-                          count lets each row size to its natural
-                          content height instead (true, unstretched
-                          squares) and the container's existing
-                          overflow-y-auto scrolls to reveal the rest —
-                          which is explicitly the approved behaviour
-                          for Year. 4 columns (vs. the suggested 3) is
-                          kept because it needs measurably less total
-                          scroll to reach month 12: at this panel's
-                          fixed ~3.5:1 wide-short aspect, 3 columns
-                          makes each card wider, which — since a card's
-                          height is driven by its width via
-                          aspect-square cells — makes every card
-                          natural-taller too, resulting in MORE total
-                          scroll content (4 rows of taller cards), not
-                          less. */}
-                      <div className="mt-[0.8%] grid min-h-0 flex-1 grid-cols-4 overflow-y-auto" style={{ gap: "0.8%", alignContent: "start" }}>
-                        {yearMonths.map((m) => (
-                          <Link
-                            key={m.month}
-                            href={`?view=month&date=${date.slice(0, 4)}-${pad(m.month)}-01`}
-                            className="flex flex-col rounded-lg border border-white/10 p-[4%] transition hover:bg-white/[0.05]"
-                          >
-                            <span className="text-white" style={{ fontSize: "0.72vw" }}>{m.label}</span>
-                            <div className="mt-[3%] grid grid-cols-7 gap-[2px]">
-                              {m.cells.map((c, i) => (
-                                <span
-                                  key={i}
-                                  className={`aspect-square rounded-sm ${
-                                    !c ? "bg-transparent" : c.count > 0 ? (c.isFullyBooked ? "bg-magenta/70" : "bg-royal-light/70") : "bg-white/10"
-                                  }`}
-                                />
-                              ))}
-                            </div>
-                          </Link>
-                        ))}
-                      </div>
-                    </>
-                  )}
-
-                  {view === "day" && dayData && (
-                    <>
-                      <div className="flex items-center justify-between border-b border-white/10 pb-[0.8%]">
-                        <p className="font-display text-white" style={{ fontSize: "1vw" }}>{dayLabel(date)}</p>
+        {/* DAY */}
+        {view === "day" && dayData && (
+          <div className="flex min-h-0 flex-1 flex-col">
+            <div className="flex shrink-0 items-center justify-between pb-3">
+              <p className="text-lg font-bold text-white">{dayLabel(date)}</p>
+              <button
+                type="button"
+                onClick={handleBlockWholeDay}
+                disabled={pending}
+                className="rounded-md border px-3 py-1.5 text-sm font-semibold transition hover:bg-white/5 disabled:opacity-50"
+                style={{ borderColor: `rgba(${PINK.rgb},0.5)`, color: PINK.hex }}
+              >
+                Block whole day
+              </button>
+            </div>
+            <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+              {timeline.length === 0 ? (
+                <p className="pt-2 text-sm text-white/45">Unavailable — no working hours set for this day.</p>
+              ) : (
+                <ul className="space-y-2">
+                  {timeline.map((seg, i) => (
+                    <li key={i}>
+                      {seg.kind === "available" ? (
                         <button
                           type="button"
-                          onClick={handleBlockWholeDay}
-                          disabled={pending}
-                          className="rounded-md border border-magenta/40 px-[1%] py-[0.4%] text-magenta transition hover:bg-magenta/10 hover:shadow-[0_0_10px_-3px_rgba(255,61,154,0.6)] disabled:opacity-50"
-                          style={{ fontSize: "0.68vw" }}
+                          onClick={() => setActiveSlot({ start: seg.start, end: seg.end })}
+                          className="flex w-full items-center justify-between rounded-lg border border-dashed border-ice-glow/30 bg-ice-glow/[0.03] px-4 py-3 text-left text-sm text-ice-100 transition hover:border-ice-glow/60 hover:bg-ice-glow/10"
                         >
-                          Block whole day
+                          <span>
+                            {formatTime12h(seg.start)} – {formatTime12h(seg.end)}
+                          </span>
+                          <span className="text-xs tracking-[0.14em] text-white/40">AVAILABLE</span>
                         </button>
-                      </div>
-                      {/* min-h-0 lets this flex child actually shrink
-                          so overflow-y-auto can engage (same fix as
-                          Year view) — a long working day scrolls only
-                          within this panel; the Calendar shell and
-                          right-hand panel never move. */}
-                      <div className="mt-[1%] min-h-0 flex-1 overflow-y-auto" style={{ paddingRight: "0.5%" }}>
-                        {timeline.length === 0 ? (
-                          <p className="text-white/50" style={{ fontSize: "0.85vw" }}>UNAVAILABLE — no working hours set for this day.</p>
-                        ) : (
-                          <ul className="space-y-[0.6%]">
-                            {timeline.map((seg, i) => (
-                              <li key={i}>
-                                {seg.kind === "available" ? (
-                                  <button
-                                    type="button"
-                                    onClick={() => setActiveSlot({ start: seg.start, end: seg.end })}
-                                    className="flex w-full items-center justify-between rounded-lg border border-dashed border-royal-light/30 bg-royal-light/[0.03] px-[1.2%] py-[0.9%] text-left text-royal-light transition hover:border-royal-light/60 hover:bg-royal-light/10 hover:shadow-[0_0_12px_-4px_rgba(91,155,255,0.5)]"
-                                    style={{ fontSize: "0.8vw" }}
-                                  >
-                                    <span>
-                                      {formatTime12h(seg.start)} – {formatTime12h(seg.end)}
-                                    </span>
-                                    <span className="tracking-wide text-white/40" style={{ fontSize: "0.68vw" }}>AVAILABLE</span>
-                                  </button>
-                                ) : (
-                                  <button
-                                    type="button"
-                                    onClick={() => setDetail(seg.booking)}
-                                    className={`flex w-full items-center justify-between rounded-lg border px-[1.2%] py-[0.9%] text-left transition hover:bg-white/[0.06] ${bookingKindClass(seg.booking)}`}
-                                    style={{ fontSize: "0.8vw" }}
-                                  >
-                                    <span>
-                                      {formatTime12h(seg.start)} – {formatTime12h(seg.end)} ({timeToMinutes(seg.end) - timeToMinutes(seg.start)}m) · {bookingKindLabel(seg.booking)}
-                                    </span>
-                                    {seg.booking.serviceName && (
-                                      <span className="text-white/40" style={{ fontSize: "0.7vw" }}>{seg.booking.serviceName}</span>
-                                    )}
-                                  </button>
-                                )}
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                      </div>
-                    </>
-                  )}
-                </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setDetail(seg.booking)}
+                          className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-left text-sm transition hover:bg-white/[0.06] ${bookingKindClass(seg.booking)}`}
+                        >
+                          <span>
+                            {formatTime12h(seg.start)} – {formatTime12h(seg.end)} ({timeToMinutes(seg.end) - timeToMinutes(seg.start)}m) · {bookingKindLabel(seg.booking)}
+                          </span>
+                          {seg.booking.serviceName && <span className="text-xs text-white/40">{seg.booking.serviceName}</span>}
+                        </button>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* LIST */}
+        {view === "list" && listDays && (
+          <div className="min-h-0 flex-1 overflow-y-auto pr-1">
+            {listDays.length === 0 ? (
+              <p className="pt-2 text-sm text-white/45">No bookings in {monthLabel(date)}.</p>
+            ) : (
+              <div className="space-y-5">
+                {listDays.map((d) => (
+                  <section key={d.date}>
+                    <Link
+                      href={`?view=day&date=${d.date}`}
+                      className="mb-2 inline-flex items-center gap-2 text-sm font-bold transition hover:text-white"
+                      style={{ color: d.date === today ? PINK.hex : "rgba(255,255,255,0.75)" }}
+                    >
+                      {dayLabel(d.date)}
+                      {d.date === today && <span className="text-[11px] tracking-[0.14em]">TODAY</span>}
+                    </Link>
+                    <ul className="space-y-1.5">
+                      {d.bookings.map((b) => (
+                        <li key={b.id}>
+                          <button
+                            type="button"
+                            onClick={() => setDetail(b)}
+                            className={`flex w-full items-center justify-between gap-4 rounded-lg border px-4 py-2.5 text-left text-sm transition hover:bg-white/[0.06] ${bookingKindClass(b)}`}
+                          >
+                            <span className="w-44 shrink-0 tabular-nums opacity-80">
+                              {formatTime12h(b.startTime)} – {formatTime12h(b.endTime)}
+                            </span>
+                            <span className="min-w-0 flex-1 truncate font-semibold">{bookingKindLabel(b)}</span>
+                            {b.serviceName && <span className="shrink-0 text-xs text-white/45">{b.serviceName}</span>}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                ))}
               </div>
+            )}
+          </div>
+        )}
+
+        {/* YEAR — no tab any more; still served for existing ?view=year links. */}
+        {view === "year" && yearMonths && (
+          <div className="grid min-h-0 flex-1 grid-cols-4 content-start gap-3 overflow-y-auto">
+            {yearMonths.map((m) => (
+              <Link
+                key={m.month}
+                href={`?view=month&date=${date.slice(0, 4)}-${pad(m.month)}-01`}
+                className="flex flex-col rounded-lg border border-white/10 p-3 transition hover:bg-white/[0.05]"
+              >
+                <span className="text-sm text-white">{m.label}</span>
+                <div className="mt-2 grid grid-cols-7 gap-[2px]">
+                  {m.cells.map((c, i) => (
+                    <span
+                      key={i}
+                      className="aspect-square rounded-sm"
+                      style={{ background: !c ? "transparent" : c.count > 0 ? (c.isFullyBooked ? `rgba(${PINK.rgb},0.8)` : `rgba(${PINK.rgb},0.45)`) : "rgba(255,255,255,0.08)" }}
+                    />
+                  ))}
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
+      </FocusModeShell>
+
+      {/* Booking dialogs — rendered outside the Focus panel (whose
+          backdrop blur would otherwise contain these fixed overlays). */}
+      {/* Slot action menu (Day view) */}
+      {activeSlot && !modal && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setActiveSlot(null)}>
+          <div
+            className="relative w-72 rounded-xl border border-royal-light/30 bg-navy-light p-4 shadow-[0_0_32px_-6px_rgba(91,155,255,0.3)]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              type="button"
+              onClick={() => setActiveSlot(null)}
+              aria-label="Close"
+              className="absolute right-3 top-3 text-white/40 transition hover:text-white"
+            >
+              ✕
+            </button>
+            <p className="pr-6 font-display text-sm text-white">
+              {formatTime12h(activeSlot.start)} – {formatTime12h(activeSlot.end)}
+            </p>
+            <p className="text-[10px] uppercase tracking-wide text-royal-light/60">Available slot</p>
+            <div className="mt-3 flex flex-col gap-2">
+              <button type="button" onClick={() => setModal("book")} className="rounded-lg bg-gradient-to-r from-royal to-royal-dark px-3 py-2 text-left text-sm font-medium text-white shadow-[0_0_10px_-4px_rgba(91,155,255,0.6)] transition hover:brightness-110">
+                Book Appointment
+              </button>
+              <button type="button" onClick={() => setModal("walkin")} className="rounded-lg border border-royal-light/30 px-3 py-2 text-left text-sm text-white transition hover:bg-royal-light/10">
+                Add Walk-In
+              </button>
+              <button type="button" onClick={() => setModal("barter")} className="rounded-lg border border-magenta/40 px-3 py-2 text-left text-sm text-magenta transition hover:bg-magenta/10">
+                Add Barter
+              </button>
+              <button type="button" onClick={() => setModal("block")} className="rounded-lg border border-white/15 px-3 py-2 text-left text-sm text-white/70 transition hover:bg-white/5">
+                Block Time
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Book / Walk-in / Barter / Block forms */}
+      {activeSlot && modal && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={closeModal}>
+          <div className="relative w-96 rounded-xl border border-royal-light/30 bg-navy-light p-5 shadow-[0_0_32px_-6px_rgba(91,155,255,0.3)]" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={closeModal}
+              aria-label="Close"
+              className="absolute right-3 top-3 text-white/40 transition hover:text-white"
+            >
+              ✕
+            </button>
+            <p className="pr-6 font-display text-white" style={{ fontSize: "1.1rem" }}>
+              {modal === "book" && "Book Appointment"}
+              {modal === "walkin" && "Add Walk-In"}
+              {modal === "barter" && "Add Barter"}
+              {modal === "block" && "Block Time"}
+            </p>
+            <p className="mt-1 text-xs text-white/50">
+              {formatTime12h(activeSlot.start)} – {formatTime12h(activeSlot.end)} on {dayLabel(date)}
+            </p>
+
+            {modal === "book" && (
+              <form
+                className="mt-4 space-y-3"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const fd = new FormData(e.currentTarget);
+                  fd.set("date", date);
+                  runAction(() => createBookingAsBarber(fd));
+                }}
+              >
+                <select name="client_profile_id" required className="w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm text-white">
+                  <option value="">Choose a client…</option>
+                  {clients.map((c) => (
+                    <option key={c.id} value={c.id}>{c.fullName}</option>
+                  ))}
+                </select>
+                {clients.length === 0 && <p className="text-xs text-white/40">No linked clients yet — link one from the Clients page first.</p>}
+                <ServiceAndStartFields services={services} gapStart={activeSlot.start} gapEnd={activeSlot.end} />
+                {error && <p className="text-xs text-polar-danger">{error}</p>}
+                <button type="submit" disabled={pending} className="w-full rounded bg-royal py-2 text-sm font-semibold text-white disabled:opacity-60">
+                  {pending ? "Booking…" : "Confirm Booking"}
+                </button>
+              </form>
+            )}
+
+            {modal === "walkin" && (
+              <form
+                className="mt-4 space-y-3"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const fd = new FormData(e.currentTarget);
+                  fd.set("date", date);
+                  runAction(() => createWalkIn(fd));
+                }}
+              >
+                <input name="label" type="text" placeholder="Name (optional)" className="w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm text-white placeholder:text-white/30" />
+                <ServiceAndStartFields services={services} gapStart={activeSlot.start} gapEnd={activeSlot.end} />
+                {error && <p className="text-xs text-polar-danger">{error}</p>}
+                <button type="submit" disabled={pending} className="w-full rounded bg-royal py-2 text-sm font-semibold text-white disabled:opacity-60">
+                  {pending ? "Adding…" : "Add Walk-In"}
+                </button>
+              </form>
+            )}
+
+            {modal === "barter" && (
+              <form
+                className="mt-4 space-y-3"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const fd = new FormData(e.currentTarget);
+                  fd.set("date", date);
+                  runAction(() => createBarterBooking(fd));
+                }}
+              >
+                <input name="with_label" type="text" placeholder="Who was it with?" className="w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm text-white placeholder:text-white/30" />
+                <ServiceAndStartFields services={services} gapStart={activeSlot.start} gapEnd={activeSlot.end} />
+                <textarea name="notes" placeholder="What was received in exchange?" className="w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm text-white placeholder:text-white/30" />
+                <p className="text-xs text-white/40">Amount charged will be recorded as £0 — barter value is never counted as cash revenue.</p>
+                {error && <p className="text-xs text-polar-danger">{error}</p>}
+                <button type="submit" disabled={pending} className="w-full rounded bg-magenta py-2 text-sm font-semibold text-white disabled:opacity-60">
+                  {pending ? "Adding…" : "Add Barter"}
+                </button>
+              </form>
+            )}
+
+            {modal === "block" && (
+              <form
+                className="mt-4 space-y-3"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const fd = new FormData(e.currentTarget);
+                  const minutes = Number(fd.get("duration"));
+                  const endTotal = timeToMinutes(activeSlot.start) + minutes;
+                  fd.set("date", date);
+                  fd.set("start_time", activeSlot.start);
+                  fd.set("end_time", minutesToTime(endTotal));
+                  runAction(() => createBlockedTime(fd));
+                }}
+              >
+                {/* Break vs Blocked — both occupy the time the same
+                    way; this only distinguishes a normal scheduled
+                    break from other planned unavailable time. */}
+                <div className="flex gap-3 text-xs text-white/70">
+                  <label className="flex items-center gap-1.5">
+                    <input type="radio" name="is_break" value="false" defaultChecked />
+                    Blocked
+                  </label>
+                  <label className="flex items-center gap-1.5">
+                    <input type="radio" name="is_break" value="true" />
+                    Break
+                  </label>
+                </div>
+                <label className="block text-xs text-white/60">
+                  Block for
+                  <select name="duration" defaultValue={30} className="mt-1 w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm text-white">
+                    <option value={15}>15 minutes</option>
+                    <option value={30}>30 minutes</option>
+                    <option value={60}>1 hour</option>
+                    <option value={120}>2 hours</option>
+                  </select>
+                </label>
+                <input name="label" type="text" placeholder="Reason (optional)" className="w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm text-white placeholder:text-white/30" />
+                {error && <p className="text-xs text-polar-danger">{error}</p>}
+                <button type="submit" disabled={pending} className="w-full rounded border border-white/30 py-2 text-sm font-semibold text-white hover:bg-white/5 disabled:opacity-60">
+                  {pending ? "Blocking…" : "Block Time"}
+                </button>
+              </form>
             )}
           </div>
         </div>
+      )}
 
-        {/* Slot action menu (Day view) */}
-        {activeSlot && !modal && (
-          <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setActiveSlot(null)}>
-            <div
-              className="relative w-72 rounded-xl border border-royal-light/30 bg-navy-light p-4 shadow-[0_0_32px_-6px_rgba(91,155,255,0.3)]"
-              onClick={(e) => e.stopPropagation()}
+      {/* Existing appointment detail */}
+      {detail && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setDetail(null)}>
+          <div className="relative w-96 rounded-xl border border-royal-light/30 bg-navy-light p-5 shadow-[0_0_32px_-6px_rgba(91,155,255,0.3)]" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => setDetail(null)}
+              aria-label="Close"
+              className="absolute right-3 top-3 text-white/40 transition hover:text-white"
             >
-              <button
-                type="button"
-                onClick={() => setActiveSlot(null)}
-                aria-label="Close"
-                className="absolute right-3 top-3 text-white/40 transition hover:text-white"
-              >
-                ✕
-              </button>
-              <p className="pr-6 font-display text-sm text-white">
-                {formatTime12h(activeSlot.start)} – {formatTime12h(activeSlot.end)}
+              ✕
+            </button>
+            <p className="pr-6 font-display text-white" style={{ fontSize: "1.1rem" }}>{bookingKindLabel(detail)}</p>
+            <p className="mt-1 text-sm text-white/70">
+              {formatTime12h(detail.startTime)} – {formatTime12h(detail.endTime)}
+            </p>
+            {detail.serviceName && (
+              <p className="mt-2 text-sm text-white">
+                {detail.serviceName} {detail.isBarter ? "(barter — £0 charged)" : detail.servicePrice != null ? `· ${money(detail.servicePrice)}` : ""}
               </p>
-              <p className="text-[10px] uppercase tracking-wide text-royal-light/60">Available slot</p>
-              <div className="mt-3 flex flex-col gap-2">
-                <button type="button" onClick={() => setModal("book")} className="rounded-lg bg-gradient-to-r from-royal to-royal-dark px-3 py-2 text-left text-sm font-medium text-white shadow-[0_0_10px_-4px_rgba(91,155,255,0.6)] transition hover:brightness-110">
-                  Book Appointment
-                </button>
-                <button type="button" onClick={() => setModal("walkin")} className="rounded-lg border border-royal-light/30 px-3 py-2 text-left text-sm text-white transition hover:bg-royal-light/10">
-                  Add Walk-In
-                </button>
-                <button type="button" onClick={() => setModal("barter")} className="rounded-lg border border-magenta/40 px-3 py-2 text-left text-sm text-magenta transition hover:bg-magenta/10">
-                  Add Barter
-                </button>
-                <button type="button" onClick={() => setModal("block")} className="rounded-lg border border-white/15 px-3 py-2 text-left text-sm text-white/70 transition hover:bg-white/5">
-                  Block Time
-                </button>
-              </div>
+            )}
+            {detail.label && !detail.clientName && <p className="mt-1 text-sm text-white/70">{detail.isBarter ? "With: " : "Name: "}{detail.label}</p>}
+            {detail.barterNotes && <p className="mt-1 text-sm text-white/50">Received: {detail.barterNotes}</p>}
+            {error && <p className="mt-2 text-xs text-polar-danger">{error}</p>}
+            <div className="mt-4 flex gap-2">
+              {detail.clientProfileId && (
+                <Link href={`/dashboard/barber/clients/${detail.clientProfileId}`} className="rounded border border-royal-light/40 px-3 py-1.5 text-xs text-royal-light hover:bg-royal-light/10">
+                  View client
+                </Link>
+              )}
+              <button type="button" disabled={pending} onClick={() => handleCancel(detail.id)} className="rounded border border-magenta/50 px-3 py-1.5 text-xs text-magenta hover:bg-magenta/10 disabled:opacity-50">
+                {pending ? "…" : detail.isBlocked ? (detail.isBreak ? "Remove break" : "Unblock") : "Cancel"}
+              </button>
             </div>
           </div>
-        )}
-
-        {/* Book / Walk-in / Barter / Block forms */}
-        {activeSlot && modal && (
-          <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={closeModal}>
-            <div className="relative w-96 rounded-xl border border-royal-light/30 bg-navy-light p-5 shadow-[0_0_32px_-6px_rgba(91,155,255,0.3)]" onClick={(e) => e.stopPropagation()}>
-              <button
-                type="button"
-                onClick={closeModal}
-                aria-label="Close"
-                className="absolute right-3 top-3 text-white/40 transition hover:text-white"
-              >
-                ✕
-              </button>
-              <p className="pr-6 font-display text-white" style={{ fontSize: "1.1rem" }}>
-                {modal === "book" && "Book Appointment"}
-                {modal === "walkin" && "Add Walk-In"}
-                {modal === "barter" && "Add Barter"}
-                {modal === "block" && "Block Time"}
-              </p>
-              <p className="mt-1 text-xs text-white/50">
-                {formatTime12h(activeSlot.start)} – {formatTime12h(activeSlot.end)} on {dayLabel(date)}
-              </p>
-
-              {modal === "book" && (
-                <form
-                  className="mt-4 space-y-3"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const fd = new FormData(e.currentTarget);
-                    fd.set("date", date);
-                    runAction(() => createBookingAsBarber(fd));
-                  }}
-                >
-                  <select name="client_profile_id" required className="w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm text-white">
-                    <option value="">Choose a client…</option>
-                    {clients.map((c) => (
-                      <option key={c.id} value={c.id}>{c.fullName}</option>
-                    ))}
-                  </select>
-                  {clients.length === 0 && <p className="text-xs text-white/40">No linked clients yet — link one from the Clients page first.</p>}
-                  <ServiceAndStartFields services={services} gapStart={activeSlot.start} gapEnd={activeSlot.end} />
-                  {error && <p className="text-xs text-polar-danger">{error}</p>}
-                  <button type="submit" disabled={pending} className="w-full rounded bg-royal py-2 text-sm font-semibold text-white disabled:opacity-60">
-                    {pending ? "Booking…" : "Confirm Booking"}
-                  </button>
-                </form>
-              )}
-
-              {modal === "walkin" && (
-                <form
-                  className="mt-4 space-y-3"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const fd = new FormData(e.currentTarget);
-                    fd.set("date", date);
-                    runAction(() => createWalkIn(fd));
-                  }}
-                >
-                  <input name="label" type="text" placeholder="Name (optional)" className="w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm text-white placeholder:text-white/30" />
-                  <ServiceAndStartFields services={services} gapStart={activeSlot.start} gapEnd={activeSlot.end} />
-                  {error && <p className="text-xs text-polar-danger">{error}</p>}
-                  <button type="submit" disabled={pending} className="w-full rounded bg-royal py-2 text-sm font-semibold text-white disabled:opacity-60">
-                    {pending ? "Adding…" : "Add Walk-In"}
-                  </button>
-                </form>
-              )}
-
-              {modal === "barter" && (
-                <form
-                  className="mt-4 space-y-3"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const fd = new FormData(e.currentTarget);
-                    fd.set("date", date);
-                    runAction(() => createBarterBooking(fd));
-                  }}
-                >
-                  <input name="with_label" type="text" placeholder="Who was it with?" className="w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm text-white placeholder:text-white/30" />
-                  <ServiceAndStartFields services={services} gapStart={activeSlot.start} gapEnd={activeSlot.end} />
-                  <textarea name="notes" placeholder="What was received in exchange?" className="w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm text-white placeholder:text-white/30" />
-                  <p className="text-xs text-white/40">Amount charged will be recorded as £0 — barter value is never counted as cash revenue.</p>
-                  {error && <p className="text-xs text-polar-danger">{error}</p>}
-                  <button type="submit" disabled={pending} className="w-full rounded bg-magenta py-2 text-sm font-semibold text-white disabled:opacity-60">
-                    {pending ? "Adding…" : "Add Barter"}
-                  </button>
-                </form>
-              )}
-
-              {modal === "block" && (
-                <form
-                  className="mt-4 space-y-3"
-                  onSubmit={(e) => {
-                    e.preventDefault();
-                    const fd = new FormData(e.currentTarget);
-                    const minutes = Number(fd.get("duration"));
-                    const endTotal = timeToMinutes(activeSlot.start) + minutes;
-                    fd.set("date", date);
-                    fd.set("start_time", activeSlot.start);
-                    fd.set("end_time", minutesToTime(endTotal));
-                    runAction(() => createBlockedTime(fd));
-                  }}
-                >
-                  {/* Break vs Blocked — both occupy the time the same
-                      way; this only distinguishes a normal scheduled
-                      break from other planned unavailable time. */}
-                  <div className="flex gap-3 text-xs text-white/70">
-                    <label className="flex items-center gap-1.5">
-                      <input type="radio" name="is_break" value="false" defaultChecked />
-                      Blocked
-                    </label>
-                    <label className="flex items-center gap-1.5">
-                      <input type="radio" name="is_break" value="true" />
-                      Break
-                    </label>
-                  </div>
-                  <label className="block text-xs text-white/60">
-                    Block for
-                    <select name="duration" defaultValue={30} className="mt-1 w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm text-white">
-                      <option value={15}>15 minutes</option>
-                      <option value={30}>30 minutes</option>
-                      <option value={60}>1 hour</option>
-                      <option value={120}>2 hours</option>
-                    </select>
-                  </label>
-                  <input name="label" type="text" placeholder="Reason (optional)" className="w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm text-white placeholder:text-white/30" />
-                  {error && <p className="text-xs text-polar-danger">{error}</p>}
-                  <button type="submit" disabled={pending} className="w-full rounded border border-white/30 py-2 text-sm font-semibold text-white hover:bg-white/5 disabled:opacity-60">
-                    {pending ? "Blocking…" : "Block Time"}
-                  </button>
-                </form>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Existing appointment detail */}
-        {detail && (
-          <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setDetail(null)}>
-            <div className="relative w-96 rounded-xl border border-royal-light/30 bg-navy-light p-5 shadow-[0_0_32px_-6px_rgba(91,155,255,0.3)]" onClick={(e) => e.stopPropagation()}>
-              <button
-                type="button"
-                onClick={() => setDetail(null)}
-                aria-label="Close"
-                className="absolute right-3 top-3 text-white/40 transition hover:text-white"
-              >
-                ✕
-              </button>
-              <p className="pr-6 font-display text-white" style={{ fontSize: "1.1rem" }}>{bookingKindLabel(detail)}</p>
-              <p className="mt-1 text-sm text-white/70">
-                {formatTime12h(detail.startTime)} – {formatTime12h(detail.endTime)}
-              </p>
-              {detail.serviceName && (
-                <p className="mt-2 text-sm text-white">
-                  {detail.serviceName} {detail.isBarter ? "(barter — £0 charged)" : detail.servicePrice != null ? `· ${money(detail.servicePrice)}` : ""}
-                </p>
-              )}
-              {detail.label && !detail.clientName && <p className="mt-1 text-sm text-white/70">{detail.isBarter ? "With: " : "Name: "}{detail.label}</p>}
-              {detail.barterNotes && <p className="mt-1 text-sm text-white/50">Received: {detail.barterNotes}</p>}
-              {error && <p className="mt-2 text-xs text-polar-danger">{error}</p>}
-              <div className="mt-4 flex gap-2">
-                {detail.clientProfileId && (
-                  <Link href={`/dashboard/barber/clients/${detail.clientProfileId}`} className="rounded border border-royal-light/40 px-3 py-1.5 text-xs text-royal-light hover:bg-royal-light/10">
-                    View client
-                  </Link>
-                )}
-                <button type="button" disabled={pending} onClick={() => handleCancel(detail.id)} className="rounded border border-magenta/50 px-3 py-1.5 text-xs text-magenta hover:bg-magenta/10 disabled:opacity-50">
-                  {pending ? "…" : detail.isBlocked ? (detail.isBreak ? "Remove break" : "Unblock") : "Cancel"}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-      </main>
+        </div>
+      )}
     </div>
   );
 }
