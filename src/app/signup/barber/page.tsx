@@ -44,28 +44,66 @@ const nunito = Nunito_Sans({ subsets: ["latin"], weight: ["400", "600", "700", "
 // it (purely a UI label, not a semantic change) so it doesn't read as
 // a duplicate of the separate Work/Commercial Address section below.
 //
-// Desktop background v5 (panoramic barber-shop scene, native 2048x768:
-// POLAR left, empty chair right, navy back wall in the centre). No-crop
-// rule: the stage is CONTAINED, never crop-to-fill — its width is
-// min(100vw, 100dvh * ratio), so the complete composition is always
-// visible and any leftover browser space is plain POLAR navy.
-const BG_ASPECT = "2048 / 768";
+// Desktop background v7 (16:9 barber-shop scene, native 1672x941: POLAR
+// left holding the cape, empty chair right, navy back wall in the
+// centre). Locked master asset — never edited, stretched or re-cropped
+// on disk. The stage keeps the artwork's exact aspect ratio; everything
+// on it (background + panel) is positioned in artwork coordinates, so
+// the panel stays on the wall at every window size.
+const BG_RATIO = 1672 / 941;
+
+// Responsive fill. The stage covers the window (no dead bands) and the
+// overflow is cropped dynamically by viewport aspect ratio — but never
+// into SAFE, the region that must always stay visible (fractions of the
+// artwork, measured off the source): POLAR's cape edge (x0.117) to the
+// chair's far edge (x0.89), just above the panel (y0.16) to the feet and
+// chair base (y0.887). The crop is centred on SAFE. Only past the
+// extremes where covering would cut into SAFE (narrower than ~4:3 or
+// wider than ~2.4:1) does the stage stop growing, leaving a minimal navy
+// margin instead of cropping POLAR, the chair or the panel.
+const SAFE = { x0: 0.115, x1: 0.895, y0: 0.16, y1: 0.9 };
+const STAGE_W = `min(max(100vw, calc(100dvh * ${BG_RATIO})), calc(100vw / ${SAFE.x1 - SAFE.x0}), calc(100dvh * ${BG_RATIO} / ${SAFE.y1 - SAFE.y0}))`;
+const STAGE_H = `calc(var(--stage-w) / ${BG_RATIO})`;
+// Offset so SAFE's centre sits at the window centre, clamped so the
+// stage always covers the window (or is centred when it can't).
+const offset = (view: string, size: string, centre: number) =>
+  `clamp(min(calc(${view} - ${size}), calc((${view} - ${size}) / 2)), calc(${view} / 2 - ${size} * ${centre}), max(0px, calc((${view} - ${size}) / 2)))`;
+const STAGE_STYLE = {
+  "--stage-w": STAGE_W,
+  width: "var(--stage-w)",
+  height: STAGE_H,
+  left: offset("100vw", "var(--stage-w)", (SAFE.x0 + SAFE.x1) / 2),
+  top: offset("100dvh", STAGE_H, (SAFE.y0 + SAFE.y1) / 2),
+} as React.CSSProperties;
 
 // Approved UI reference (barber-signup-panel-v1.webp — the supplied
 // PNG, losslessly converted, pixel-identical, native 1399x1124). Its
 // painted splatter/glow frame is the panel's frame layer. PANEL_BOX
-// keeps the panel at its approved size (47.42% of the stage width) and
-// centres the frame's opaque extent (x237-1167, y61-1075 in reference
-// px) on the back wall (centre x~1035 of 2048) and vertically on the
-// stage. Uniform scale, no distortion; only the transparent outer glow
-// reaches past the frame.
-const PANEL_BOX = { left: "26.70%", top: "-1.34%", width: "47.42%" };
+// maps the frame's opaque extent (x237-1167, y61-1075 in reference px)
+// to x585-1125, y200-789 of the 1672x941 background: centred on the
+// wall (x~855), top just under the ceiling light bar, extending onto the
+// open floor. Width is capped by clearance to POLAR (right edge x~540)
+// and the chair (left edge x~1198). Uniform scale 0.5806, no distortion.
+const PANEL_BOX = { left: "26.76%", top: "17.49%", width: "48.58%" };
 
 // Every desktop panel size below is written in the reference's own
 // pixels and converted to cqw of the panel box (reference width =
 // 100cqw), so the real UI lands exactly where the reference draws it
 // at any viewport size.
 const r = (n: number) => `${((n * 100) / 1399).toFixed(3)}cqw`;
+
+// Readability floor: panel text scales with the artwork, but never
+// drops below a comfortable minimum (px, by text role) on small
+// laptops / landscape tablets. On larger screens the artwork-scaled
+// size is already bigger, so the approved look is unchanged there.
+// The panel's own size and position are not affected.
+const MIN_PX: Record<number, number> = { 19: 11, 19.6: 10.5, 20: 11, 21: 11.5, 23: 12, 24: 13, 25: 12.5, 28: 12.5, 29: 12.5 };
+const fs = (n: number) => (MIN_PX[n] ? `max(${r(n)}, ${MIN_PX[n]}px)` : r(n));
+// Vertical gap that is the approved r(full) whenever the panel renders
+// wider than ~700px (desktop), and eases down to r(compact) on small
+// laptops / tablets so the readability floor never pushes the
+// collapsed form into scrolling. 100cqw = the panel's rendered width.
+const gap = (full: number, compact: number) => `clamp(${r(compact)}, calc((100cqw - 640px) * 0.1), ${r(full)})`;
 
 // The reference also has its own baked copy of the logo, headings and
 // controls. Those areas are masked out of the frame layer (soft-edged)
@@ -89,14 +127,13 @@ const LINK = "#00ebf5";
 
 function BarberScene({ children }: { children: React.ReactNode }) {
   return (
-    <main className={`${nunito.className} relative hidden h-[100dvh] items-center justify-center overflow-hidden bg-navy sm:flex`}>
-      <div className="relative shrink-0" style={{ width: `min(100vw, calc(100dvh * ${BG_ASPECT}))`, aspectRatio: BG_ASPECT }}>
+    <main className={`${nunito.className} relative hidden h-[100dvh] overflow-hidden bg-navy sm:block`}>
+      <div className="absolute" style={STAGE_STYLE}>
         <Image
-          src="/signup/create-account-barber-v5.webp"
+          src="/signup/create-account-barber-v7.webp"
           alt="POLAR in the barber shop, next to an empty barber chair. Barber Portal — create your account."
           fill
-          sizes="100vw"
-          quality={90}
+          unoptimized
           className="object-contain"
           priority
         />
@@ -107,7 +144,7 @@ function BarberScene({ children }: { children: React.ReactNode }) {
             className="pointer-events-none absolute inset-0"
             style={{ WebkitMaskImage: MASK_URL, maskImage: MASK_URL, WebkitMaskSize: "100% 100%", maskSize: "100% 100%" }}
           >
-            <Image src="/signup/barber-signup-panel-v1.webp" alt="" fill sizes="50vw" quality={90} className="object-contain" priority />
+            <Image src="/signup/barber-signup-panel-v1.webp" alt="" fill unoptimized className="object-contain" priority />
           </div>
           {children}
         </div>
@@ -118,7 +155,7 @@ function BarberScene({ children }: { children: React.ReactNode }) {
 
 const INPUT_CLASS =
   "w-full border border-[#0560a0] bg-[#021027] text-white outline-none placeholder:text-white/40 focus:border-[#00d9ee] transition";
-const INPUT_STYLE: React.CSSProperties = { padding: `${r(15)} ${r(20)}`, fontSize: r(24), borderWidth: r(2), borderRadius: r(12) };
+const INPUT_STYLE: React.CSSProperties = { padding: `${r(15)} ${r(20)}`, fontSize: fs(24), borderWidth: r(2), borderRadius: r(12) };
 
 function ChevronDown({ open }: { open: boolean }) {
   return (
@@ -153,14 +190,14 @@ function Section({
         onClick={onToggle}
         aria-expanded={open}
         className="flex w-full items-center text-left transition hover:bg-white/[0.03]"
-        style={{ height: r(105), padding: `0 ${r(14)} 0 ${r(28)}` }}
+        style={{ minHeight: r(105), padding: `${r(10)} ${r(14)} ${r(10)} ${r(28)}` }}
       >
         <span className="block shrink-0" style={{ height: r(64), width: r(64), color: "#12e4f7" }}>
           {icon}
         </span>
         <span className="flex-1" style={{ marginLeft: r(37) }}>
-          <span className="block font-bold text-white" style={{ fontSize: r(25), lineHeight: 1.2 }}>{title}</span>
-          <span className="block text-white/85" style={{ fontSize: r(21), lineHeight: 1.2, marginTop: r(8) }}>{subtitle}</span>
+          <span className="block font-bold text-white" style={{ fontSize: fs(25), lineHeight: 1.2 }}>{title}</span>
+          <span className="block text-white/85" style={{ fontSize: fs(21), lineHeight: 1.2, marginTop: r(8) }}>{subtitle}</span>
         </span>
         <ChevronDown open={open} />
       </button>
@@ -198,7 +235,7 @@ function TextField({
 }) {
   return (
     <label className="block">
-      <span className="block text-white/80" style={{ fontSize: r(21), marginBottom: r(8) }}>
+      <span className="block text-white/80" style={{ fontSize: fs(21), marginBottom: r(8) }}>
         {label}
         {required && <span className="text-magenta"> *</span>}
       </span>
@@ -359,7 +396,7 @@ export default function BarberSignupPage() {
         </p>
       </main>
 
-      {/* Desktop — background v5 shown in full, approved UI reference
+      {/* Desktop — background v7 shown in full, approved UI reference
           as the panel (see BarberScene). Fixed header (logo/title/
           subtitle) + a single internally-scrollable region holding
           every section, consent and the submit button — it only
@@ -371,14 +408,14 @@ export default function BarberSignupPage() {
         </div>
         <p
           className="absolute inset-x-0 text-center font-bold uppercase"
-          style={{ top: r(284), fontSize: r(28), lineHeight: 1, letterSpacing: "0.28em", paddingLeft: "0.28em", color: "#08c6f2" }}
+          style={{ top: r(284), fontSize: fs(28), lineHeight: 1, letterSpacing: "0.28em", paddingLeft: "0.28em", color: "#08c6f2" }}
         >
           Barber Portal
         </p>
-        <h1 className="absolute inset-x-0 text-center font-extrabold text-white" style={{ top: r(326), fontSize: r(70), lineHeight: 1, letterSpacing: "-0.005em" }}>
+        <h1 className="absolute inset-x-0 text-center font-extrabold text-white" style={{ top: r(326), fontSize: fs(70), lineHeight: 1, letterSpacing: "-0.005em" }}>
           Create <span style={{ color: "#06cdfb" }}>your</span> account
         </h1>
-        <p className="absolute inset-x-0 text-center text-white/90" style={{ top: r(409), fontSize: r(29), lineHeight: 1.1 }}>
+        <p className="absolute inset-x-0 text-center text-white/90" style={{ top: r(409), fontSize: fs(29), lineHeight: 1.1 }}>
           Join POLAR. Be part of something bigger.
         </p>
 
@@ -444,7 +481,7 @@ export default function BarberSignupPage() {
                 <TextField name="phone" label="Phone Number" type="tel" required onInvalid={() => openSection("personal")} />
                 <TextField name="email" label="Email" type="email" required onInvalid={() => openSection("personal")} />
                 <label className="block">
-                  <span className="block text-white/80" style={{ fontSize: r(21), marginBottom: r(8) }}>
+                  <span className="block text-white/80" style={{ fontSize: fs(21), marginBottom: r(8) }}>
                     Password <span className="text-magenta">*</span>
                   </span>
                   <div className="relative">
@@ -479,7 +516,7 @@ export default function BarberSignupPage() {
                 open={openSections.professional}
                 onToggle={() => toggleSection("professional")}
               >
-                <p className="text-white/50" style={{ fontSize: r(20) }}>
+                <p className="text-white/50" style={{ fontSize: fs(20) }}>
                   Optional — you can fill this in later from your dashboard instead.
                 </p>
                 <TextField name="barber_name" label="Barber / Stylist Name" />
@@ -487,7 +524,7 @@ export default function BarberSignupPage() {
                 <TextField name="years_experience" label="Years of Experience" type="number" />
                 <div>
                   <TextField name="work_location" label="Work Location" />
-                  <p className="text-white/50" style={{ marginTop: r(8), fontSize: r(19) }}>
+                  <p className="text-white/50" style={{ marginTop: r(8), fontSize: fs(19) }}>
                     A short description for your profile — e.g. &quot;Central London&quot; or &quot;Mobile barber&quot;. Not your address.
                   </p>
                 </div>
@@ -500,8 +537,8 @@ export default function BarberSignupPage() {
                 open={openSections.addresses}
                 onToggle={() => toggleSection("addresses")}
               >
-                <p className="font-bold text-white/90" style={{ fontSize: r(23) }}>Personal / Home Address</p>
-                <p className="text-white/50" style={{ fontSize: r(20), marginTop: r(-10) }}>Always private. Never shown to clients.</p>
+                <p className="font-bold text-white/90" style={{ fontSize: fs(23) }}>Personal / Home Address</p>
+                <p className="text-white/50" style={{ fontSize: fs(20), marginTop: r(-10) }}>Always private. Never shown to clients.</p>
                 <TextField name="home_address_line_1" label="Address Line 1" required onInvalid={() => openSection("addresses")} />
                 <TextField name="home_address_line_2" label="Address Line 2 (optional)" />
                 <TextField name="home_town_city" label="Town / City" required onInvalid={() => openSection("addresses")} />
@@ -509,11 +546,11 @@ export default function BarberSignupPage() {
                 <TextField name="home_postcode" label="Postcode" required onInvalid={() => openSection("addresses")} />
                 <TextField name="home_country" label="Country" required onInvalid={() => openSection("addresses")} />
 
-                <p className="font-bold text-white/90" style={{ fontSize: r(23), marginTop: r(10) }}>Work / Commercial Address</p>
-                <p className="text-white/50" style={{ fontSize: r(20), marginTop: r(-10) }}>
+                <p className="font-bold text-white/90" style={{ fontSize: fs(23), marginTop: r(10) }}>Work / Commercial Address</p>
+                <p className="text-white/50" style={{ fontSize: fs(20), marginTop: r(-10) }}>
                   Where you provide services from. May be shown to clients with a confirmed appointment.
                 </p>
-                <label className="flex items-center text-white/85" style={{ gap: r(16), fontSize: r(21) }}>
+                <label className="flex items-center text-white/85" style={{ gap: r(16), fontSize: fs(21) }}>
                   <input
                     type="checkbox"
                     name="work_same_as_home"
@@ -536,7 +573,7 @@ export default function BarberSignupPage() {
                 )}
               </Section>
 
-              <label className="flex items-center text-white/90" style={{ gap: r(20), fontSize: r(19.6), marginTop: r(12) }}>
+              <label className="flex items-center text-white/90" style={{ gap: r(20), fontSize: fs(19.6), lineHeight: 1.25, marginTop: gap(12, 2) }}>
                 <input type="checkbox" required onChange={handleConsentChange} className="polar-check" />
                 <span>
                   I agree to the{" "}
@@ -551,7 +588,7 @@ export default function BarberSignupPage() {
               <input type="checkbox" name="age_confirmed" className="hidden" />
 
               {error && (
-                <p className="text-magenta" style={{ fontSize: r(21) }}>
+                <p className="text-magenta" style={{ fontSize: fs(21) }}>
                   {error}
                 </p>
               )}
@@ -561,9 +598,9 @@ export default function BarberSignupPage() {
                 disabled={pending}
                 className="w-full text-center font-bold text-white transition hover:brightness-110 disabled:opacity-60"
                 style={{
-                  marginTop: r(13),
+                  marginTop: gap(13, 3),
                   height: r(82),
-                  fontSize: r(28),
+                  fontSize: fs(28),
                   borderRadius: r(18),
                   border: `${r(2)} solid rgba(90,220,255,0.9)`,
                   background: "linear-gradient(180deg, #1a8dff 0%, #0061fc 50%, #0056ef 100%)",
@@ -575,7 +612,7 @@ export default function BarberSignupPage() {
             </form>
         </div>
 
-        <p className="absolute inset-x-0 text-center text-white/90" style={{ top: r(1013), fontSize: r(25), lineHeight: 1.2 }}>
+        <p className="absolute inset-x-0 text-center text-white/90" style={{ top: r(1013), fontSize: fs(25), lineHeight: 1.2 }}>
           Already have an account?{" "}
           <Link href="/login" className="font-bold underline underline-offset-2" style={{ color: LINK }}>Log in</Link>
         </p>
