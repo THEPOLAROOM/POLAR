@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 
 // Desktop Barber Dashboard scene: the approved artwork
-// (barber-dashboard-v2.webp — the supplied file converted losslessly,
+// (barber-dashboard-v3.webp — the supplied file converted losslessly,
 // pixel-identical, native 1942x809) with five real click targets laid
 // over its five physical destinations. The artwork's own pills/objects
 // ARE the navigation; no extra UI is drawn on top. Rendered by
@@ -59,7 +59,7 @@ export function BarberDashboardScene() {
     <main className="relative hidden overflow-hidden sm:block" style={{ height: "100dvh", background: EDGE_FILL }}>
       <div className="absolute" style={STAGE_STYLE}>
         <Image
-          src="/dashboard/barber-dashboard-v2.webp"
+          src="/dashboard/barber-dashboard-v3.webp"
           alt="POLAR's barber shop: Clients tablet, Calendar board, Workflow Mode chair, POLAR for My Profile, and the My Services workstation."
           fill
           unoptimized
