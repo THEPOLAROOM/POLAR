@@ -44,22 +44,22 @@ const nunito = Nunito_Sans({ subsets: ["latin"], weight: ["400", "600", "700", "
 // it (purely a UI label, not a semantic change) so it doesn't read as
 // a duplicate of the separate Work/Commercial Address section below.
 //
-// Desktop background v4 (barber-shop scene: POLAR far left, empty
-// chair far right, clear navy back wall in the centre reserved for the
-// UI). No-crop rule: the stage is CONTAINED, never crop-to-fill — its
-// width is min(100vw, 100dvh * ratio), so the complete 16:9
-// composition is always visible and any leftover browser space is
-// plain POLAR navy.
-const V4_ASPECT = "1672 / 941";
+// Desktop background v5 (panoramic barber-shop scene, native 2048x768:
+// POLAR left, empty chair right, navy back wall in the centre). No-crop
+// rule: the stage is CONTAINED, never crop-to-fill — its width is
+// min(100vw, 100dvh * ratio), so the complete composition is always
+// visible and any leftover browser space is plain POLAR navy.
+const BG_ASPECT = "2048 / 768";
 
 // Approved UI reference (barber-signup-panel-v1.webp — the supplied
 // PNG, losslessly converted, pixel-identical, native 1399x1124). Its
 // painted splatter/glow frame is the panel's frame layer. PANEL_BOX
-// places it so the frame's opaque extent (x237-1167, y61-1075 in
-// reference px) exactly fills the clear back wall (x576-1103,
-// y115-690 of the 1672x941 background): uniform scale 0.5667, no
-// distortion. Only the transparent outer glow reaches past the wall.
-const PANEL_BOX = { left: "26.42%", top: "8.54%", width: "47.42%" };
+// keeps the panel at its approved size (47.42% of the stage width) and
+// centres the frame's opaque extent (x237-1167, y61-1075 in reference
+// px) on the back wall (centre x~1035 of 2048) and vertically on the
+// stage. Uniform scale, no distortion; only the transparent outer glow
+// reaches past the frame.
+const PANEL_BOX = { left: "26.70%", top: "-1.34%", width: "47.42%" };
 
 // Every desktop panel size below is written in the reference's own
 // pixels and converted to cqw of the panel box (reference width =
@@ -90,9 +90,9 @@ const LINK = "#00ebf5";
 function BarberScene({ children }: { children: React.ReactNode }) {
   return (
     <main className={`${nunito.className} relative hidden h-[100dvh] items-center justify-center overflow-hidden bg-navy sm:flex`}>
-      <div className="relative shrink-0" style={{ width: `min(100vw, calc(100dvh * ${V4_ASPECT}))`, aspectRatio: V4_ASPECT }}>
+      <div className="relative shrink-0" style={{ width: `min(100vw, calc(100dvh * ${BG_ASPECT}))`, aspectRatio: BG_ASPECT }}>
         <Image
-          src="/signup/create-account-barber-v4.webp"
+          src="/signup/create-account-barber-v5.webp"
           alt="POLAR in the barber shop, next to an empty barber chair. Barber Portal — create your account."
           fill
           sizes="100vw"
@@ -359,7 +359,7 @@ export default function BarberSignupPage() {
         </p>
       </main>
 
-      {/* Desktop — background v4 shown in full, approved UI reference
+      {/* Desktop — background v5 shown in full, approved UI reference
           as the panel (see BarberScene). Fixed header (logo/title/
           subtitle) + a single internally-scrollable region holding
           every section, consent and the submit button — it only
