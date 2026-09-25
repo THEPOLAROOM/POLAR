@@ -47,10 +47,11 @@ function buildMonthCells(year: number, month: number, summaries: Map<string, Day
 export default async function BarberCalendarPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string; date?: string }>;
+  searchParams: Promise<{ view?: string; date?: string; action?: string }>;
 }) {
   const { supabase, user } = await requireRole("barber");
-  const { view: rawView, date: rawDate } = await searchParams;
+  const { view: rawView, date: rawDate, action: rawAction } = await searchParams;
+  const action = rawAction === "book" || rawAction === "walkin" || rawAction === "block" ? rawAction : null;
 
   const today = getShopToday();
   const view: ViewKind = VALID_VIEWS.includes(rawView as ViewKind) ? (rawView as ViewKind) : "month";
@@ -176,6 +177,7 @@ export default async function BarberCalendarPage({
       dayData={dayData}
       weekDays={weekDays}
       listDays={listDays}
+      action={action}
       yearMonths={yearMonths}
     />
   );

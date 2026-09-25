@@ -7,7 +7,8 @@ import type { CalendarBooking } from "@/lib/queries/barber-calendar";
 import { createWalkIn } from "@/lib/actions/walk-ins";
 import { cancelBookingAsBarber } from "@/lib/actions/barber-bookings";
 import { createBookingAsBarber, createBarterBooking, createBlockedTime } from "@/lib/actions/barber-calendar-actions";
-import { FocusModeShell, ACCENTS } from "@/components/focus-mode/focus-mode-shell";
+import { Barlow_Condensed, Permanent_Marker } from "next/font/google";
+import { FocusModeShell, ACCENTS, type FrameSplatter } from "@/components/focus-mode/focus-mode-shell";
 import { BarberRoom } from "../dashboard-scene";
 
 export type ViewKind = "day" | "week" | "month" | "list" | "year";
@@ -15,11 +16,37 @@ export type MonthCell = { date: string; day: number; count: number; isFullyBooke
 type Service = { id: string; name: string; durationMinutes: number; price: number };
 type Client = { id: string; fullName: string };
 
-// Calendar Focus Mode (desktop): the old layered calendar artwork and its
-// measured patch boxes are gone — the calendar is now real HTML inside
-// the reusable FocusModeShell, over the darkened POLAR Room. All booking
-// data, actions and modals below are unchanged.
+// Calendar Focus Mode (desktop), built to the approved CALENDAR-UI
+// reference: real HTML inside the reusable FocusModeShell, over the
+// darkened POLAR Room. Only the paint splatter at the frame corners is
+// imagery (paint only, cut from the reference); every word, date and
+// booking is live. All booking data, actions and modals are unchanged.
 const PINK = ACCENTS.magenta;
+const GRID_LINE = `rgba(${ACCENTS.magenta.rgb},0.34)`;
+const PINK_OUTLINE: React.CSSProperties = {
+  borderColor: `rgba(${ACCENTS.magenta.rgb},0.85)`,
+  boxShadow: `0 0 10px -2px rgba(${ACCENTS.magenta.rgb},0.6), inset 0 0 6px rgba(${ACCENTS.magenta.rgb},0.2)`,
+};
+const BTN = "flex h-11 shrink-0 items-center rounded-xl border-2 bg-black/40 text-white transition hover:bg-white/5";
+
+// POLAR graffiti identity for the title; bold condensed italic for the
+// period ("SEPTEMBER 2026" etc.) and condensed UI text — defined once,
+// so every month/year renders with the identical treatment.
+const graffiti = Permanent_Marker({ subsets: ["latin"], weight: "400" });
+const ui = Barlow_Condensed({ subsets: ["latin"], weight: ["500", "600", "700", "800"], style: ["normal", "italic"] });
+
+const SPLATTER: FrameSplatter = {
+  src: {
+    tl: "/dashboard/focus/calendar-splat-tl.webp",
+    tr: "/dashboard/focus/calendar-splat-tr.webp",
+    bl: "/dashboard/focus/calendar-splat-bl.webp",
+    br: "/dashboard/focus/calendar-splat-br.webp",
+  },
+  size: [240, 200],
+  corner: { tl: [60, 66], tr: [181, 66], bl: [60, 122], br: [181, 122] },
+  frameWidth: 1481,
+};
+
 const TABS: { view: ViewKind; label: string }[] = [
   { view: "day", label: "Day" },
   { view: "week", label: "Week" },
@@ -27,7 +54,108 @@ const TABS: { view: ViewKind; label: string }[] = [
   { view: "list", label: "List" },
 ];
 const WEEKDAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
-const CTRL = "flex h-9 items-center rounded-lg border border-white/[0.14] text-white/80 transition hover:bg-white/5 hover:text-white";
+
+type PickAction = "book" | "walkin" | "block";
+const ACTION_META: Record<PickAction, { label: string; verb: string }> = {
+  book: { label: "Add Appointment", verb: "add an appointment" },
+  walkin: { label: "Add Walk-In", verb: "add a walk-in" },
+  block: { label: "Block Time", verb: "block time" },
+};
+
+function CalendarGlyph() {
+  return (
+    <svg viewBox="0 0 48 48" className="h-14 w-14 shrink-0" fill="none" stroke={ACCENTS.magenta.hex} strokeWidth="3.4" strokeLinecap="round" aria-hidden="true" style={{ filter: `drop-shadow(0 0 6px rgba(${ACCENTS.magenta.rgb},0.8))` }}>
+      <rect x="5" y="9" width="38" height="34" rx="6" />
+      <path d="M5 18h38M15 5v8M33 5v8" />
+      <g fill={ACCENTS.magenta.hex} stroke="none">
+        <circle cx="15" cy="27" r="2.6" />
+        <circle cx="24" cy="27" r="2.6" />
+        <circle cx="33" cy="27" r="2.6" />
+        <circle cx="15" cy="35" r="2.6" />
+        <circle cx="24" cy="35" r="2.6" />
+      </g>
+    </svg>
+  );
+}
+
+function CrownGlyph() {
+  return (
+    <svg viewBox="0 0 48 34" className="h-10 w-14 shrink-0 -translate-y-2" fill="none" stroke={ACCENTS.magenta.hex} strokeWidth="3" strokeLinejoin="round" aria-hidden="true" style={{ filter: `drop-shadow(0 0 6px rgba(${ACCENTS.magenta.rgb},0.8))` }}>
+      <path d="M4 10l9 9 11-15 11 15 9-9-4 20H8z" />
+      <path d="M10 30h28" />
+    </svg>
+  );
+}
+
+function Chevron({ dir }: { dir: "left" | "right" }) {
+  return (
+    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke={ACCENTS.magenta.hex} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d={dir === "left" ? "M15 5l-7 7 7 7" : "M9 5l7 7-7 7"} />
+    </svg>
+  );
+}
+
+/** "SEPTEMBER 2026" style period title — any trailing year is pink. */
+function PeriodTitle({ text }: { text: string }) {
+  const m = text.toUpperCase().match(/^(.*?)(\s\d{4})?$/);
+  return (
+    <div className="relative mx-1 shrink-0 2xl:mx-3">
+      <p className="cal-period relative z-10 whitespace-nowrap" style={{ fontSize: "clamp(24px, 2.1vw, 40px)" }}>
+        {m?.[1]}
+        {m?.[2] && <span style={{ color: ACCENTS.magenta.hex }}>{m[2]}</span>}
+      </p>
+      {/* Pink paint swash under the period, as in the reference. */}
+      <svg viewBox="0 0 300 18" preserveAspectRatio="none" className="absolute -bottom-2 left-[-4%] h-3 w-[108%]" aria-hidden="true">
+        <path d="M2 11c60-6 140-8 220-6 30 1 55 2 76 4-24 2-50 3-78 3-70 1-150 3-218 2z" fill={ACCENTS.magenta.hex} opacity="0.9" />
+        <path d="M120 12c2 3 1 5 0 6M150 12c1 2 1 3 0 4M95 12c1 2 0 3 0 3" stroke={ACCENTS.magenta.hex} strokeWidth="2" strokeLinecap="round" />
+      </svg>
+    </div>
+  );
+}
+
+function ActionButton({ kind, onPick, view, date }: { kind: PickAction; onPick: (k: PickAction) => void; view: ViewKind; date: string }) {
+  const style: React.CSSProperties =
+    kind === "book"
+      ? { background: ACCENTS.magenta.hex, borderColor: ACCENTS.magenta.hex, boxShadow: `0 0 16px -2px rgba(${ACCENTS.magenta.rgb},0.8)` }
+      : kind === "walkin"
+        ? { borderColor: ACCENTS.cyan.hex, color: ACCENTS.cyan.hex, boxShadow: `0 0 12px -2px rgba(${ACCENTS.cyan.rgb},0.7), inset 0 0 6px rgba(${ACCENTS.cyan.rgb},0.2)` }
+        : PINK_OUTLINE;
+  const icon =
+    kind === "book" ? (
+      <path d="M12 5v14M5 12h14" />
+    ) : kind === "walkin" ? (
+      <>
+        <circle cx="13" cy="4.5" r="2" />
+        <path d="M11 9l-3 4 3 1-1 7M11 9l3 3 4 1M13 14l2 7" />
+      </>
+    ) : (
+      <>
+        <circle cx="12" cy="12" r="8.5" />
+        <path d="M9 9l6 6M15 9l-6 6" />
+      </>
+    );
+  const inner = (
+    <>
+      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={kind === "block" ? { color: ACCENTS.magenta.hex } : undefined}>
+        {icon}
+      </svg>
+      {ACTION_META[kind].label}
+    </>
+  );
+  const cls = `${BTN} gap-2 px-3 text-base font-bold 2xl:px-4`;
+  // Actions need a real free slot: in Day view they highlight the free
+  // slots to pick from; elsewhere they open the selected date's Day view
+  // in that mode. The existing booking dialogs do the rest.
+  return view === "day" ? (
+    <button type="button" onClick={() => onPick(kind)} className={cls} style={style}>
+      {inner}
+    </button>
+  ) : (
+    <Link href={`?view=day&date=${date}&action=${kind}`} className={cls} style={style}>
+      {inner}
+    </Link>
+  );
+}
 
 function pad(n: number): string {
   return String(n).padStart(2, "0");
@@ -185,6 +313,7 @@ export function CalendarView({
   weekDays,
   listDays,
   yearMonths,
+  action = null,
 }: {
   view: ViewKind;
   date: string;
@@ -197,12 +326,37 @@ export function CalendarView({
   weekDays: { date: string; label: string; count: number; isFullyBooked: boolean; hasAvailability: boolean; bookings: CalendarBooking[] }[] | null;
   listDays: { date: string; bookings: CalendarBooking[] }[] | null;
   yearMonths: { month: number; label: string; cells: MonthCell[] }[] | null;
+  /** Header action (Add Appointment / Walk-In / Block Time) carried into Day view. */
+  action?: PickAction | null;
 }) {
   const [activeSlot, setActiveSlot] = useState<{ start: string; end: string } | null>(null);
   const [modal, setModal] = useState<"book" | "walkin" | "barter" | "block" | null>(null);
   const [detail, setDetail] = useState<CalendarBooking | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const [pickAction, setPickAction] = useState<PickAction | null>(action);
+  function startPick(kind: PickAction) {
+    setPickAction(kind);
+  }
+
+  // Month grid with the neighbouring months' days filled in (dimmed), as
+  // in the approved design — all derived from the real month's dates.
+  const monthGrid = useMemo(() => {
+    if (!monthCells) return null;
+    const firstIdx = monthCells.findIndex((c) => c);
+    let lastIdx = -1;
+    monthCells.forEach((c, i) => {
+      if (c) lastIdx = i;
+    });
+    if (firstIdx < 0) return null;
+    const first = monthCells[firstIdx]!.date;
+    const last = monthCells[lastIdx]!.date;
+    return monthCells.map((c, i) => {
+      if (c) return { ...c, inMonth: true };
+      const d = i < firstIdx ? addDays(first, i - firstIdx) : addDays(last, i - lastIdx);
+      return { date: d, day: Number(d.slice(8)), count: 0, isFullyBooked: false, inMonth: false };
+    });
+  }, [monthCells]);
 
   const prevHref = useMemo(() => {
     if (view === "day") return `?view=day&date=${addDays(date, -1)}`;
@@ -264,6 +418,24 @@ export function CalendarView({
         div:has(> #barber-calendar-page) > nav {
           display: none;
         }
+        .cal-title {
+          display: inline-block;
+          transform: rotate(-4deg) skewX(-8deg);
+          background: linear-gradient(180deg, #ffffff 0%, #e8e8ee 45%, #a9a9b6 70%, #f4f4f8 100%);
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+          filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.8)) drop-shadow(0 0 8px rgba(255, 31, 180, 0.35));
+          padding: 0.05em 0.1em;
+        }
+        .cal-period {
+          font-weight: 800;
+          font-style: italic;
+          letter-spacing: 0.01em;
+          line-height: 1;
+          color: #fff;
+          text-shadow: 0 2px 0 rgba(0, 0, 0, 0.7);
+        }
       `}</style>
 
       {/* Mobile — simple functional placeholder; the immersive layered
@@ -284,31 +456,39 @@ export function CalendarView({
       </main>
 
       {/* Desktop — Calendar Focus Mode: the POLAR Room with its lights
-          off, and one large magenta Calendar panel on top. */}
+          off, and the approved neon Calendar panel on top. Every label,
+          date and booking below is live HTML driven by real data. */}
       <FocusModeShell
         id="calendar"
         accent="magenta"
         room={<BarberRoom decorative />}
-        title="CALENDAR"
-        controls={
+        className={ui.className}
+        splatter={SPLATTER}
+        heading={
+          <div className="flex items-center gap-4">
+            <CalendarGlyph />
+            <h1 className={`${graffiti.className} cal-title leading-none`} style={{ fontSize: "clamp(40px, 3.6vw, 64px)" }}>
+              Calendar
+            </h1>
+            <CrownGlyph />
+          </div>
+        }
+        toolbar={
           <>
-            <Link href={todayHref} className={`${CTRL} px-3.5 text-sm font-semibold ${date === today ? "text-white" : "text-white/80"}`} style={{ borderColor: `rgba(${PINK.rgb},0.45)` }}>
+            <Link href={todayHref} className={`${BTN} px-4 text-lg font-bold 2xl:px-5`} style={{ ...PINK_OUTLINE, color: PINK.hex }}>
               Today
             </Link>
-            <div className="flex items-center gap-1">
-              <Link href={prevHref} aria-label="Previous" className={`${CTRL} w-9 justify-center text-lg`}>
-                ‹
-              </Link>
-              <Link href={nextHref} aria-label="Next" className={`${CTRL} w-9 justify-center text-lg`}>
-                ›
-              </Link>
-            </div>
-            <p className="min-w-0 truncate text-xl font-extrabold tracking-tight text-white">{periodLabel(view, date)}</p>
-            <div className="ml-auto flex items-center gap-3">
-              <Link href="/dashboard/barber/calendar/analytics" className="text-sm text-white/50 transition hover:text-white">
-                Analytics
-              </Link>
-              <div role="tablist" aria-label="Calendar view" className="flex rounded-lg border border-white/[0.12] bg-white/[0.02] p-0.5">
+            <Link href={prevHref} aria-label="Previous" className={`${BTN} w-11 justify-center 2xl:w-12`} style={PINK_OUTLINE}>
+              <Chevron dir="left" />
+            </Link>
+            <Link href={nextHref} aria-label="Next" className={`${BTN} w-11 justify-center 2xl:w-12`} style={PINK_OUTLINE}>
+              <Chevron dir="right" />
+            </Link>
+
+            <PeriodTitle text={periodLabel(view, date)} />
+
+            <div className="ml-auto flex flex-wrap items-center gap-2 2xl:gap-3">
+              <div role="tablist" aria-label="Calendar view" className="flex h-11 overflow-hidden rounded-xl border-2" style={{ borderColor: `rgba(${PINK.rgb},0.7)` }}>
                 {TABS.map(({ view: v, label }) => {
                   const active = view === v;
                   return (
@@ -317,53 +497,70 @@ export function CalendarView({
                       role="tab"
                       aria-selected={active}
                       href={`?view=${v}&date=${date}`}
-                      className={`rounded-md px-3.5 py-1.5 text-sm font-semibold transition ${active ? "text-white" : "text-white/60 hover:bg-white/5 hover:text-white"}`}
-                      style={active ? { background: `rgba(${PINK.rgb},0.22)`, boxShadow: `inset 0 0 0 1px rgba(${PINK.rgb},0.7), 0 0 14px -4px rgba(${PINK.rgb},0.7)` } : undefined}
+                      className={`flex items-center px-3.5 text-base font-bold transition 2xl:px-5 ${active ? "text-white" : "text-white/90 hover:bg-white/5"}`}
+                      style={active ? { background: PINK.hex, boxShadow: `0 0 16px rgba(${PINK.rgb},0.7)` } : undefined}
                     >
                       {label}
                     </Link>
                   );
                 })}
               </div>
+              <ActionButton kind="book" onPick={startPick} view={view} date={date} />
+              <ActionButton kind="walkin" onPick={startPick} view={view} date={date} />
+              <ActionButton kind="block" onPick={startPick} view={view} date={date} />
             </div>
           </>
         }
       >
         {/* MONTH */}
-        {view === "month" && monthCells && (
-          <div className="flex min-h-0 flex-1 flex-col">
-            <div className="grid shrink-0 grid-cols-7 pb-2 text-[11px] font-bold tracking-[0.16em] text-white/45">
+        {view === "month" && monthGrid && (
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border-2" style={{ borderColor: GRID_LINE }}>
+            <div className="grid shrink-0 grid-cols-7">
               {WEEKDAYS.map((d, i) => (
-                <div key={d} className="px-2" style={i >= 5 ? { color: `rgba(${PINK.rgb},0.75)` } : undefined}>
+                <div
+                  key={d}
+                  className="py-2 text-center text-lg font-bold tracking-wide"
+                  style={{ color: i === 6 ? PINK.hex : "#fff", borderLeft: i ? `1px solid ${GRID_LINE}` : undefined, borderBottom: `1.5px solid ${GRID_LINE}` }}
+                >
                   {d}
                 </div>
               ))}
             </div>
-            <div
-              className="grid min-h-0 flex-1 grid-cols-7 border-l border-t border-white/[0.08]"
-              style={{ gridTemplateRows: `repeat(${Math.ceil(monthCells.length / 7)}, minmax(0, 1fr))` }}
-            >
-              {monthCells.map((cell, i) => {
-                if (!cell) return <div key={i} className="border-b border-r border-white/[0.08] bg-white/[0.012]" aria-hidden="true" />;
-                const isToday = cell.date === today;
-                const isSelected = cell.date === date && !isToday;
+            <div className="grid min-h-0 flex-1 grid-cols-7" style={{ gridTemplateRows: `repeat(${monthGrid.length / 7}, minmax(0, 1fr))` }}>
+              {monthGrid.map((cell, i) => {
+                const col = i % 7;
+                const lastRow = i >= monthGrid.length - 7;
+                const isToday = cell.inMonth && cell.date === today;
+                const isSelected = cell.inMonth && cell.date === date && !isToday;
+                const lines = { borderLeft: col ? `1px solid ${GRID_LINE}` : undefined, borderBottom: lastRow ? undefined : `1px solid ${GRID_LINE}` };
+                const numberColor = !cell.inMonth ? "rgba(255,255,255,0.35)" : isToday || col === 6 ? PINK.hex : "#fff";
                 return (
                   <Link
-                    key={i}
+                    key={cell.date}
                     href={`?view=day&date=${cell.date}`}
                     aria-label={`${dayLabel(cell.date)}${cell.count > 0 ? `, ${cell.count} booking${cell.count === 1 ? "" : "s"}` : ""}`}
-                    className="relative flex min-h-0 flex-col border-b border-r border-white/[0.08] p-2 transition hover:bg-white/[0.04]"
-                    style={isSelected ? { boxShadow: `inset 0 0 0 1px rgba(${PINK.rgb},0.6)` } : undefined}
+                    className="relative flex min-h-0 flex-col px-3 pb-2 pt-2 transition hover:bg-white/[0.035]"
+                    style={lines}
                   >
                     <span
-                      className={`flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold ${isToday ? "text-white" : cell.isFullyBooked ? "text-white/35" : "text-white/85"}`}
-                      style={isToday ? { background: PINK.hex, boxShadow: `0 0 12px rgba(${PINK.rgb},0.7)` } : undefined}
+                      className="relative flex h-11 w-11 flex-col items-center justify-center rounded-full text-2xl font-bold leading-none"
+                      style={{
+                        color: numberColor,
+                        textShadow: cell.inMonth ? "0 1px 2px rgba(0,0,0,0.6)" : undefined,
+                        ...(isToday
+                          ? { border: `3px solid ${PINK.hex}`, boxShadow: `0 0 14px rgba(${PINK.rgb},0.85), inset 0 0 8px rgba(${PINK.rgb},0.45)`, marginLeft: -6 }
+                          : isSelected
+                            ? { border: `1.5px solid rgba(${PINK.rgb},0.8)`, marginLeft: -6 }
+                            : undefined),
+                      }}
                     >
                       {cell.day}
+                      {cell.inMonth && cell.count > 0 && (
+                        <span className="absolute bottom-[5px] h-1.5 w-1.5 rounded-full" style={{ background: PINK.hex }} aria-hidden="true" />
+                      )}
                     </span>
-                    {cell.count > 0 && (
-                      <span className="mt-auto flex items-center gap-1.5 truncate text-xs font-semibold" style={{ color: cell.isFullyBooked ? "rgba(255,255,255,0.45)" : PINK.hex }}>
-                        <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: cell.isFullyBooked ? "rgba(255,255,255,0.4)" : PINK.hex }} aria-hidden="true" />
+                    {cell.inMonth && cell.count > 0 && (
+                      <span className="mt-auto truncate text-sm font-semibold" style={{ color: cell.isFullyBooked ? "rgba(255,255,255,0.5)" : PINK.hex }}>
                         {cell.isFullyBooked ? "Fully booked" : `${cell.count} booking${cell.count === 1 ? "" : "s"}`}
                       </span>
                     )}
@@ -376,28 +573,29 @@ export function CalendarView({
 
         {/* WEEK */}
         {view === "week" && weekDays && (
-          <div className="grid min-h-0 flex-1 grid-cols-7 border-l border-t border-white/[0.08]">
+          <div className="grid min-h-0 flex-1 grid-cols-7 overflow-hidden rounded-xl border-2" style={{ borderColor: GRID_LINE }}>
             {weekDays.map((d, i) => {
               const isToday = d.date === today;
               return (
-                <div key={d.date} className="flex min-h-0 flex-col border-b border-r border-white/[0.08]">
+                <div key={d.date} className="flex min-h-0 flex-col" style={{ borderLeft: i ? `1px solid ${GRID_LINE}` : undefined }}>
                   <Link
                     href={`?view=day&date=${d.date}`}
-                    className="flex shrink-0 items-center justify-between border-b border-white/[0.08] px-3 py-2.5 transition hover:bg-white/[0.04]"
+                    className="flex shrink-0 items-center justify-between px-3 py-2 transition hover:bg-white/[0.04]"
+                    style={{ borderBottom: `1.5px solid ${GRID_LINE}` }}
                   >
-                    <span className="text-[11px] font-bold tracking-[0.16em]" style={{ color: i >= 5 ? `rgba(${PINK.rgb},0.75)` : "rgba(255,255,255,0.45)" }}>
+                    <span className="text-lg font-bold" style={{ color: i === 6 ? PINK.hex : "#fff" }}>
                       {WEEKDAYS[i]}
                     </span>
                     <span
-                      className={`flex h-7 w-7 items-center justify-center rounded-full text-sm font-semibold ${isToday ? "text-white" : "text-white/85"}`}
-                      style={isToday ? { background: PINK.hex, boxShadow: `0 0 12px rgba(${PINK.rgb},0.7)` } : undefined}
+                      className="flex h-10 w-10 items-center justify-center rounded-full text-xl font-bold"
+                      style={{ color: isToday || i === 6 ? PINK.hex : "#fff", ...(isToday ? { border: `3px solid ${PINK.hex}`, boxShadow: `0 0 12px rgba(${PINK.rgb},0.8)` } : {}) }}
                     >
                       {Number(d.date.slice(8))}
                     </span>
                   </Link>
                   <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto p-2">
                     {d.bookings.length === 0 ? (
-                      <p className="px-1 pt-1 text-xs text-white/30">{d.hasAvailability ? "Available" : "Unavailable"}</p>
+                      <p className="px-1 pt-1 text-sm text-white/30">{d.hasAvailability ? "Available" : "Unavailable"}</p>
                     ) : (
                       d.bookings.map((b) => (
                         <button
@@ -406,8 +604,8 @@ export function CalendarView({
                           onClick={() => setDetail(b)}
                           className={`block w-full rounded-md border px-2 py-1.5 text-left transition hover:bg-white/[0.06] ${bookingKindClass(b)}`}
                         >
-                          <span className="block text-[11px] opacity-70">{formatTime12h(b.startTime)} – {formatTime12h(b.endTime)}</span>
-                          <span className="block truncate text-xs font-semibold">{bookingKindLabel(b)}</span>
+                          <span className="block text-xs opacity-75">{formatTime12h(b.startTime)} – {formatTime12h(b.endTime)}</span>
+                          <span className="block truncate text-sm font-bold">{bookingKindLabel(b)}</span>
                         </button>
                       ))
                     )}
@@ -422,20 +620,32 @@ export function CalendarView({
         {view === "day" && dayData && (
           <div className="flex min-h-0 flex-1 flex-col">
             <div className="flex shrink-0 items-center justify-between pb-3">
-              <p className="text-lg font-bold text-white">{dayLabel(date)}</p>
+              <p className="text-xl font-bold text-white">{dayLabel(date)}</p>
               <button
                 type="button"
                 onClick={handleBlockWholeDay}
                 disabled={pending}
-                className="rounded-md border px-3 py-1.5 text-sm font-semibold transition hover:bg-white/5 disabled:opacity-50"
-                style={{ borderColor: `rgba(${PINK.rgb},0.5)`, color: PINK.hex }}
+                className={`${BTN} px-4 text-base font-bold disabled:opacity-50`}
+                style={{ ...PINK_OUTLINE, color: PINK.hex }}
               >
                 Block whole day
               </button>
             </div>
+            {pickAction && (
+              <div className="mb-3 flex shrink-0 items-center justify-between rounded-lg border px-4 py-2.5 text-base" style={{ borderColor: `rgba(${PINK.rgb},0.6)`, background: `rgba(${PINK.rgb},0.08)` }}>
+                <span className="font-semibold text-white">
+                  {timeline.some((s) => s.kind === "available")
+                    ? `Choose a free slot below to ${ACTION_META[pickAction].verb}.`
+                    : "No free slots on this day — use ‹ › to pick another day."}
+                </span>
+                <button type="button" onClick={() => setPickAction(null)} className="text-sm font-bold text-white/60 hover:text-white">
+                  Cancel
+                </button>
+              </div>
+            )}
             <div className="min-h-0 flex-1 overflow-y-auto pr-1">
               {timeline.length === 0 ? (
-                <p className="pt-2 text-sm text-white/45">Unavailable — no working hours set for this day.</p>
+                <p className="pt-2 text-base text-white/45">Unavailable — no working hours set for this day.</p>
               ) : (
                 <ul className="space-y-2">
                   {timeline.map((seg, i) => (
@@ -443,24 +653,31 @@ export function CalendarView({
                       {seg.kind === "available" ? (
                         <button
                           type="button"
-                          onClick={() => setActiveSlot({ start: seg.start, end: seg.end })}
-                          className="flex w-full items-center justify-between rounded-lg border border-dashed border-ice-glow/30 bg-ice-glow/[0.03] px-4 py-3 text-left text-sm text-ice-100 transition hover:border-ice-glow/60 hover:bg-ice-glow/10"
+                          onClick={() => {
+                            setActiveSlot({ start: seg.start, end: seg.end });
+                            if (pickAction) {
+                              setModal(pickAction);
+                              setPickAction(null);
+                            }
+                          }}
+                          className="flex w-full items-center justify-between rounded-lg border border-dashed px-4 py-3 text-left text-base text-white transition hover:bg-white/[0.05]"
+                          style={{ borderColor: pickAction ? PINK.hex : `rgba(${PINK.rgb},0.4)`, boxShadow: pickAction ? `0 0 12px -4px rgba(${PINK.rgb},0.8)` : undefined }}
                         >
-                          <span>
+                          <span className="font-semibold">
                             {formatTime12h(seg.start)} – {formatTime12h(seg.end)}
                           </span>
-                          <span className="text-xs tracking-[0.14em] text-white/40">AVAILABLE</span>
+                          <span className="text-sm tracking-[0.14em]" style={{ color: `rgba(${PINK.rgb},0.8)` }}>AVAILABLE</span>
                         </button>
                       ) : (
                         <button
                           type="button"
                           onClick={() => setDetail(seg.booking)}
-                          className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-left text-sm transition hover:bg-white/[0.06] ${bookingKindClass(seg.booking)}`}
+                          className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-left text-base transition hover:bg-white/[0.06] ${bookingKindClass(seg.booking)}`}
                         >
-                          <span>
+                          <span className="font-semibold">
                             {formatTime12h(seg.start)} – {formatTime12h(seg.end)} ({timeToMinutes(seg.end) - timeToMinutes(seg.start)}m) · {bookingKindLabel(seg.booking)}
                           </span>
-                          {seg.booking.serviceName && <span className="text-xs text-white/40">{seg.booking.serviceName}</span>}
+                          {seg.booking.serviceName && <span className="text-sm text-white/45">{seg.booking.serviceName}</span>}
                         </button>
                       )}
                     </li>
@@ -475,18 +692,18 @@ export function CalendarView({
         {view === "list" && listDays && (
           <div className="min-h-0 flex-1 overflow-y-auto pr-1">
             {listDays.length === 0 ? (
-              <p className="pt-2 text-sm text-white/45">No bookings in {monthLabel(date)}.</p>
+              <p className="pt-2 text-base text-white/45">No bookings in {monthLabel(date)}.</p>
             ) : (
               <div className="space-y-5">
                 {listDays.map((d) => (
                   <section key={d.date}>
                     <Link
                       href={`?view=day&date=${d.date}`}
-                      className="mb-2 inline-flex items-center gap-2 text-sm font-bold transition hover:text-white"
-                      style={{ color: d.date === today ? PINK.hex : "rgba(255,255,255,0.75)" }}
+                      className="mb-2 inline-flex items-center gap-2 text-lg font-bold transition hover:text-white"
+                      style={{ color: d.date === today ? PINK.hex : "rgba(255,255,255,0.85)" }}
                     >
                       {dayLabel(d.date)}
-                      {d.date === today && <span className="text-[11px] tracking-[0.14em]">TODAY</span>}
+                      {d.date === today && <span className="text-xs tracking-[0.14em]">TODAY</span>}
                     </Link>
                     <ul className="space-y-1.5">
                       {d.bookings.map((b) => (
@@ -494,13 +711,13 @@ export function CalendarView({
                           <button
                             type="button"
                             onClick={() => setDetail(b)}
-                            className={`flex w-full items-center justify-between gap-4 rounded-lg border px-4 py-2.5 text-left text-sm transition hover:bg-white/[0.06] ${bookingKindClass(b)}`}
+                            className={`flex w-full items-center justify-between gap-4 rounded-lg border px-4 py-2.5 text-left text-base transition hover:bg-white/[0.06] ${bookingKindClass(b)}`}
                           >
-                            <span className="w-44 shrink-0 tabular-nums opacity-80">
+                            <span className="w-48 shrink-0 tabular-nums opacity-80">
                               {formatTime12h(b.startTime)} – {formatTime12h(b.endTime)}
                             </span>
-                            <span className="min-w-0 flex-1 truncate font-semibold">{bookingKindLabel(b)}</span>
-                            {b.serviceName && <span className="shrink-0 text-xs text-white/45">{b.serviceName}</span>}
+                            <span className="min-w-0 flex-1 truncate font-bold">{bookingKindLabel(b)}</span>
+                            {b.serviceName && <span className="shrink-0 text-sm text-white/45">{b.serviceName}</span>}
                           </button>
                         </li>
                       ))}
@@ -512,16 +729,17 @@ export function CalendarView({
           </div>
         )}
 
-        {/* YEAR — no tab any more; still served for existing ?view=year links. */}
+        {/* YEAR — no tab; still served for existing ?view=year links. */}
         {view === "year" && yearMonths && (
           <div className="grid min-h-0 flex-1 grid-cols-4 content-start gap-3 overflow-y-auto">
             {yearMonths.map((m) => (
               <Link
                 key={m.month}
                 href={`?view=month&date=${date.slice(0, 4)}-${pad(m.month)}-01`}
-                className="flex flex-col rounded-lg border border-white/10 p-3 transition hover:bg-white/[0.05]"
+                className="flex flex-col rounded-lg border p-3 transition hover:bg-white/[0.05]"
+                style={{ borderColor: GRID_LINE }}
               >
-                <span className="text-sm text-white">{m.label}</span>
+                <span className="text-base font-bold text-white">{m.label}</span>
                 <div className="mt-2 grid grid-cols-7 gap-[2px]">
                   {m.cells.map((c, i) => (
                     <span
