@@ -461,7 +461,7 @@ export function CalendarView({
       <FocusModeShell
         id="calendar"
         accent="magenta"
-        room={<BarberRoom decorative />}
+        room={<BarberRoom decorative hide={["Calendar"]} />}
         className={ui.className}
         splatter={SPLATTER}
         heading={
