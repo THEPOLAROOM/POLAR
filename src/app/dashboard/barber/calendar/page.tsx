@@ -26,6 +26,14 @@ function startOfWeekMonday(dateStr: string): Date {
   return d;
 }
 
+// A date with no summary is treated as a non-working day.
+const NO_SUMMARY: DaySummary = {
+  count: 0,
+  isFullyBooked: false,
+  hasAvailability: false,
+  capacity: { status: "off", bookableMinutes: 0, bookedMinutes: 0, ratio: null },
+};
+
 function buildMonthCells(year: number, month: number, summaries: Map<string, DaySummary>): MonthCell[] {
   const firstOfMonth = new Date(Date.UTC(year, month - 1, 1));
   const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
@@ -35,8 +43,8 @@ function buildMonthCells(year: number, month: number, summaries: Map<string, Day
   for (let i = 0; i < mondayIndex; i++) cells.push(null);
   for (let day = 1; day <= daysInMonth; day++) {
     const date = `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-    const summary = summaries.get(date) ?? { count: 0, isFullyBooked: false, hasAvailability: false };
-    cells.push({ date, day, count: summary.count, isFullyBooked: summary.isFullyBooked });
+    const summary = summaries.get(date) ?? NO_SUMMARY;
+    cells.push({ date, day, count: summary.count, isFullyBooked: summary.isFullyBooked, capacity: summary.capacity });
   }
   while (cells.length % 7 !== 0) cells.push(null);
   return cells;
@@ -134,7 +142,7 @@ export default async function BarberCalendarPage({
     );
     weekDays = labels.map((label, i) => {
       const dateStr = dates[i];
-      const summary = summaries.get(dateStr) ?? { count: 0, isFullyBooked: false, hasAvailability: false };
+      const summary = summaries.get(dateStr) ?? NO_SUMMARY;
       return {
         date: dateStr,
         label: `${label} ${Number(dateStr.slice(8))}`,

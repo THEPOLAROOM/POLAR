@@ -1,4 +1,5 @@
 import type { createClient } from "@/lib/supabase/server";
+import { computeDayCapacity, type DayCapacity } from "@/lib/calendar/capacity";
 
 type SupabaseClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -175,7 +176,13 @@ export async function getAvailabilityForDate(
   }));
 }
 
-export type DaySummary = { count: number; isFullyBooked: boolean; hasAvailability: boolean };
+export type DaySummary = {
+  count: number;
+  isFullyBooked: boolean;
+  hasAvailability: boolean;
+  /** POLAR Capacity View — booked vs bookable minutes (see lib/calendar/capacity). */
+  capacity: DayCapacity;
+};
 
 /**
  * Per-date summary for every real day in [startDate, endDateInclusive]
@@ -204,9 +211,11 @@ export async function getDaySummaries(
   ]);
 
   const availableMinutesByDow = new Map<number, number>();
+  const windowsByDow = new Map<number, { startTime: string; endTime: string }[]>();
   for (const row of (availabilityRows ?? []) as { day_of_week: number; start_time: string; end_time: string }[]) {
     const minutes = timeToMinutes(row.end_time) - timeToMinutes(row.start_time);
     availableMinutesByDow.set(row.day_of_week, (availableMinutesByDow.get(row.day_of_week) ?? 0) + minutes);
+    windowsByDow.set(row.day_of_week, [...(windowsByDow.get(row.day_of_week) ?? []), { startTime: row.start_time, endTime: row.end_time }]);
   }
 
   const summaries = new Map<string, DaySummary>();
@@ -226,6 +235,10 @@ export async function getDaySummaries(
       count: dayBookings.length,
       isFullyBooked: availableMinutes > 0 && bookedMinutes >= availableMinutes,
       hasAvailability: availableMinutes > 0,
+      capacity: computeDayCapacity(
+        windowsByDow.get(dow) ?? [],
+        dayBookings.map((b) => ({ startTime: b.start_time, endTime: b.end_time, isBlocked: b.is_blocked }))
+      ),
     });
     cursor.setUTCDate(cursor.getUTCDate() + 1);
   }

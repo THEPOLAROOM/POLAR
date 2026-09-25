@@ -4,6 +4,7 @@ import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { formatTime12h } from "@/lib/dates";
 import type { CalendarBooking } from "@/lib/queries/barber-calendar";
+import type { DayCapacity } from "@/lib/calendar/capacity";
 import { createWalkIn } from "@/lib/actions/walk-ins";
 import { cancelBookingAsBarber } from "@/lib/actions/barber-bookings";
 import { createBookingAsBarber, createBarterBooking, createBlockedTime } from "@/lib/actions/barber-calendar-actions";
@@ -12,7 +13,7 @@ import { FocusModeShell, ACCENTS, type FrameSplatter } from "@/components/focus-
 import { BarberRoom } from "../dashboard-scene";
 
 export type ViewKind = "day" | "week" | "month" | "list" | "year";
-export type MonthCell = { date: string; day: number; count: number; isFullyBooked: boolean } | null;
+export type MonthCell = { date: string; day: number; count: number; isFullyBooked: boolean; capacity?: DayCapacity } | null;
 type Service = { id: string; name: string; durationMinutes: number; price: number };
 type Client = { id: string; fullName: string };
 
@@ -92,6 +93,42 @@ function Chevron({ dir }: { dir: "left" | "right" }) {
     <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke={ACCENTS.magenta.hex} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d={dir === "left" ? "M15 5l-7 7 7 7" : "M9 5l7 7-7 7"} />
     </svg>
+  );
+}
+
+// POLAR Capacity View — each working day's cell fills from the bottom
+// like a battery, to booked ÷ bookable minutes (lib/calendar/capacity).
+// Kept deliberately subtle so dates, text and grid lines stay readable.
+const CAPACITY_FILL_ALPHA = { top: 0.1, bottom: 0.26 };
+const CAPACITY_EDGE_ALPHA = 0.38;
+const OFF_HATCH = "repeating-linear-gradient(135deg, rgba(255,255,255,0.035) 0 2px, transparent 2px 10px)";
+
+function capacityLabel(capacity: DayCapacity | undefined): string {
+  if (!capacity) return "";
+  if (capacity.status === "off") return ", not a working day";
+  if (capacity.status === "blocked") return ", blocked";
+  return `, ${Math.round(capacity.ratio! * 100)}% booked`;
+}
+
+function CapacityFill({ capacity }: { capacity: DayCapacity | undefined }) {
+  if (!capacity) return null;
+  // Non-working and fully-blocked days are shown as unavailable, never as 0%.
+  if (capacity.status !== "open") {
+    return <span aria-hidden="true" className="pointer-events-none absolute inset-0" style={{ background: OFF_HATCH }} />;
+  }
+  const pct = Math.min(1, Math.max(0, capacity.ratio!)) * 100;
+  if (pct === 0) return null;
+  const { rgb } = ACCENTS.magenta;
+  return (
+    <span
+      aria-hidden="true"
+      className="pointer-events-none absolute inset-x-0 bottom-0 transition-[height] duration-500"
+      style={{
+        height: `${pct}%`,
+        background: `linear-gradient(0deg, rgba(${rgb},${CAPACITY_FILL_ALPHA.bottom}) 0%, rgba(${rgb},${CAPACITY_FILL_ALPHA.top}) 100%)`,
+        borderTop: pct < 100 ? `1.5px solid rgba(${rgb},${CAPACITY_EDGE_ALPHA})` : undefined,
+      }}
+    />
   );
 }
 
@@ -538,10 +575,12 @@ export function CalendarView({
                   <Link
                     key={cell.date}
                     href={`?view=day&date=${cell.date}`}
-                    aria-label={`${dayLabel(cell.date)}${cell.count > 0 ? `, ${cell.count} booking${cell.count === 1 ? "" : "s"}` : ""}`}
+                    aria-label={`${dayLabel(cell.date)}${cell.count > 0 ? `, ${cell.count} booking${cell.count === 1 ? "" : "s"}` : ""}${cell.inMonth ? capacityLabel(cell.capacity) : ""}`}
+                    title={cell.inMonth ? capacityLabel(cell.capacity).replace(/^, /, "") || undefined : undefined}
                     className="relative flex min-h-0 flex-col px-3 pb-2 pt-2 transition hover:bg-white/[0.035]"
                     style={lines}
                   >
+                    {cell.inMonth && <CapacityFill capacity={cell.capacity} />}
                     <span
                       className="relative flex h-11 w-11 flex-col items-center justify-center rounded-full text-2xl font-bold leading-none"
                       style={{
@@ -559,9 +598,18 @@ export function CalendarView({
                         <span className="absolute bottom-[5px] h-1.5 w-1.5 rounded-full" style={{ background: PINK.hex }} aria-hidden="true" />
                       )}
                     </span>
-                    {cell.inMonth && cell.count > 0 && (
-                      <span className="mt-auto truncate text-sm font-semibold" style={{ color: cell.isFullyBooked ? "rgba(255,255,255,0.5)" : PINK.hex }}>
-                        {cell.isFullyBooked ? "Fully booked" : `${cell.count} booking${cell.count === 1 ? "" : "s"}`}
+                    {cell.inMonth && (cell.count > 0 || cell.capacity?.status === "blocked") && (
+                      <span className="relative mt-auto flex items-baseline justify-between gap-2 text-sm font-semibold">
+                        {cell.capacity?.status === "blocked" ? (
+                          <span className="text-white/45">Blocked</span>
+                        ) : (
+                          <span className="truncate" style={{ color: cell.isFullyBooked ? "rgba(255,255,255,0.55)" : PINK.hex }}>
+                            {cell.isFullyBooked ? "Fully booked" : `${cell.count} booking${cell.count === 1 ? "" : "s"}`}
+                          </span>
+                        )}
+                        {cell.capacity?.status === "open" && cell.capacity.ratio! > 0 && (
+                          <span className="shrink-0 text-xs text-white/60 tabular-nums">{Math.round(cell.capacity.ratio! * 100)}%</span>
+                        )}
                       </span>
                     )}
                   </Link>
