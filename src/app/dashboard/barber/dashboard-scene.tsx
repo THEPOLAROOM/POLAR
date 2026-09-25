@@ -43,12 +43,6 @@ export const DESTINATIONS = [
   { href: "/dashboard/barber/services", label: "My Services", zone: [1540, 234, 362, 470] },
 ] as const;
 
-// Areas blacked out when a Focus Mode page hides its own object: the
-// whole object incl. its paint drips/glow (native artwork px).
-const HIDE_ZONES: Record<string, readonly number[]> = {
-  Calendar: [372, 20, 336, 610],
-};
-
 const pct = (n: number, of: number) => `${((n / of) * 100).toFixed(3)}%`;
 const zoneStyle = ([x, y, w, h]: readonly number[]): React.CSSProperties => ({
   left: pct(x, 1942),
@@ -67,17 +61,7 @@ const ZONE_CLASS =
  * no children), so every screen shows the exact same room with the
  * exact same crop behaviour.
  */
-export function BarberRoom({
-  children,
-  decorative = false,
-  hide = [],
-}: {
-  children?: React.ReactNode;
-  decorative?: boolean;
-  /** Destination labels whose object/pill is blacked out of the room — a
-   *  Focus Mode page hides its own object so it never appears twice. */
-  hide?: string[];
-}) {
+export function BarberRoom({ children, decorative = false }: { children?: React.ReactNode; decorative?: boolean }) {
   return (
     <div className="absolute inset-0 overflow-hidden" style={{ background: EDGE_FILL }} aria-hidden={decorative || undefined}>
       <div className="absolute" style={STAGE_STYLE}>
@@ -89,14 +73,6 @@ export function BarberRoom({
           priority
           className="object-contain"
         />
-        {hide.map((label) => (
-          <div
-            key={label}
-            aria-hidden="true"
-            className="absolute rounded-3xl"
-            style={{ ...zoneStyle(HIDE_ZONES[label] ?? DESTINATIONS.find((d) => d.label === label)?.zone ?? [0, 0, 0, 0]), background: "#040308", boxShadow: "0 0 28px 22px #040308" }}
-          />
-        ))}
         {children}
       </div>
     </div>

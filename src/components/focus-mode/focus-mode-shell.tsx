@@ -36,6 +36,10 @@ export type FrameSplatter = {
   frameWidth: number;
 };
 
+// Focus Mode backdrop ("lights off"), shared by every destination.
+const FOCUS_ROOM_FILTER = "saturate(0.15) brightness(0.42) blur(2.5px)";
+const FOCUS_OVERLAY = "rgba(2,2,5,0.92)";
+
 // Full Screen is remembered for the browser tab so it survives the
 // feature's own in-page navigation (e.g. Calendar's view/date links).
 const storageKey = (id: string) => `polar-focus-fullscreen:${id}`;
@@ -100,13 +104,18 @@ export function FocusModeShell({
 
   return (
     <main className={`relative hidden h-[100dvh] overflow-hidden bg-black sm:block ${className ?? ""}`}>
-      {/* The POLAR Room, lights off: still recognisable as silhouettes in
-          Focus Mode, almost fully blacked out in Full Screen. */}
-      {room}
+      {/* The POLAR Room, lights OFF. Applied uniformly to the whole room
+          layer (never object-by-object): colour is drained and brightness
+          cut so no neon label, sign or object can glow through, then a
+          near-black overlay leaves only faint silhouettes. Full Screen
+          blacks it out completely. */}
+      <div aria-hidden="true" className="absolute inset-0" style={{ filter: FOCUS_ROOM_FILTER }}>
+        {room}
+      </div>
       <div
         aria-hidden="true"
         className="absolute inset-0 transition-[background-color] duration-500"
-        style={{ backgroundColor: fullScreen ? "rgba(2,2,6,0.97)" : "rgba(2,2,8,0.88)" }}
+        style={{ backgroundColor: fullScreen ? "rgba(1,1,3,0.99)" : FOCUS_OVERLAY }}
       />
 
       {/* Frame wrapper: positions the panel and carries the corner paint,
