@@ -15,11 +15,13 @@ import Link from "next/link";
 //   ⛶ / Esc  → leave Full Screen, back to normal Focus Mode
 //   ✕ Back   → leave the feature, back to the master dashboard
 
-export type FocusAccent = "magenta" | "cyan";
+export type FocusAccent = "magenta" | "cyan" | "blue";
 
 export const ACCENTS: Record<FocusAccent, { hex: string; rgb: string }> = {
   magenta: { hex: "#ff1fb4", rgb: "255,31,180" },
   cyan: { hex: "#22e4ff", rgb: "34,228,255" },
+  // POLAR electric blue — Clients / Workflow Mode / My Profile.
+  blue: { hex: "#1e7bff", rgb: "30,123,255" },
 };
 
 /** Paint splatter for the four frame corners: transparent WebP pieces
@@ -34,6 +36,13 @@ export type FrameSplatter = {
   corner: { tl: [number, number]; tr: [number, number]; bl: [number, number]; br: [number, number] };
   /** Native frame width the pieces were cut against, for scaling. */
   frameWidth: number;
+};
+
+// Panel interior per accent (magenta = Calendar's original value).
+const SURFACES: Record<FocusAccent, string> = {
+  magenta: "linear-gradient(180deg, #0c0510 0%, #07030a 100%)",
+  cyan: "linear-gradient(180deg, #04101a 0%, #03080f 100%)",
+  blue: "linear-gradient(180deg, #06112a 0%, #030a1c 100%)",
 };
 
 // Focus Mode backdrop ("lights off"), shared by every destination.
@@ -132,7 +141,7 @@ export function FocusModeShell({
           style={{
             borderRadius: fullScreen ? 0 : 26,
             border: `3px solid ${fullScreen ? `rgba(${rgb},0.35)` : hex}`,
-            background: "linear-gradient(180deg, #0c0510 0%, #07030a 100%)",
+            background: SURFACES[accent],
             boxShadow: fullScreen
               ? "none"
               : `0 0 22px rgba(${rgb},0.75), 0 0 60px -10px rgba(${rgb},0.6), inset 0 0 0 5px #0a0409, inset 0 0 0 6.5px rgba(${rgb},0.55), inset 0 0 40px -12px rgba(${rgb},0.45)`,

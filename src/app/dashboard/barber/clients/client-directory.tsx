@@ -1,39 +1,24 @@
 "use client";
 
 import { useMemo, useRef, useState, useTransition } from "react";
-import Image from "next/image";
 import Link from "next/link";
+import { Barlow, Permanent_Marker } from "next/font/google";
 import { linkClientByEmail } from "@/lib/actions/barber-client-links";
+import { FocusModeShell, ACCENTS } from "@/components/focus-mode/focus-mode-shell";
+import { BarberRoom } from "../dashboard-scene";
 
 type Client = { id: string; full_name: string };
 
-// Same layered approach as the Barber Dashboard/My Profile: Layer 1 =
-// full-bleed background (reused, decorative only), Layer 2 = the
-// locked, mastered transparent Clients UI PNG (the sole visual source
-// of truth — nothing below recreates its cards/icons/typography),
-// Layer 3 = real hit areas/data on top. This asset's own canvas
-// (990x978, cropped tight to its actual content — the raw supplied
-// file had ~38% dead space around it) is nearly square, unlike the
-// Dashboard/My Profile's 1672x941 — its own ratio is used here, not
-// borrowed from either of those pages.
-const ASSET_ASPECT = "990 / 978";
+// Clients Focus Mode (desktop), built to the approved blue CLIENTS
+// reference as real HTML inside the shared FocusModeShell, over the
+// darkened POLAR Room — this replaces the previous flat mastered-image
+// UI entirely. The directory is names only: find person → click person.
+// Details, editing and removal live on the client's own page.
+const BLUE = ACCENTS.blue;
+const ROW_LINE = `rgba(${ACCENTS.blue.rgb},0.22)`;
 
-// Every box below is measured directly against this asset's own
-// cropped canvas (pixel-level border scan), same technique used for
-// the Barber Dashboard overlay.
-const HEADER_ADD_CLIENT_BOX = { left: "72.8%", top: "3.9%", width: "26.1%", height: "6.2%" };
-const SEARCH_BOX = { left: "1.1%", top: "13.7%", width: "88.9%", height: "6.5%" };
-const INDEX_COL_BOX = { left: "91.7%", top: "13.7%", width: "7.2%", height: "83.0%" };
-const LIST_BOX = { left: "1.1%", top: "21.6%", width: "88.9%", height: "75.1%" };
-const EMPTY_ADD_CLIENT_BOX = { left: "31.7%", top: "63.6%", width: "30.6%", height: "6.2%" };
-
-// The button shape/border is already fully baked into the mastered
-// asset, so this never draws a shape or outline of its own — only a
-// soft, blurred glow (no spread, no ring) on hover, echoing the
-// cyan/magenta glow used for hover states elsewhere on POLAR, so the
-// existing baked button simply looks like it's glowing brighter.
-const HIT_AREA_CLASS =
-  "absolute rounded-2xl bg-transparent transition duration-200 ease-out hover:shadow-[0_0_18px_4px_rgba(91,155,255,0.4),0_0_26px_8px_rgba(255,61,154,0.22)]";
+const graffiti = Permanent_Marker({ subsets: ["latin"], weight: "400" });
+const ui = Barlow({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 
 const ALPHABET = ["#", ...Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i))];
 
@@ -42,9 +27,32 @@ function groupKey(fullName: string): string {
   return /[A-Z]/.test(first) ? first : "#";
 }
 
+function PeopleGlyph() {
+  return (
+    <svg viewBox="0 0 48 40" className="h-14 w-16 shrink-0" fill="none" stroke="#18d4ff" strokeWidth="3.6" strokeLinecap="round" aria-hidden="true" style={{ filter: "drop-shadow(0 0 6px rgba(24,212,255,0.7))" }}>
+      <circle cx="17" cy="11" r="7" />
+      <path d="M3 37c0-8 6.3-13 14-13s14 5 14 13z" />
+      <circle cx="33" cy="12" r="6" />
+      <path d="M34 24c6.5.5 11 5 11 12h-9" />
+    </svg>
+  );
+}
+
+function CrownGlyph() {
+  return (
+    <svg viewBox="0 0 80 64" className="h-16 w-20 shrink-0" fill="none" stroke={ACCENTS.blue.hex} strokeWidth="5" strokeLinejoin="round" aria-hidden="true" style={{ filter: `drop-shadow(0 0 8px rgba(${ACCENTS.blue.rgb},0.8))` }}>
+      <path d="M8 16l16 16 16-26 16 26 16-16-6 30H14z" />
+      <path d="M16 54c8-5 40-5 48 0" />
+      <path d="M22 50v10M40 48v14M58 50v8" strokeLinecap="round" strokeWidth="3" />
+    </svg>
+  );
+}
+
 export function ClientDirectory({ clients }: { clients: Client[] }) {
   const [query, setQuery] = useState("");
+  const [activeLetter, setActiveLetter] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
+  const [added, setAdded] = useState(false);
   const [pending, startTransition] = useTransition();
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -69,12 +77,15 @@ export function ClientDirectory({ clients }: { clients: Client[] }) {
     return set;
   }, [groups]);
 
+  // Jumps the list (not the page) to that letter's section.
   function jumpToLetter(letter: string) {
     if (!availableLetters.has(letter)) return;
-    if (query) setQuery("");
-    requestAnimationFrame(() => {
-      document.getElementById(`client-group-${letter}`)?.scrollIntoView({ block: "start", behavior: "smooth" });
-    });
+    // Instant jump, like a phone contacts index. The list is the sections'
+    // offsetParent (position: relative), so offsetTop is list-relative.
+    const list = listRef.current;
+    const target = document.getElementById(`client-group-${letter}`);
+    if (list && target) list.scrollTop = target.offsetTop;
+    setActiveLetter(letter);
   }
 
   function handleAddSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -82,67 +93,56 @@ export function ClientDirectory({ clients }: { clients: Client[] }) {
     const formData = new FormData(e.currentTarget);
     startTransition(async () => {
       await linkClientByEmail(formData);
-      setAddOpen(false);
+      setAdded(true);
     });
   }
 
-  const addClientForm = addOpen && (
-    <div
-      className="absolute z-10 rounded-xl border border-royal-light/40 bg-navy-light/95 shadow-[0_0_24px_-4px_rgba(91,155,255,0.6)]"
-      style={{ top: "11%", right: "1.5%", width: "26%", padding: "1.2vw" }}
+  function openAdd() {
+    setAdded(false);
+    setAddOpen(true);
+  }
+
+  const addButton = (
+    <button
+      type="button"
+      onClick={openAdd}
+      className="flex h-14 shrink-0 items-center gap-6 rounded-xl border-2 px-8 text-lg font-bold uppercase tracking-wide text-white transition hover:bg-white/5"
+      style={{ borderColor: BLUE.hex, boxShadow: `0 0 16px -2px rgba(${BLUE.rgb},0.75), inset 0 0 10px rgba(${BLUE.rgb},0.3)` }}
     >
-      <form onSubmit={handleAddSubmit} className="flex flex-col" style={{ gap: "0.6vw" }}>
-        <label className="block">
-          <span className="mb-1 block text-white/60" style={{ fontSize: "0.75vw" }}>
-            Client&apos;s email
-          </span>
-          <input
-            name="client_email"
-            type="email"
-            required
-            placeholder="client@example.com"
-            className="w-full rounded-md border border-royal-light/30 bg-navy px-3 py-2 text-white outline-none placeholder:text-white/30 focus:border-royal-light"
-            style={{ fontSize: "0.85vw" }}
-          />
-        </label>
-        <div className="flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={() => setAddOpen(false)}
-            className="rounded-md px-3 py-1.5 text-white/60 hover:text-white"
-            style={{ fontSize: "0.8vw" }}
-          >
-            Cancel
-          </button>
-          <button
-            type="submit"
-            disabled={pending}
-            className="rounded-md bg-royal px-3 py-1.5 font-display text-white transition hover:bg-royal-dark disabled:opacity-60"
-            style={{ fontSize: "0.8vw" }}
-          >
-            {pending ? "Linking…" : "Link client"}
-          </button>
-        </div>
-      </form>
-    </div>
+      <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="#18d4ff" strokeWidth="3" strokeLinecap="round" aria-hidden="true">
+        <path d="M12 4v16M4 12h16" />
+      </svg>
+      Add Client
+    </button>
   );
 
   return (
     <div id="barber-clients-page">
-      {/* Same technique as the Barber Dashboard/My Profile: the shared
-          barber nav lives in layout.tsx, which every other barber
-          route still needs, so it's hidden for this specific page
-          only via this scoped rule rather than editing the shared
-          layout. */}
+      {/* The shared barber nav lives in layout.tsx, which every other
+          barber route still needs, so it's hidden for this page only. */}
       <style>{`
         div:has(> #barber-clients-page) > nav {
           display: none;
         }
+        .clients-title {
+          display: inline-block;
+          transform: rotate(-3deg) skewX(-6deg);
+          background: linear-gradient(180deg, #ffffff 0%, #eef3ff 50%, #b9c6de 75%, #ffffff 100%);
+          -webkit-background-clip: text;
+          background-clip: text;
+          color: transparent;
+          filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.8)) drop-shadow(0 0 8px rgba(30, 123, 255, 0.45));
+          padding: 0.05em 0.1em;
+        }
+        .clients-scroll {
+          scrollbar-width: thin;
+          scrollbar-color: rgba(30, 123, 255, 0.9) transparent;
+        }
+        .clients-scroll::-webkit-scrollbar { width: 6px; }
+        .clients-scroll::-webkit-scrollbar-thumb { background: rgba(30, 123, 255, 0.9); border-radius: 999px; }
       `}</style>
 
-      {/* Mobile — simple functional placeholder; the immersive layered
-          design below is desktop-only, matching the Barber Dashboard
-          and My Profile. */}
+      {/* Mobile — unchanged simple functional layout. */}
       <main className="mx-auto max-w-xl px-6 py-16 sm:hidden">
         <h1 className="text-xl font-semibold text-polar-text">Clients</h1>
 
@@ -182,117 +182,189 @@ export function ClientDirectory({ clients }: { clients: Client[] }) {
         )}
       </main>
 
-      {/* Desktop */}
-      <main className="relative hidden overflow-hidden bg-navy sm:block" style={{ height: "100dvh" }}>
-        <Image
-          src="/dashboard/polar-barber-dashboard-background.png"
-          alt=""
-          fill
-          priority
-          className="object-cover"
-          aria-hidden="true"
-        />
-
-        <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
-          <div
-            className="relative"
-            style={{ width: `min(100%, calc(100dvh * ${ASSET_ASPECT}))`, aspectRatio: ASSET_ASPECT }}
-          >
-            <Image
-              src="/dashboard/polar-barber-clients-ui-mastered.png"
-              alt="Clients"
-              fill
-              priority
-              className="object-contain"
+      {/* Desktop — Clients Focus Mode. */}
+      <FocusModeShell
+        id="clients"
+        accent="blue"
+        room={<BarberRoom decorative />}
+        className={ui.className}
+        heading={
+          <div className="relative flex min-w-0 flex-1 items-center gap-5">
+            {/* Faint diagonal light streaks behind the header, as in the reference. */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-[-24px] left-[38%] right-[18%]"
+              style={{ background: `repeating-linear-gradient(115deg, transparent 0 70px, rgba(${BLUE.rgb},0.07) 70px 110px, transparent 110px 170px)` }}
             />
-
-            {/* Search — fully transparent so the mastered artwork
-                (including its own baked placeholder text) is the only
-                thing visually drawing this control; the placeholder
-                is set to transparent so it never doubles up with the
-                baked text, while typed value text stays visible. */}
-            <div className="absolute flex items-center" style={SEARCH_BOX}>
+            <PeopleGlyph />
+            <div className="relative">
+              <h1 className={`${graffiti.className} clients-title leading-none`} style={{ fontSize: "clamp(40px, 3.6vw, 64px)" }}>
+                Clients
+              </h1>
+              <p className="mt-1 whitespace-nowrap pl-3 text-sm font-medium uppercase tracking-[0.42em]" style={{ color: "#8fb6ff" }}>
+                Real people. Real progress.
+              </p>
+            </div>
+            <div className="relative ml-auto mr-[14%] hidden xl:block">
+              <CrownGlyph />
+            </div>
+          </div>
+        }
+        toolbar={
+          <>
+            <label className="flex h-14 min-w-0 flex-1 items-center gap-4 rounded-xl border-2 px-5" style={{ borderColor: BLUE.hex, boxShadow: `0 0 14px -3px rgba(${BLUE.rgb},0.7), inset 0 0 8px rgba(${BLUE.rgb},0.2)` }}>
+              <svg viewBox="0 0 24 24" className="h-7 w-7 shrink-0" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
+                <circle cx="10.5" cy="10.5" r="6.5" />
+                <path d="M20 20l-4.5-4.5" />
+              </svg>
               <input
-                type="text"
+                type="search"
                 value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                onChange={(e) => {
+                  setQuery(e.target.value);
+                  setActiveLetter(null);
+                }}
                 placeholder="Search clients..."
                 aria-label="Search clients"
-                className="h-full w-full border-none bg-transparent text-white shadow-none outline-none placeholder:text-transparent focus:border-none focus:shadow-none focus:outline-none focus:ring-0"
-                style={{ fontSize: "1vw", paddingLeft: "7.5%" }}
+                className="h-full min-w-0 flex-1 bg-transparent text-lg text-white outline-none placeholder:text-white/70"
               />
+            </label>
+            {addButton}
+          </>
+        }
+      >
+        {/* A–Z — jumps the list to that letter; letters with no clients are dimmed. */}
+        <nav
+          aria-label="Jump to letter"
+          className="mb-3 flex shrink-0 items-center justify-between rounded-xl border px-2 py-1.5"
+          style={{ borderColor: `rgba(${BLUE.rgb},0.35)`, background: "rgba(3,10,28,0.6)" }}
+        >
+          {ALPHABET.map((letter) => {
+            const has = availableLetters.has(letter);
+            const active = activeLetter === letter;
+            return (
+              <button
+                key={letter}
+                type="button"
+                disabled={!has}
+                onClick={() => jumpToLetter(letter)}
+                aria-label={`Jump to ${letter === "#" ? "numbers and symbols" : letter}`}
+                aria-pressed={active}
+                className={`flex h-10 min-w-9 flex-1 items-center justify-center rounded-lg text-lg transition ${letter === "#" ? "max-w-12 border font-bold" : "max-w-12"} ${has ? "text-white hover:bg-white/5" : "cursor-default text-white/25"}`}
+                style={{
+                  ...(letter === "#" ? { borderColor: `rgba(${BLUE.rgb},0.5)` } : {}),
+                  ...(active ? { background: `rgba(${BLUE.rgb},0.35)`, borderWidth: 2, borderStyle: "solid", borderColor: BLUE.hex, boxShadow: `0 0 12px rgba(${BLUE.rgb},0.7)`, fontWeight: 700 } : {}),
+                }}
+              >
+                {letter}
+              </button>
+            );
+          })}
+        </nav>
+
+        {/* Directory — real linked clients, names only. */}
+        <div ref={listRef} className="clients-scroll relative min-h-0 flex-1 overflow-y-auto pr-3">
+          {!hasAnyClients ? (
+            <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+              <p className="text-2xl font-bold text-white">No clients yet</p>
+              <p className="text-base text-white/60">Add your first client to get started.</p>
+              <div className="mt-3">{addButton}</div>
             </div>
-
-            {/* Add Client — the same existing link-by-email flow,
-                triggered from either baked button (header, and the
-                empty-state's own centred button when there are no
-                clients yet). */}
-            <button type="button" aria-label="Add client" onClick={() => setAddOpen((v) => !v)} className={HIT_AREA_CLASS} style={HEADER_ADD_CLIENT_BOX} />
-            {!hasAnyClients && (
-              <button type="button" aria-label="Add client" onClick={() => setAddOpen((v) => !v)} className={HIT_AREA_CLASS} style={EMPTY_ADD_CLIENT_BOX} />
-            )}
-            {addClientForm}
-
-            {/* A-Z index — jumps the scrollable list below to the
-                first client in that letter group; letters with no
-                match are inert. */}
-            <div className="absolute flex flex-col" style={INDEX_COL_BOX}>
-              {ALPHABET.map((letter) => (
-                <button
-                  key={letter}
-                  type="button"
-                  aria-label={`Jump to ${letter}`}
-                  disabled={!availableLetters.has(letter)}
-                  onClick={() => jumpToLetter(letter)}
-                  className="flex-1 disabled:cursor-default"
-                />
-              ))}
+          ) : filtered.length === 0 ? (
+            <p className="pt-4 text-lg text-white/60">No clients match &quot;{query}&quot;.</p>
+          ) : (
+            <div className="space-y-3">
+              {ALPHABET.map((letter) => {
+                const items = groups.get(letter) ?? [];
+                if (items.length === 0) return null;
+                return (
+                  <section
+                    key={letter}
+                    id={`client-group-${letter}`}
+                    aria-label={letter}
+                    className="overflow-hidden rounded-xl border"
+                    style={{ borderColor: `rgba(${BLUE.rgb},0.45)` }}
+                  >
+                    <h2
+                      className="px-5 py-1.5 text-2xl font-bold text-white"
+                      style={{ background: "linear-gradient(180deg, #0f3fa6 0%, #0a2f82 100%)" }}
+                    >
+                      {letter}
+                    </h2>
+                    <ul>
+                      {items.map((client, i) => (
+                        <li key={client.id} style={i ? { borderTop: `1px solid ${ROW_LINE}` } : undefined}>
+                          <Link
+                            href={`/dashboard/barber/clients/${client.id}`}
+                            className="flex items-center justify-between px-10 py-2.5 text-xl font-medium text-white transition hover:bg-white/[0.05]"
+                            style={{ background: "rgba(2,8,24,0.55)" }}
+                          >
+                            <span className="truncate">{client.full_name}</span>
+                            <svg viewBox="0 0 24 24" className="h-6 w-6 shrink-0 text-white/85" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <path d="M9 5l7 7-7 7" />
+                            </svg>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </section>
+                );
+              })}
             </div>
+          )}
+        </div>
+      </FocusModeShell>
 
-            {/* Client list — only rendered with real rows once there
-                is at least one real client; otherwise the mastered
-                asset's own accurate empty-state artwork ("No clients
-                yet") is left exactly as supplied, untouched. */}
-            {hasAnyClients && (
-              <div ref={listRef} className="absolute overflow-y-auto" style={LIST_BOX}>
-                {filtered.length === 0 ? (
-                  <p className="text-white/50" style={{ padding: "1.5%", fontSize: "0.95vw" }}>
-                    No clients match &quot;{query}&quot;.
-                  </p>
-                ) : (
-                  ALPHABET.map((letter) => {
-                    const items = groups.get(letter) ?? [];
-                    if (items.length === 0) return null;
-                    return (
-                      <div key={letter} id={`client-group-${letter}`}>
-                        <p
-                          className="sticky top-0 bg-[#020c1c]/95 font-display text-royal-light"
-                          style={{ padding: "0.6% 1.5%", fontSize: "0.85vw" }}
-                        >
-                          {letter}
-                        </p>
-                        <ul>
-                          {items.map((client) => (
-                            <li key={client.id} className="border-b border-white/5">
-                              <Link
-                                href={`/dashboard/barber/clients/${client.id}`}
-                                className="block text-white transition hover:bg-white/5"
-                                style={{ padding: "1% 1.5%", fontSize: "1vw" }}
-                              >
-                                {client.full_name}
-                              </Link>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    );
-                  })
-                )}
-              </div>
+      {/* Add Client — the existing link-by-email flow. */}
+      {addOpen && (
+        <div className="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 backdrop-blur-sm sm:flex" onClick={() => setAddOpen(false)}>
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="add-client-title"
+            className={`${ui.className} relative w-[440px] rounded-2xl border-2 p-6`}
+            style={{ borderColor: BLUE.hex, background: "linear-gradient(180deg, #06112a 0%, #030a1c 100%)", boxShadow: `0 0 30px -6px rgba(${BLUE.rgb},0.8)` }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <p id="add-client-title" className="text-2xl font-bold uppercase tracking-wide text-white">Add client</p>
+            {added ? (
+              <>
+                <p className="mt-3 text-base text-white/75">
+                  If a POLAR client account exists with that email, they&apos;ve been added and now appear in your list.
+                </p>
+                <div className="mt-6 flex justify-end">
+                  <button type="button" onClick={() => setAddOpen(false)} className="rounded-lg px-5 py-2 text-base font-bold text-white" style={{ background: BLUE.hex }}>
+                    Done
+                  </button>
+                </div>
+              </>
+            ) : (
+              <form onSubmit={handleAddSubmit} className="mt-3 space-y-4">
+                <label className="block">
+                  <span className="mb-1.5 block text-sm text-white/70">Enter the email address your client signed up to POLAR with.</span>
+                  <input
+                    name="client_email"
+                    type="email"
+                    required
+                    autoFocus
+                    placeholder="client@example.com"
+                    className="h-12 w-full rounded-lg border-2 bg-black/30 px-4 text-base text-white outline-none placeholder:text-white/35"
+                    style={{ borderColor: `rgba(${BLUE.rgb},0.6)` }}
+                  />
+                </label>
+                <div className="flex justify-end gap-3">
+                  <button type="button" onClick={() => setAddOpen(false)} className="rounded-lg px-4 py-2 text-base text-white/70 hover:text-white">
+                    Cancel
+                  </button>
+                  <button type="submit" disabled={pending} className="rounded-lg px-5 py-2 text-base font-bold text-white disabled:opacity-60" style={{ background: BLUE.hex }}>
+                    {pending ? "Adding…" : "Add client"}
+                  </button>
+                </div>
+              </form>
             )}
           </div>
         </div>
-      </main>
+      )}
     </div>
   );
 }

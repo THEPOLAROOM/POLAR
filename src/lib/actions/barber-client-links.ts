@@ -27,7 +27,46 @@ export async function linkClientByEmail(formData: FormData): Promise<void> {
 
   const { supabase } = await requireRole("barber");
 
-  await supabase.rpc("link_client_by_email", { client_email: email });
+  const { error } = await supabase.rpc("link_client_by_email", { client_email: email });
+  if (error) {
+    console.error("linkClientByEmail failed:", error.message);
+  }
+
+  revalidatePath("/dashboard/barber/clients");
+}
+
+/**
+ * Unlinks the calling barber from one of their own clients, via the
+ * unlink_client() SECURITY DEFINER function — the sole write path for
+ * removing a barber_client_links row (that table has no DELETE policy
+ * for any role, by design). requireRole("barber") is the first check;
+ * the function's own internal has_role('barber') check plus scoping
+ * the delete to auth.uid() as the barber (never a caller-supplied id)
+ * is the second, non-bypassable layer — a client can never unlink
+ * themselves or anyone, and a barber can never unlink another
+ * barber's client.
+ *
+ * Deleting the link only removes that one row: it does not touch the
+ * client's bookings, profile details, address, balance, or custom
+ * field values in any way, and the barber can freely relink the same
+ * client later via linkClientByEmail above.
+ *
+ * No UI currently calls this — it is intentionally unwired pending
+ * the Client Directory's visual/mastering pass, which will decide
+ * where and how an unlink control is presented.
+ */
+export async function unlinkClient(formData: FormData): Promise<void> {
+  const clientId = String(formData.get("client_id") ?? "").trim();
+  if (!clientId) {
+    return;
+  }
+
+  const { supabase } = await requireRole("barber");
+
+  const { error } = await supabase.rpc("unlink_client", { p_client_profile_id: clientId });
+  if (error) {
+    console.error("unlinkClient failed:", error.message);
+  }
 
   revalidatePath("/dashboard/barber/clients");
 }

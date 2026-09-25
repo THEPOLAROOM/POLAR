@@ -4,6 +4,7 @@ import { requireRole } from "@/lib/auth/require-role";
 import type { ClientProfileDetails, CustomFieldDefinition } from "@/lib/types";
 import { ClientDetailsForm } from "./client-details-form";
 import { ClientBalanceForm } from "./client-balance-form";
+import { RemoveClientButton } from "./remove-client-button";
 import { updateClientCustomFieldValues } from "@/lib/actions/custom-field-values";
 
 const UUID_RE =
@@ -24,11 +25,11 @@ export default async function ClientProfileCardPage({
 }) {
   const { clientId } = await params;
 
+  const { supabase, user } = await requireRole("barber");
+
   if (!UUID_RE.test(clientId)) {
     notFound();
   }
-
-  const { supabase, user } = await requireRole("barber");
 
   const [
     { data: profile },
@@ -83,7 +84,10 @@ export default async function ClientProfileCardPage({
 
   return (
     <main className="mx-auto max-w-xl px-6 py-16">
-      <h1 className="text-xl font-semibold text-polar-text">
+      <Link href="/dashboard/barber/clients" className="text-sm text-polar-muted">
+        ‹ Back to Clients
+      </Link>
+      <h1 className="mt-4 text-xl font-semibold text-polar-text">
         {profile.full_name}
       </h1>
       <p className="mt-1 text-sm text-polar-muted">{profile.phone}</p>
@@ -207,6 +211,10 @@ export default async function ClientProfileCardPage({
             No custom fields set up yet.
           </p>
         )}
+      </section>
+
+      <section className="mt-12 border-t border-polar-border pt-6">
+        <RemoveClientButton clientId={clientId} clientName={profile.full_name} />
       </section>
     </main>
   );
