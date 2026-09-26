@@ -61,12 +61,21 @@ const ZONE_CLASS =
  * no children), so every screen shows the exact same room with the
  * exact same crop behaviour.
  */
-export function BarberRoom({ children, decorative = false }: { children?: React.ReactNode; decorative?: boolean }) {
+export function BarberRoom({
+  children,
+  decorative = false,
+  src = "/dashboard/barber-dashboard-v3.webp",
+}: {
+  children?: React.ReactNode;
+  decorative?: boolean;
+  /** A dedicated scene derived from the dashboard (same size/aspect), e.g. My Profile. */
+  src?: string;
+}) {
   return (
     <div className="absolute inset-0 overflow-hidden" style={{ background: EDGE_FILL }} aria-hidden={decorative || undefined}>
       <div className="absolute" style={STAGE_STYLE}>
         <Image
-          src="/dashboard/barber-dashboard-v3.webp"
+          src={src}
           alt={decorative ? "" : "POLAR's barber shop: Clients tablet, Calendar board, Workflow Mode chair, POLAR for My Profile, and the My Services workstation."}
           fill
           unoptimized

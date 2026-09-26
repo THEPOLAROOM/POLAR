@@ -63,6 +63,8 @@ export function FocusModeShell({
   className,
   children,
   backHref = "/dashboard/barber",
+  backdrop = "off",
+  frameInset = "max(6dvh, 28px) max(5vw, 28px)",
 }: {
   /** Stable feature id, e.g. "calendar" — scopes the Full Screen memory. */
   id: string;
@@ -78,6 +80,11 @@ export function FocusModeShell({
   className?: string;
   children: React.ReactNode;
   backHref?: string;
+  /** "off" (default): room powered down. "lit": the room is a dedicated
+   *  scene for this feature and stays lit (e.g. My Profile with POLAR). */
+  backdrop?: "off" | "lit";
+  /** Panel position in normal Focus Mode (CSS inset). Default: centred ~90%. */
+  frameInset?: string;
 }) {
   const { hex, rgb } = ACCENTS[accent];
   const [fullScreen, setFullScreen] = useState(false);
@@ -118,20 +125,20 @@ export function FocusModeShell({
           cut so no neon label, sign or object can glow through, then a
           near-black overlay leaves only faint silhouettes. Full Screen
           blacks it out completely. */}
-      <div aria-hidden="true" className="absolute inset-0" style={{ filter: FOCUS_ROOM_FILTER }}>
+      <div aria-hidden="true" className="absolute inset-0" style={{ filter: backdrop === "off" ? FOCUS_ROOM_FILTER : undefined }}>
         {room}
       </div>
       <div
         aria-hidden="true"
         className="absolute inset-0 transition-[background-color] duration-500"
-        style={{ backgroundColor: fullScreen ? "rgba(1,1,3,0.99)" : FOCUS_OVERLAY }}
+        style={{ backgroundColor: fullScreen ? "rgba(1,1,3,0.99)" : backdrop === "off" ? FOCUS_OVERLAY : "transparent" }}
       />
 
       {/* Frame wrapper: positions the panel and carries the corner paint,
           which is allowed to spill outside the panel (not clipped). */}
       <div
         className="absolute transition-all duration-300 ease-out"
-        style={{ inset: fullScreen ? "0" : "max(6dvh, 28px) max(5vw, 28px)", containerType: "inline-size" }}
+        style={{ inset: fullScreen ? "0" : frameInset, containerType: "inline-size" }}
       >
         {splatter && !fullScreen && <CornerSplatter splatter={splatter} />}
 
