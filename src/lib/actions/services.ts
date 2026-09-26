@@ -53,14 +53,19 @@ export async function saveService(formData: FormData): Promise<ActionResult> {
     return { id: serviceId };
   }
 
-  const { count } = await supabase
+  // Append after the current last position (max + 1, not the row count,
+  // which can collide with an existing position after a deletion).
+  const { data: last } = await supabase
     .from("services")
-    .select("id", { count: "exact", head: true })
-    .eq("barber_profile_id", user.id);
+    .select("display_order")
+    .eq("barber_profile_id", user.id)
+    .order("display_order", { ascending: false })
+    .limit(1)
+    .maybeSingle();
 
   const { data, error } = await supabase
     .from("services")
-    .insert({ ...row, barber_profile_id: user.id, display_order: count ?? 0 })
+    .insert({ ...row, barber_profile_id: user.id, display_order: ((last?.display_order as number | undefined) ?? -1) + 1 })
     .select("id")
     .single();
 
@@ -81,7 +86,10 @@ export async function setServiceActive(formData: FormData): Promise<void> {
 
   const { supabase } = await requireRole("barber");
 
-  await supabase.from("services").update({ is_active: isActive }).eq("id", serviceId);
+  const { error } = await supabase.from("services").update({ is_active: isActive }).eq("id", serviceId);
+  if (error) {
+    console.error("setServiceActive failed:", error.message);
+  }
 
   revalidatePath(SERVICES_PATH);
 }
@@ -109,7 +117,10 @@ export async function deleteService(formData: FormData): Promise<void> {
     await supabase.storage.from(IMAGE_BUCKET).remove(paths);
   }
 
-  await supabase.from("services").delete().eq("id", serviceId);
+  const { error } = await supabase.from("services").delete().eq("id", serviceId);
+  if (error) {
+    console.error("deleteService failed:", error.message);
+  }
 
   revalidatePath(SERVICES_PATH);
 }
@@ -136,21 +147,25 @@ export async function reorderService(formData: FormData): Promise<void> {
 
   const otherId = orderedIds[swapIndex];
 
-  const { supabase } = await requireRole("barber");
+  const { supabase, user } = await requireRole("barber");
 
-  const { data: rows } = await supabase
-    .from("services")
-    .select("id, display_order")
-    .in("id", [serviceId, otherId]);
+  // Rewrite this barber's whole order as 0..n-1 with the two swapped.
+  // A plain swap of the two display_order values silently did nothing
+  // whenever they were equal (possible after deleting a service).
+  const { data: owned } = await supabase.from("services").select("id").eq("barber_profile_id", user.id);
+  const ownedIds = new Set((owned ?? []).map((r) => r.id as string));
+  if (!ownedIds.has(serviceId) || !ownedIds.has(otherId)) return;
+  const next = orderedIds.filter((id) => ownedIds.has(id));
+  for (const id of ownedIds) if (!next.includes(id)) next.push(id);
+  const i = next.indexOf(serviceId), j = next.indexOf(otherId);
+  [next[i], next[j]] = [next[j], next[i]];
 
-  const a = rows?.find((r) => r.id === serviceId);
-  const b = rows?.find((r) => r.id === otherId);
-  if (!a || !b) return;
-
-  await Promise.all([
-    supabase.from("services").update({ display_order: b.display_order }).eq("id", a.id),
-    supabase.from("services").update({ display_order: a.display_order }).eq("id", b.id),
-  ]);
+  const results = await Promise.all(
+    next.map((id, order) => supabase.from("services").update({ display_order: order }).eq("id", id).eq("barber_profile_id", user.id))
+  );
+  for (const { error } of results) {
+    if (error) console.error("reorderService failed:", error.message);
+  }
 
   revalidatePath(SERVICES_PATH);
 }
@@ -216,8 +231,10 @@ export async function deleteServiceImage(formData: FormData): Promise<void> {
 
   if (!image) return;
 
-  await supabase.storage.from(IMAGE_BUCKET).remove([image.storage_path as string]);
-  await supabase.from("service_images").delete().eq("id", imageId);
+  const { error: removeError } = await supabase.storage.from(IMAGE_BUCKET).remove([image.storage_path as string]);
+  if (removeError) console.error("deleteServiceImage storage remove failed:", removeError.message);
+  const { error: deleteError } = await supabase.from("service_images").delete().eq("id", imageId);
+  if (deleteError) console.error("deleteServiceImage row delete failed:", deleteError.message);
 
   if (image.is_cover) {
     const { data: next } = await supabase
@@ -229,7 +246,8 @@ export async function deleteServiceImage(formData: FormData): Promise<void> {
       .maybeSingle();
 
     if (next) {
-      await supabase.from("service_images").update({ is_cover: true }).eq("id", next.id);
+      const { error } = await supabase.from("service_images").update({ is_cover: true }).eq("id", next.id);
+      if (error) console.error("deleteServiceImage cover promotion failed:", error.message);
     }
   }
 
@@ -244,8 +262,20 @@ export async function setCoverImage(formData: FormData): Promise<void> {
 
   const { supabase } = await requireRole("barber");
 
-  await supabase.from("service_images").update({ is_cover: false }).eq("service_id", serviceId);
-  await supabase.from("service_images").update({ is_cover: true }).eq("id", imageId);
+  // Sequential, not parallel: "set" must run strictly after "unset"
+  // clears every cover on this service (including the new one), or a
+  // race between the two could leave the new cover unset.
+  const { error: unsetError } = await supabase
+    .from("service_images")
+    .update({ is_cover: false })
+    .eq("service_id", serviceId);
+  if (unsetError) console.error("setCoverImage unset failed:", unsetError.message);
+
+  const { error: setError } = await supabase
+    .from("service_images")
+    .update({ is_cover: true })
+    .eq("id", imageId);
+  if (setError) console.error("setCoverImage set failed:", setError.message);
 
   revalidatePath(SERVICES_PATH);
 }

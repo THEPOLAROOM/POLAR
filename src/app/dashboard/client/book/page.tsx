@@ -23,7 +23,8 @@ export default async function ClientBookingPage() {
       .select("id, name, duration_minutes")
       .eq("barber_profile_id", POLAR_BARBER_PROFILE_ID)
       .eq("is_active", true)
-      .order("name", { ascending: true }),
+      // The barber's own My Services order (Reorder).
+      .order("display_order", { ascending: true }),
     supabase
       .from("barber_availability")
       .select("day_of_week")

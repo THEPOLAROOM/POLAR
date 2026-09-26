@@ -12,27 +12,29 @@ import { requireRole } from "@/lib/auth/require-role";
  * auth.uid(), not a caller-supplied id) is the second, non-bypassable
  * layer, mirroring every other action in this codebase.
  *
- * Bound directly via a <form action={...}> prop (no client
- * component), so this returns void. The function returns a bare
- * boolean that intentionally can't distinguish "no such email" from
- * "that account isn't a client" from "already linked" — there is
- * nothing safe to surface to the UI beyond "did the list change,"
- * which the barber can already see from the Client Directory itself.
+ * Returns { linked } from the function's own boolean: true when the
+ * client is now in this barber's list (newly or already linked), false
+ * when no POLAR client account has that email. It deliberately does not
+ * say which of "no such email" / "not a client account" applies — the
+ * barber learns no more than the Client Directory already shows them.
+ * The client keeps ownership of their own account; nothing is created.
  */
-export async function linkClientByEmail(formData: FormData): Promise<void> {
+export async function linkClientByEmail(formData: FormData): Promise<{ linked: boolean } | { error: string }> {
   const email = String(formData.get("client_email") ?? "").trim();
   if (!email) {
-    return;
+    return { error: "Enter the client's email." };
   }
 
   const { supabase } = await requireRole("barber");
 
-  const { error } = await supabase.rpc("link_client_by_email", { client_email: email });
+  const { data, error } = await supabase.rpc("link_client_by_email", { client_email: email });
   if (error) {
     console.error("linkClientByEmail failed:", error.message);
+    return { error: "Could not add the client. Please try again." };
   }
 
   revalidatePath("/dashboard/barber/clients");
+  return { linked: data === true };
 }
 
 /**

@@ -4,7 +4,7 @@ import { ProfessionalDetailsForm } from "../professional-details-form";
 
 // Split out of the old single-page /dashboard/barber/account so the
 // new My Profile hub (page.tsx one level up) can link to it as its
-// "Professional Profile & CV" card. The form itself is unchanged —
+// "Professional" card. The form itself is unchanged —
 // same component, same fields, same updateBarberProfessionalDetails()
 // action.
 export default async function BarberProfessionalProfilePage() {
@@ -22,7 +22,7 @@ export default async function BarberProfessionalProfilePage() {
         ← Back to My Profile
       </Link>
 
-      <h1 className="mt-4 text-xl font-semibold text-polar-text">Professional Profile &amp; CV</h1>
+      <h1 className="mt-4 text-xl font-semibold text-polar-text">Professional Profile</h1>
 
       <section className="mt-8">
         <h2 className="text-sm font-semibold text-polar-text">Professional details</h2>

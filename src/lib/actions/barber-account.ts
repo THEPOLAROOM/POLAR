@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { requireRole } from "@/lib/auth/require-role";
 
 type ActionResult = { error: string } | void;
@@ -18,25 +19,45 @@ function readChecked(formData: FormData, key: string): boolean {
 }
 
 /**
- * Updates the calling barber's own profiles row (full_name, phone).
+ * Updates the calling barber's own name (profiles.full_name) — the name
+ * shown on My Profile. Edited only via My Profile's EDIT PROFILE.
+ * Relies on the existing "profiles: update own" RLS policy.
+ */
+export async function updateBarberName(formData: FormData): Promise<ActionResult> {
+  const fullName = readRequiredText(formData, "full_name");
+  if (!fullName) {
+    return { error: "Name is required." };
+  }
+
+  const { supabase, user } = await requireRole("barber");
+
+  const { error } = await supabase.from("profiles").update({ full_name: fullName }).eq("id", user.id);
+  if (error) {
+    return { error: error.message };
+  }
+  revalidatePath("/dashboard/barber/account");
+}
+
+/**
+ * Updates the calling barber's own phone (profiles.phone) — private
+ * account information, edited under Personal Details.
  * Relies entirely on the existing "profiles: update own" RLS policy
  * (auth.uid() = id) — this action adds no additional authorization.
  */
 export async function updateBarberProfile(
   formData: FormData
 ): Promise<ActionResult> {
-  const fullName = readRequiredText(formData, "full_name");
   const phone = readRequiredText(formData, "phone");
 
-  if (!fullName || !phone) {
-    return { error: "Name and phone are required." };
+  if (!phone) {
+    return { error: "Phone is required." };
   }
 
   const { supabase, user } = await requireRole("barber");
 
   const { error } = await supabase
     .from("profiles")
-    .update({ full_name: fullName, phone })
+    .update({ phone })
     .eq("id", user.id);
 
   if (error) {

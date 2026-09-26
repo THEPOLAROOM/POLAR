@@ -36,10 +36,7 @@ export default async function BarberPersonalDetailsPage() {
 
       <section className="mt-8">
         <h2 className="text-sm font-semibold text-polar-text">Personal details</h2>
-        <PersonalDetailsForm
-          fullName={profile?.full_name ?? ""}
-          phone={profile?.phone ?? ""}
-        />
+        <PersonalDetailsForm phone={profile?.phone ?? ""} />
       </section>
 
       <section className="mt-8">

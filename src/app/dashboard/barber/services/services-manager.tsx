@@ -365,7 +365,6 @@ export function ServicesManager({ services }: { services: ServiceWithImages[] })
             <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
               <p className="text-2xl font-bold text-white">No services yet</p>
               <p className="text-base text-white/60">Add your first service to start building your booking menu.</p>
-              <div className="mt-3">{addButton}</div>
             </div>
           ) : (
             <div className="services-scroll min-h-0 flex-1 overflow-y-auto">

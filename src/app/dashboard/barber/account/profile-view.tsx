@@ -1,6 +1,8 @@
 "use client";
 
+import { useState, useTransition } from "react";
 import Link from "next/link";
+import { updateBarberName } from "@/lib/actions/barber-account";
 import { Barlow, Barlow_Condensed, Permanent_Marker } from "next/font/google";
 import { FocusModeShell, ACCENTS } from "@/components/focus-mode/focus-mode-shell";
 import { BarberRoom } from "../dashboard-scene";
@@ -11,7 +13,8 @@ import { BarberRoom } from "../dashboard-scene";
 // on the left), so the room stays lit and the panel sits to his right.
 // Every pathway is either a real route or explicitly marked Coming soon —
 // no dead buttons and no invented data.
-const PINK = ACCENTS.magenta;
+// My Profile uses the POLAR blue identity (colour-only; layout unchanged).
+const PINK = ACCENTS.blue;
 
 const graffiti = Permanent_Marker({ subsets: ["latin"], weight: "400" });
 const ui = Barlow({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
@@ -93,7 +96,7 @@ function VerifiedBadge() {
     <span title="Official POLAR Barber account" className="inline-flex shrink-0">
       <svg viewBox="0 0 24 24" className="h-9 w-9" aria-label="Official POLAR Barber account" role="img">
         <path
-          fill={ACCENTS.magenta.hex}
+          fill={ACCENTS.blue.hex}
           d="M12 1.5l2.4 1.8 3-.2.9 2.9 2.5 1.7-1 2.8 1 2.8-2.5 1.7-.9 2.9-3-.2L12 22.5l-2.4-1.8-3 .2-.9-2.9-2.5-1.7 1-2.8-1-2.8 2.5-1.7.9-2.9 3 .2z"
         />
         <path d="M7.5 12.2l3 3 6-6.2" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
@@ -136,8 +139,8 @@ function PathwayCard({ p }: { p: Pathway }) {
   );
   const cls = `flex items-center gap-5 rounded-2xl border-2 px-5 py-3 ${p.wide ? "col-span-2" : ""}`;
   const style: React.CSSProperties = live
-    ? { borderColor: `rgba(${PINK.rgb},0.85)`, background: "rgba(20,4,16,0.55)", boxShadow: `0 0 14px -4px rgba(${PINK.rgb},0.7), inset 0 0 18px -10px rgba(${PINK.rgb},0.6)` }
-    : { borderColor: `rgba(${PINK.rgb},0.3)`, background: "rgba(12,4,10,0.45)" };
+    ? { borderColor: `rgba(${PINK.rgb},0.85)`, background: "rgba(4,12,30,0.55)", boxShadow: `0 0 14px -4px rgba(${PINK.rgb},0.7), inset 0 0 18px -10px rgba(${PINK.rgb},0.6)` }
+    : { borderColor: `rgba(${PINK.rgb},0.3)`, background: "rgba(3,9,22,0.45)" };
   return live ? (
     <Link href={p.href!} className={`${cls} transition hover:bg-white/[0.04]`} style={style}>
       {inner}
@@ -150,6 +153,7 @@ function PathwayCard({ p }: { p: Pathway }) {
 }
 
 export function ProfileView({ name, location, email }: { name: string | null; location: string | null; email: string }) {
+  const [editing, setEditing] = useState(false);
   return (
     <div id="barber-profile-page">
       {/* The shared barber nav lives in layout.tsx, which every other
@@ -161,20 +165,20 @@ export function ProfileView({ name, location, email }: { name: string | null; lo
         .profile-title {
           display: inline-block;
           transform: rotate(-2deg) skewX(-6deg);
-          background: linear-gradient(180deg, #ffffff 0%, #fff4fb 55%, #f3c9e4 80%, #ffffff 100%);
+          background: linear-gradient(180deg, #ffffff 0%, #eef4ff 55%, #b9c9e6 80%, #ffffff 100%);
           -webkit-background-clip: text;
           background-clip: text;
           color: transparent;
-          filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.8)) drop-shadow(0 0 10px rgba(255, 31, 180, 0.5));
+          filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.8)) drop-shadow(0 0 10px rgba(30, 123, 255, 0.5));
           padding: 0.05em 0.1em;
         }
         .profile-scroll {
           scrollbar-width: thin;
-          scrollbar-color: rgba(255, 31, 180, 0.8) transparent;
+          scrollbar-color: rgba(30, 123, 255, 0.8) transparent;
         }
         .profile-scroll::-webkit-scrollbar { width: 6px; }
         .profile-scroll::-webkit-scrollbar-track { background: transparent; }
-        .profile-scroll::-webkit-scrollbar-thumb { background: rgba(255, 31, 180, 0.8); border-radius: 999px; }
+        .profile-scroll::-webkit-scrollbar-thumb { background: rgba(30, 123, 255, 0.8); border-radius: 999px; }
       `}</style>
 
       {/* Mobile — existing simple functional layout (links to the same real pages). */}
@@ -203,7 +207,7 @@ export function ProfileView({ name, location, email }: { name: string | null; lo
       {/* Desktop — My Profile Focus Mode. */}
       <FocusModeShell
         id="profile"
-        accent="magenta"
+        accent="blue"
         backdrop="lit"
         frameInset={FRAME_INSET}
         room={<BarberRoom decorative src="/dashboard/profile-room-v1.webp" />}
@@ -227,7 +231,7 @@ export function ProfileView({ name, location, email }: { name: string | null; lo
           {/* Profile header — real name / location; photo and bio are not built yet. */}
           <section
             className="flex items-center gap-6 rounded-2xl border-2 px-6 py-4"
-            style={{ borderColor: `rgba(${PINK.rgb},0.85)`, background: "rgba(20,4,16,0.5)", boxShadow: `0 0 16px -4px rgba(${PINK.rgb},0.6)` }}
+            style={{ borderColor: `rgba(${PINK.rgb},0.85)`, background: "rgba(4,12,30,0.5)", boxShadow: `0 0 16px -4px rgba(${PINK.rgb},0.6)` }}
           >
             <div
               aria-label="Profile photo — coming soon"
@@ -254,7 +258,7 @@ export function ProfileView({ name, location, email }: { name: string | null; lo
               >
                 <svg viewBox="0 0 24 24" className="h-6 w-6" fill={PINK.hex} aria-hidden="true">
                   <path d="M12 22s7-6.2 7-12a7 7 0 10-14 0c0 5.8 7 12 7 12z" />
-                  <circle cx="12" cy="10" r="2.6" fill="#1a0614" />
+                  <circle cx="12" cy="10" r="2.6" fill="#061126" />
                 </svg>
                 {location || "Add Location"}
               </Link>
@@ -270,16 +274,17 @@ export function ProfileView({ name, location, email }: { name: string | null; lo
               </div>
             </div>
 
-            <Link
-              href="/dashboard/barber/account/personal-details"
+            <button
+              type="button"
+              onClick={() => setEditing(true)}
               className="flex h-14 shrink-0 items-center gap-3 self-start rounded-xl border-2 px-6 text-lg font-bold uppercase tracking-wide text-white transition hover:brightness-110"
-              style={{ borderColor: "#ff6fcf", background: `linear-gradient(180deg, #ff3fc0 0%, ${PINK.hex} 55%, #d10f90 100%)`, boxShadow: `0 0 18px -2px rgba(${PINK.rgb},0.85)` }}
+              style={{ borderColor: "#6fb2ff", background: `linear-gradient(180deg, #4a9bff 0%, ${PINK.hex} 55%, #0f5fd6 100%)`, boxShadow: `0 0 18px -2px rgba(${PINK.rgb},0.85)` }}
             >
               <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M4 20h4L19 9l-4-4L4 16z" />
               </svg>
               Edit Profile
-            </Link>
+            </button>
           </section>
 
           <div className="grid grid-cols-2 gap-3">
@@ -289,6 +294,63 @@ export function ProfileView({ name, location, email }: { name: string | null; lo
           </div>
         </div>
       </FocusModeShell>
+
+      {editing && <EditProfileDialog name={name} onClose={() => setEditing(false)} />}
+    </div>
+  );
+}
+
+// EDIT PROFILE — public identity. Today the only stored identity field is
+// the name; photo and bio have no storage yet (shown as Coming soon), and
+// location is edited under Professional Profile (single pathway).
+function EditProfileDialog({ name, onClose }: { name: string | null; onClose: () => void }) {
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
+  return (
+    <div className="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 p-6 backdrop-blur-sm sm:flex" onClick={onClose}>
+      <form
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="edit-profile-title"
+        className={`${ui.className} w-[480px] max-w-full rounded-2xl border-2 p-7`}
+        style={{ borderColor: PINK.hex, background: "linear-gradient(180deg, #06112a 0%, #030a1c 100%)", boxShadow: `0 0 30px -6px rgba(${PINK.rgb},0.8)` }}
+        onClick={(e) => e.stopPropagation()}
+        onSubmit={(e) => {
+          e.preventDefault();
+          const fd = new FormData(e.currentTarget);
+          setError(null);
+          startTransition(async () => {
+            const r = await updateBarberName(fd);
+            if (r && "error" in r) setError(r.error);
+            else onClose();
+          });
+        }}
+      >
+        <p id="edit-profile-title" className="text-2xl font-bold uppercase tracking-wide text-white">
+          Edit profile
+        </p>
+        <label className="mt-5 block">
+          <span className="mb-1.5 block text-sm font-semibold uppercase tracking-wide text-white/70">Name</span>
+          <input
+            name="full_name"
+            required
+            autoFocus
+            defaultValue={name ?? ""}
+            className="h-12 w-full rounded-lg border-2 bg-black/30 px-4 text-base text-white outline-none"
+            style={{ borderColor: `rgba(${PINK.rgb},0.6)` }}
+          />
+        </label>
+        <p className="mt-3 text-sm text-white/55">Location is edited under Professional Profile. Photo and bio are coming soon.</p>
+        {error && <p className="mt-3 text-sm font-semibold text-[#ff6b8b]">{error}</p>}
+        <div className="mt-6 flex justify-end gap-3">
+          <button type="button" onClick={onClose} className="rounded-lg px-4 py-2 text-base text-white/75 hover:text-white">
+            Cancel
+          </button>
+          <button type="submit" disabled={pending} className="rounded-lg px-5 py-2 text-base font-bold uppercase text-white disabled:opacity-60" style={{ background: PINK.hex }}>
+            {pending ? "Saving…" : "Save"}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

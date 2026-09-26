@@ -52,7 +52,7 @@ export function ClientDirectory({ clients }: { clients: Client[] }) {
   const [query, setQuery] = useState("");
   const [activeLetter, setActiveLetter] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
-  const [added, setAdded] = useState(false);
+  const [added, setAdded] = useState<null | "linked" | "not_found" | string>(null);
   const [pending, startTransition] = useTransition();
   const listRef = useRef<HTMLDivElement>(null);
 
@@ -92,13 +92,13 @@ export function ClientDirectory({ clients }: { clients: Client[] }) {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     startTransition(async () => {
-      await linkClientByEmail(formData);
-      setAdded(true);
+      const r = await linkClientByEmail(formData);
+      setAdded("error" in r ? r.error : r.linked ? "linked" : "not_found");
     });
   }
 
   function openAdd() {
-    setAdded(false);
+    setAdded(null);
     setAddOpen(true);
   }
 
@@ -330,7 +330,11 @@ export function ClientDirectory({ clients }: { clients: Client[] }) {
             {added ? (
               <>
                 <p className="mt-3 text-base text-white/75">
-                  If a POLAR client account exists with that email, they&apos;ve been added and now appear in your list.
+                  {added === "linked"
+                    ? "Client added — they now appear in your list."
+                    : added === "not_found"
+                      ? "No POLAR client account uses that email. Ask the client to sign up to POLAR first, then add them here."
+                      : added}
                 </p>
                 <div className="mt-6 flex justify-end">
                   <button type="button" onClick={() => setAddOpen(false)} className="rounded-lg px-5 py-2 text-base font-bold text-white" style={{ background: BLUE.hex }}>
