@@ -33,6 +33,7 @@ export async function updateClientProfileDetails(
     hair_density: readOptionalText(formData, "hair_density"),
     hair_texture: readOptionalText(formData, "hair_texture"),
     hair_colour: readOptionalText(formData, "hair_colour"),
+    hair_condition: readOptionalText(formData, "hair_condition"),
     scalp_condition: readOptionalText(formData, "scalp_condition"),
     skin_sensitivity: readOptionalText(formData, "skin_sensitivity"),
     allergies: readOptionalText(formData, "allergies"),

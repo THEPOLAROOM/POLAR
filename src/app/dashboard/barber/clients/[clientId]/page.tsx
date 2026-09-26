@@ -50,7 +50,7 @@ export default async function ClientProfileCardPage({
     supabase
       .from("client_profile_details")
       .select(
-        "hair_type, hair_density, hair_texture, hair_colour, scalp_condition, skin_sensitivity, allergies, emergency_contact, updated_at"
+        "hair_type, hair_density, hair_texture, hair_colour, hair_condition, scalp_condition, skin_sensitivity, allergies, emergency_contact, updated_at"
       )
       .eq("profile_id", clientId)
       .maybeSingle(),

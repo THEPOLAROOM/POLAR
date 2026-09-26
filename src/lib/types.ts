@@ -18,6 +18,7 @@ export interface ClientProfileDetails {
   hair_density: string | null;
   hair_texture: string | null;
   hair_colour: string | null;
+  hair_condition: string | null;
   scalp_condition: string | null;
   skin_sensitivity: string | null;
   allergies: string | null;

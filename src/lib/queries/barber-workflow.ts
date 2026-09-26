@@ -22,6 +22,7 @@ export type WorkflowClient = {
   hairTexture: string | null;
   hairDensity: string | null;
   hairColour: string | null;
+  hairCondition: string | null;
   scalpCondition: string | null;
   skinSensitivity: string | null;
   allergies: string | null;
@@ -78,7 +79,7 @@ export async function getWorkflowBookingsForDate(
     supabase.from("profiles").select("id, polar_id").in("id", clientIds),
     supabase
       .from("client_profile_details")
-      .select("profile_id, hair_type, hair_texture, hair_density, hair_colour, scalp_condition, skin_sensitivity, allergies, emergency_contact")
+      .select("profile_id, hair_type, hair_texture, hair_density, hair_colour, hair_condition, scalp_condition, skin_sensitivity, allergies, emergency_contact")
       .in("profile_id", clientIds),
     supabase
       .from("barber_client_links")
@@ -117,6 +118,7 @@ export async function getWorkflowBookingsForDate(
     hair_texture: string | null;
     hair_density: string | null;
     hair_colour: string | null;
+    hair_condition: string | null;
     scalp_condition: string | null;
     skin_sensitivity: string | null;
     allergies: string | null;
@@ -159,6 +161,7 @@ export async function getWorkflowBookingsForDate(
       hairTexture: d?.hair_texture ?? null,
       hairDensity: d?.hair_density ?? null,
       hairColour: d?.hair_colour ?? null,
+      hairCondition: d?.hair_condition ?? null,
       scalpCondition: d?.scalp_condition ?? null,
       skinSensitivity: d?.skin_sensitivity ?? null,
       allergies: d?.allergies ?? null,

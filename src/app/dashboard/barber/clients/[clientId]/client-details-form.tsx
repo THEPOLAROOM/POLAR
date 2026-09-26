@@ -33,6 +33,7 @@ const FIELDS: {
   { name: "hair_density", label: "Hair density", options: HAIR_DENSITY_OPTIONS },
   { name: "hair_texture", label: "Hair texture", options: HAIR_TEXTURE_OPTIONS },
   { name: "hair_colour", label: "Hair colour" },
+  { name: "hair_condition", label: "Hair condition" },
   { name: "scalp_condition", label: "Scalp condition" },
   { name: "skin_sensitivity", label: "Skin sensitivity" },
   { name: "allergies", label: "Allergies" },
