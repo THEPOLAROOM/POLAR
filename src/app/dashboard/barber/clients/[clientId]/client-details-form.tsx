@@ -18,6 +18,12 @@ const HAIR_DENSITY_OPTIONS = [
   { value: "high", label: "High" },
 ];
 
+const HAIR_TEXTURE_OPTIONS = [
+  { value: "fine", label: "Fine" },
+  { value: "medium", label: "Medium" },
+  { value: "coarse", label: "Coarse" },
+];
+
 const FIELDS: {
   name: keyof ClientProfileDetails;
   label: string;
@@ -25,6 +31,7 @@ const FIELDS: {
 }[] = [
   { name: "hair_type", label: "Hair type", options: HAIR_TYPE_OPTIONS },
   { name: "hair_density", label: "Hair density", options: HAIR_DENSITY_OPTIONS },
+  { name: "hair_texture", label: "Hair texture", options: HAIR_TEXTURE_OPTIONS },
   { name: "hair_colour", label: "Hair colour" },
   { name: "scalp_condition", label: "Scalp condition" },
   { name: "skin_sensitivity", label: "Skin sensitivity" },

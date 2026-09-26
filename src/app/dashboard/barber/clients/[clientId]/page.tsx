@@ -6,6 +6,9 @@ import { ClientDetailsForm } from "./client-details-form";
 import { ClientBalanceForm } from "./client-balance-form";
 import { RemoveClientButton } from "./remove-client-button";
 import { updateClientCustomFieldValues } from "@/lib/actions/custom-field-values";
+import { ClientPhotoForm, KeyNotesForm, ClientInsightsForm } from "./client-records-forms";
+
+const PHOTO_URL_TTL_SECONDS = 60 * 60;
 
 const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -37,16 +40,17 @@ export default async function ClientProfileCardPage({
     { data: definitions },
     { data: values },
     { data: balance },
+    { data: record },
   ] = await Promise.all([
     supabase
       .from("profiles")
-      .select("id, full_name, phone")
+      .select("id, full_name, phone, polar_id")
       .eq("id", clientId)
       .maybeSingle(),
     supabase
       .from("client_profile_details")
       .select(
-        "hair_type, hair_density, hair_colour, scalp_condition, skin_sensitivity, allergies, emergency_contact, updated_at"
+        "hair_type, hair_density, hair_texture, hair_colour, scalp_condition, skin_sensitivity, allergies, emergency_contact, updated_at"
       )
       .eq("profile_id", clientId)
       .maybeSingle(),
@@ -69,6 +73,13 @@ export default async function ClientProfileCardPage({
       .select("amount, note")
       .eq("profile_id", clientId)
       .maybeSingle(),
+    // This barber's PRIVATE record (Key Notes + photo) — barber-only RLS.
+    supabase
+      .from("barber_client_records")
+      .select("key_notes, photo_path")
+      .eq("barber_profile_id", user.id)
+      .eq("client_profile_id", clientId)
+      .maybeSingle(),
   ]);
 
   if (!profile) {
@@ -76,11 +87,23 @@ export default async function ClientProfileCardPage({
   }
 
   const clientDetails = details as ClientProfileDetails | null;
-  const customFields = (definitions ?? []) as CustomFieldDefinition[];
+  const allDefinitions = (definitions ?? []) as CustomFieldDefinition[];
+  // Dropdown (single_select) fields are Barber Insights; the rest are Custom Fields.
+  const customFields = allDefinitions.filter((d) => d.field_type !== "single_select");
   const valueByFieldId = new Map(
     (values ?? []).map((row) => [row.field_id as string, row.value as unknown])
   );
   const clientBalance = balance as { amount: number; note: string | null } | null;
+  const insights = allDefinitions
+    .filter((d) => d.field_type === "single_select")
+    .map((d) => {
+      const v = valueByFieldId.get(d.id);
+      return { id: d.id, label: d.label, options: (d.options ?? []).filter(Boolean), value: typeof v === "string" ? v : null };
+    });
+  const photoPath = (record?.photo_path as string | null | undefined) ?? null;
+  const photoUrl = photoPath
+    ? (await supabase.storage.from("client-photos").createSignedUrl(photoPath, PHOTO_URL_TTL_SECONDS)).data?.signedUrl ?? null
+    : null;
 
   return (
     <main className="mx-auto max-w-xl px-6 py-16">
@@ -91,6 +114,12 @@ export default async function ClientProfileCardPage({
         {profile.full_name}
       </h1>
       <p className="mt-1 text-sm text-polar-muted">{profile.phone}</p>
+      {profile.polar_id && <p className="mt-1 text-sm text-polar-muted">POLAR ID {profile.polar_id}</p>}
+
+      <section className="mt-8">
+        <h2 className="text-sm font-semibold text-polar-text">Client Photo</h2>
+        <ClientPhotoForm clientId={clientId} photoUrl={photoUrl} />
+      </section>
 
       <section className="mt-8">
         <h2 className="text-sm font-semibold text-polar-text">Balance</h2>
@@ -106,6 +135,23 @@ export default async function ClientProfileCardPage({
           Client Details
         </h2>
         <ClientDetailsForm clientId={clientId} details={clientDetails} />
+      </section>
+
+      <section className="mt-8">
+        <h2 className="text-sm font-semibold text-polar-text">Key Notes</h2>
+        <p className="text-xs text-polar-muted">Private to you — never shown to the client.</p>
+        <KeyNotesForm clientId={clientId} notes={(record?.key_notes as string | null | undefined) ?? null} />
+      </section>
+
+      <section className="mt-8">
+        <div className="flex items-center gap-2">
+          <h2 className="text-sm font-semibold text-polar-text">Barber Insights</h2>
+          <Link href="/dashboard/barber/insights" aria-label="Manage insight questions" title="Manage insight questions" className="text-xs text-polar-muted">
+            ✏️
+          </Link>
+        </div>
+        <p className="text-xs text-polar-muted">Private to you — never shown to the client.</p>
+        <ClientInsightsForm clientId={clientId} insights={insights} />
       </section>
 
       <section className="mt-8">

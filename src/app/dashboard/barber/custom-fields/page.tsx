@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireRole } from "@/lib/auth/require-role";
 import {
   createCustomFieldDefinition,
@@ -9,7 +10,6 @@ const FIELD_TYPE_OPTIONS: { value: CustomFieldDefinition["field_type"]; label: s
   { value: "text", label: "Text" },
   { value: "number", label: "Number" },
   { value: "boolean", label: "Yes / No" },
-  { value: "single_select", label: "Single select" },
   { value: "multi_select", label: "Multi select" },
   { value: "date", label: "Date" },
 ];
@@ -31,6 +31,8 @@ export default async function CustomFieldsPage() {
     .from("custom_field_definitions")
     .select("id, label, field_type, is_active, created_at")
     .eq("barber_profile_id", user.id)
+    // Dropdown questions are Barber Insights (/dashboard/barber/insights).
+    .neq("field_type", "single_select")
     .order("display_order", { ascending: true })
     .order("created_at", { ascending: true });
 
@@ -41,6 +43,13 @@ export default async function CustomFieldsPage() {
       <h1 className="text-xl font-semibold text-polar-text">Custom Fields</h1>
       <p className="mt-1 text-sm text-polar-muted">
         Active fields appear on every client&apos;s profile card.
+      </p>
+      <p className="mt-1 text-sm text-polar-muted">
+        Private dropdown questions about clients (e.g. hair difficulty) are{" "}
+        <Link href="/dashboard/barber/insights" className="underline">
+          Barber Insights
+        </Link>
+        .
       </p>
 
       <section className="mt-8">

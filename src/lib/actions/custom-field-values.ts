@@ -59,7 +59,10 @@ export async function updateClientCustomFieldValues(
     .from("custom_field_definitions")
     .select("id, field_type")
     .eq("barber_profile_id", user.id)
-    .eq("is_active", true);
+    .eq("is_active", true)
+    // Dropdown (single_select) fields are Barber Insights, saved separately
+    // by saveClientInsights — never overwritten from this form.
+    .neq("field_type", "single_select");
 
   if (!definitions || definitions.length === 0) {
     return;
@@ -76,9 +79,12 @@ export async function updateClientCustomFieldValues(
     updated_at: new Date().toISOString(),
   }));
 
-  await supabase
+  const { error } = await supabase
     .from("custom_field_values")
     .upsert(rows, { onConflict: "field_id,client_profile_id" });
+  if (error) {
+    console.error("updateClientCustomFieldValues failed:", error.message);
+  }
 
   revalidatePath(`/dashboard/barber/clients/${clientId}`);
 }

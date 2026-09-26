@@ -15,7 +15,7 @@ export default async function BarberShiftPage() {
 
   const today = getShopToday();
   const now = getShopTimeNow();
-  const bookings = await getWorkflowBookingsForDate(supabase, user.id, today);
+  const bookings = await getWorkflowBookingsForDate(supabase, user.id, today, now);
 
   // Default to the first booking that hasn't finished yet, so the
   // Countdown Timer starts pointed at something real instead of

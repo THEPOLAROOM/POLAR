@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import Image from "next/image";
 import { Anton } from "next/font/google";
 import type { WorkflowBooking } from "@/lib/queries/barber-workflow";
@@ -33,17 +34,6 @@ const PersonIcon = (p: { className?: string }) => (
   <Icon {...p}>
     <circle cx="12" cy="8" r="3.4" />
     <path d="M5 20c0-3.6 3.1-6.2 7-6.2s7 2.6 7 6.2" />
-  </Icon>
-);
-const PhoneIcon = (p: { className?: string }) => (
-  <Icon {...p}>
-    <path d="M5 4h3l1.5 4-2 1.5a11 11 0 0 0 5 5l1.5-2 4 1.5v3a1.5 1.5 0 0 1-1.6 1.5A16 16 0 0 1 3.5 5.6 1.5 1.5 0 0 1 5 4Z" />
-  </Icon>
-);
-const EnvelopeIcon = (p: { className?: string }) => (
-  <Icon {...p}>
-    <rect x="3.5" y="5.5" width="17" height="13" rx="1.6" />
-    <path d="m4.5 6.5 7.5 6 7.5-6" />
   </Icon>
 );
 const GroupIcon = (p: { className?: string }) => (
@@ -106,6 +96,11 @@ const ClockIcon = (p: { className?: string }) => (
     <path d="M12 7v5l3.2 2" />
   </Icon>
 );
+const CloseIcon = (p: { className?: string }) => (
+  <Icon {...p}>
+    <path d="M6 6l12 12M18 6 6 18" />
+  </Icon>
+);
 const ExpandIcon = (p: { className?: string }) => (
   <Icon {...p}>
     <path d="M9 4H4v5M15 4h5v5M9 20H4v-5M15 20h5v-5" />
@@ -125,19 +120,6 @@ const ArrowLeftIcon = (p: { className?: string }) => (
 const ArrowRightIcon = (p: { className?: string }) => (
   <Icon {...p}>
     <path d="M5 12h14M13 6l6 6-6 6" />
-  </Icon>
-);
-const ScissorsIcon = (p: { className?: string }) => (
-  <Icon {...p}>
-    <circle cx="6.5" cy="6.5" r="2.3" />
-    <circle cx="6.5" cy="17.5" r="2.3" />
-    <path d="M8.3 8 20 19M8.3 16 20 5" />
-  </Icon>
-);
-const CameraIcon = (p: { className?: string }) => (
-  <Icon {...p}>
-    <path d="M4 8.5A1.5 1.5 0 0 1 5.5 7h2l1-1.6h7L16.5 7h2A1.5 1.5 0 0 1 20 8.5v9A1.5 1.5 0 0 1 18.5 19h-13A1.5 1.5 0 0 1 4 17.5Z" />
-    <circle cx="12" cy="13" r="3.3" />
   </Icon>
 );
 const PersonSilhouette = (p: { className?: string }) => (
@@ -259,6 +241,16 @@ export function WorkflowView({ bookings, initialIndex }: { bookings: WorkflowBoo
     return { hh: String(h).padStart(2, "0"), mm: String(m).padStart(2, "0"), ss: String(s).padStart(2, "0") };
   }, [remaining]);
 
+  const [insightsOpen, setInsightsOpen] = useState(false);
+
+  // Whole-page full screen (browser Fullscreen API on the page). Separate
+  // from the Countdown Timer's own full screen below; Esc exits either
+  // back to Workflow. The X link is the only way back to the dashboard.
+  function togglePageFullscreen() {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen();
+  }
+
   function toggleFullscreen() {
     if (!countdownRef.current) return;
     if (document.fullscreenElement) {
@@ -297,6 +289,25 @@ export function WorkflowView({ bookings, initialIndex }: { bookings: WorkflowBoo
 
       {/* Desktop / landscape-tablet */}
       <main className="relative hidden overflow-hidden bg-navy sm:block" style={{ height: "100dvh" }}>
+        <div className="absolute right-3 top-3 z-30 flex gap-2">
+          <button
+            type="button"
+            onClick={togglePageFullscreen}
+            aria-label="Full screen"
+            title="Full screen (Esc to exit)"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-royal-light/40 bg-navy-light text-royal-light transition hover:bg-white/5"
+          >
+            <ExpandIcon className="h-4 w-4" />
+          </button>
+          <Link
+            href="/dashboard/barber"
+            aria-label="Close and return to dashboard"
+            title="Back to dashboard"
+            className="flex h-9 w-9 items-center justify-center rounded-lg border border-royal-light/40 bg-navy-light text-royal-light transition hover:bg-white/5"
+          >
+            <CloseIcon className="h-4 w-4" />
+          </Link>
+        </div>
         <Image
           src="/dashboard/polar-barber-dashboard-background.png"
           alt=""
@@ -334,29 +345,20 @@ export function WorkflowView({ bookings, initialIndex }: { bookings: WorkflowBoo
                   height demand can ever exceed what this column is
                   actually given; both simply stretch to fill their
                   share. */}
-              <div className="grid min-h-0 grid-rows-[3fr_2fr] gap-2">
+              <div className="grid min-h-0 grid-rows-[1fr] gap-2">
                 <GradientCard contentClassName="flex min-h-0 flex-col p-3">
                   <PanelTitle text="CLIENT ID" />
                   <div className="relative mt-2 flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-lg border border-royal-light/25 bg-navy">
-                    <PersonSilhouette className="h-[55%] w-auto text-white/25" />
-                    <span
-                      aria-hidden="true"
-                      className="absolute bottom-2 right-2 flex h-7 w-7 items-center justify-center rounded-full border border-royal-light/40 bg-navy-light text-royal-light"
-                      title="Photo upload not yet available"
-                    >
-                      <CameraIcon className="h-4 w-4" />
-                    </span>
+                    {client?.photoUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={client.photoUrl} alt={`${client.name}`} className="h-full w-full object-cover" />
+                    ) : (
+                      <PersonSilhouette className="h-[55%] w-auto text-white/25" />
+                    )}
                   </div>
-                </GradientCard>
-
-                <GradientCard contentClassName="flex min-h-0 flex-col p-3">
-                  <PanelTitle text="TODAY'S LOOK" />
-                  <div className="mt-2 flex flex-1 flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-royal-light/30 text-center">
-                    <ScissorsIcon className="h-[clamp(1.5rem,3vw,2.4rem)] w-[clamp(1.5rem,3vw,2.4rem)] text-royal-light/70" />
-                    <p className="px-3 text-[clamp(0.6rem,0.78vw,0.78rem)] uppercase tracking-wide text-white/50">
-                      Today&apos;s look will appear here
-                    </p>
-                  </div>
+                  <p className="mt-2 text-center text-[clamp(0.68rem,0.85vw,0.85rem)] uppercase tracking-widest text-white/70">
+                    POLAR ID <span className="text-white">{client?.polarId ?? "—"}</span>
+                  </p>
                 </GradientCard>
               </div>
 
@@ -373,12 +375,20 @@ export function WorkflowView({ bookings, initialIndex }: { bookings: WorkflowBoo
                   <div className="mt-2 grid min-h-0 flex-1 grid-cols-2 gap-5 overflow-auto">
                     <div>
                       <p className="mb-1.5 text-[clamp(0.58rem,0.7vw,0.7rem)] font-semibold uppercase tracking-widest text-white/50">
-                        Contact Information
+                        Appointment
                       </p>
                       <div className="flex flex-col gap-1.5">
                         <FieldRow icon={<PersonIcon className="h-[1.1em] w-[1.1em]" />} label="Name" value={client?.name ?? null} />
-                        <FieldRow icon={<PhoneIcon className="h-[1.1em] w-[1.1em]" />} label="Phone" value={client?.phone ?? null} />
-                        <FieldRow icon={<EnvelopeIcon className="h-[1.1em] w-[1.1em]" />} label="Email" value={null} />
+                        <FieldRow
+                          icon={<ClockIcon className="h-[1.1em] w-[1.1em]" />}
+                          label="Time"
+                          value={current ? `${current.startTime}–${current.endTime}` : null}
+                        />
+                        <FieldRow
+                          icon={<DocumentIcon className="h-[1.1em] w-[1.1em]" />}
+                          label="Service"
+                          value={current?.serviceName ? `${current.serviceName}${current.isBarter ? " (barter)" : ""}` : null}
+                        />
                         <FieldRow
                           icon={<GroupIcon className="h-[1.1em] w-[1.1em]" />}
                           label="Emergency Contact"
@@ -402,6 +412,8 @@ export function WorkflowView({ bookings, initialIndex }: { bookings: WorkflowBoo
                           value={client ? String(client.totalVisits) : null}
                         />
                         <FieldRow icon={<WaveIcon className="h-[1.1em] w-[1.1em]" />} label="Hair Type" value={client?.hairType ?? null} />
+                        <FieldRow icon={<WaveIcon className="h-[1.1em] w-[1.1em]" />} label="Hair Texture" value={client?.hairTexture ?? null} />
+                        <FieldRow icon={<WaveIcon className="h-[1.1em] w-[1.1em]" />} label="Hair Density" value={client?.hairDensity ?? null} />
                         <FieldRow icon={<DropletIcon className="h-[1.1em] w-[1.1em]" />} label="Hair Colour" value={client?.hairColour ?? null} />
                         <FieldRow
                           icon={<ScalpIcon className="h-[1.1em] w-[1.1em]" />}
@@ -414,7 +426,7 @@ export function WorkflowView({ bookings, initialIndex }: { bookings: WorkflowBoo
                           value={client?.skinSensitivity ?? null}
                         />
                         <FieldRow icon={<WarningIcon className="h-[1.1em] w-[1.1em]" />} label="Allergies" value={client?.allergies ?? null} />
-                        <FieldRow icon={<DocumentIcon className="h-[1.1em] w-[1.1em]" />} label="Key Notes" value={null} />
+                        <FieldRow icon={<DocumentIcon className="h-[1.1em] w-[1.1em]" />} label="Key Notes" value={client?.keyNotes ?? null} />
                       </div>
                     </div>
                   </div>
@@ -472,15 +484,50 @@ export function WorkflowView({ bookings, initialIndex }: { bookings: WorkflowBoo
                 Previous Client
               </button>
 
+              <div className="relative">
+              {insightsOpen && (
+                <div
+                  role="dialog"
+                  aria-label="Barber Insights"
+                  className="absolute bottom-full left-0 right-0 z-20 mb-2 rounded-xl border border-royal-light/40 bg-navy-light p-3 shadow-[0_0_24px_-6px_rgba(91,155,255,0.6)]"
+                >
+                  <p className="text-[clamp(0.6rem,0.72vw,0.72rem)] uppercase tracking-widest text-white/50">Private — only you can see these</p>
+                  {!client || client.insights.length === 0 ? (
+                    <p className="mt-2 text-sm text-white/60">
+                      No insights set up yet.{" "}
+                      <Link href="/dashboard/barber/insights" className="underline">
+                        Create insight questions
+                      </Link>
+                    </p>
+                  ) : (
+                    <ul className="mt-2 space-y-1">
+                      {client.insights.map((i) => (
+                        <li key={i.label} className="flex justify-between gap-3 text-sm">
+                          <span className="text-white/75">{i.label}</span>
+                          <span className={i.value ? "text-white" : "text-white/30"}>{i.value ?? "—"}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                  {client && (
+                    <Link href={`/dashboard/barber/clients/${client.id}`} className="mt-2 inline-block text-xs text-royal-light underline">
+                      Edit on client profile
+                    </Link>
+                  )}
+                </div>
+              )}
               <button
                 type="button"
+                onClick={() => setInsightsOpen((v) => !v)}
+                aria-expanded={insightsOpen}
                 aria-label="Barber Insights (private)"
                 title="Private to this barber"
-                className={`${anton.className} flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-magenta to-royal px-4 py-2 text-[clamp(0.8rem,1.05vw,1.05rem)] uppercase tracking-normal text-white shadow-[0_0_22px_-4px_rgba(255,61,154,0.75)] transition hover:brightness-110`}
+                className={`${anton.className} flex h-full w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-magenta to-royal px-4 py-2 text-[clamp(0.8rem,1.05vw,1.05rem)] uppercase tracking-normal text-white shadow-[0_0_22px_-4px_rgba(255,61,154,0.75)] transition hover:brightness-110`}
               >
                 <LockIcon className="h-[1.1em] w-[1.1em]" />
                 Barber Insights
               </button>
+              </div>
 
               <button
                 type="button"
