@@ -111,7 +111,9 @@ export function CvView({ initial }: { initial: CvPayload }) {
   const toggle = (id: SectionId) => setOpen((o) => ({ ...o, [id]: !o[id] }));
 
   return (
-    <div className={`cv-root ${ui.className}`}>
+    <div id="barber-cv-page" className={`cv-root ${ui.className}`}>
+      {/* Route-scoped: hides only the shared barber <nav> on this page. */}
+      <style>{`div:has(> #barber-cv-page) > nav { display: none; }`}</style>
       <style dangerouslySetInnerHTML={{ __html: CSS }} />
       <svg width="0" height="0" aria-hidden="true" style={{ position: "absolute" }}>
         <defs>

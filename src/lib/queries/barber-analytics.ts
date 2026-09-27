@@ -176,7 +176,7 @@ export type AnalyticsData = {
   perWorkingHour: number | null; // null when effective working time is zero — not calculable
   utilisation: number | null; // null when effective working time is zero
   appointments: { completed: number; noShow: number; cancelled: number; upcoming: number };
-  topServices: { serviceId: string; name: string; count: number; revenue: number }[];
+  topServices: { serviceId: string; name: string; count: number; revenue: number }[]; // every service booked in the period, revenue-desc
   clientActivity: { totalClients: number; newClients: number; returningClients: number; averageSpend: number | null };
   busiestTimes: { label: string; value: number }[];
   quickStats: { servicesCompleted: number; totalClients: number; averageServiceMinutes: number | null; totalCashCollected: number };
@@ -219,13 +219,23 @@ export async function getBarberAnalytics(
 ): Promise<AnalyticsData> {
   const { start, end } = periodRange(period, date);
 
+  // Only the rows that can touch [start, end] are fetched — never the
+  // barber's whole booking history: one-offs dated inside the period,
+  // plus weekly series that began on/before its end and hadn't ended
+  // before its start. That is exactly the set computePeriodData and the
+  // cancelled count can use (a cancelled row anchored in the period is
+  // covered by the same two clauses).
   const [bookingsRes, availabilityRes, servicesRes] = await Promise.all([
     supabase
       .from("bookings")
       .select(
         "id, client_profile_id, service_id, recurrence, start_date, end_date, start_time, end_time, recurrence_interval_weeks, status, is_barter, is_blocked, is_break, no_show, price_charged"
       )
-      .eq("barber_profile_id", barberProfileId),
+      .eq("barber_profile_id", barberProfileId)
+      .lte("start_date", end)
+      .or(
+        `and(recurrence.eq.one_off,start_date.gte.${start}),and(recurrence.eq.weekly,or(end_date.is.null,end_date.gte.${start}))`
+      ),
     supabase
       .from("barber_availability")
       .select("day_of_week, start_time, end_time")
@@ -288,23 +298,29 @@ export async function getBarberAnalytics(
   }
   const topServices = [...topServicesMap.entries()]
     .map(([serviceId, v]) => ({ serviceId, ...v }))
-    .sort((a, b) => b.revenue - a.revenue)
-    .slice(0, 6);
+    .sort((a, b) => b.revenue - a.revenue);
 
   const clientIds = [...new Set(occurrences.map((o) => o.clientProfileId).filter((id): id is string => Boolean(id)))];
   let newClients = 0;
   let returningClients = 0;
   if (clientIds.length > 0) {
-    const firstBookingByClient = new Map<string, string>();
-    for (const b of bookings) {
-      if (b.status !== "confirmed" || !b.client_profile_id) continue;
-      const existing = firstBookingByClient.get(b.client_profile_id);
-      if (!existing || b.start_date < existing) firstBookingByClient.set(b.client_profile_id, b.start_date);
-    }
+    // A client is New when their first-ever confirmed booking with this
+    // barber falls inside the period. Every client here already has a
+    // confirmed booking starting on/before `end` (they occur in the
+    // period), so "first booking in period" is equivalent to "no
+    // confirmed booking starting before `start`" — asked of the
+    // database for just these clients instead of scanning all history.
+    const { data: earlier } = await supabase
+      .from("bookings")
+      .select("client_profile_id")
+      .eq("barber_profile_id", barberProfileId)
+      .eq("status", "confirmed")
+      .lt("start_date", start)
+      .in("client_profile_id", clientIds);
+    const seenBefore = new Set((earlier ?? []).map((r) => r.client_profile_id as string));
     for (const id of clientIds) {
-      const first = firstBookingByClient.get(id);
-      if (first && first >= start && first <= end) newClients += 1;
-      else returningClients += 1;
+      if (seenBefore.has(id)) returningClients += 1;
+      else newClients += 1;
     }
   }
   const payingClientIds = new Set(revenueOccurrences.map((o) => o.clientProfileId).filter((id): id is string => Boolean(id)));
