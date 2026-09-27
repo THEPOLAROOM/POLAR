@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "gradient-text",
+        "value": "*",
+        "files": [
+          "src/app/dashboard/barber/account/professional-profile/cv-view.tsx"
+        ],
+        "createdAt": "2026-09-27T00:17:34.499Z",
+        "reason": "Approved POLAR-CV master artwork renders 'PROFILE' with a white-to-pale-blue gradient; faithful reproduction required by user"
+      }
+    ]
+  }
+}
