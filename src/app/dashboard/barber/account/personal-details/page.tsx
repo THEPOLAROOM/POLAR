@@ -1,13 +1,14 @@
-import Link from "next/link";
 import { requireRole } from "@/lib/auth/require-role";
-import { PersonalDetailsForm } from "../personal-details-form";
-import { AddressesForm } from "../addresses-form";
+import { PersonalDetailsView } from "./personal-details-view";
 
-// Split out of the old single-page /dashboard/barber/account so the
-// new My Profile hub (page.tsx one level up) can link to it as its
-// "Personal Details" card, per the mastered My Profile design. The
-// forms themselves are unchanged — same components, same fields, same
-// updateBarberProfile()/updateBarberAddresses() actions.
+// Mastered visual rebuild (same design family as Professional
+// Profile/CV and Smart Analytics) of the old plain-page Personal
+// Details. Data fetching and the underlying save pathways are
+// unchanged — same two queries, same updateBarberProfile()/
+// updateBarberAddresses() actions, now presented through one view
+// with a single Save Changes control. The old PersonalDetailsForm/
+// AddressesForm components are no longer used by this page but have
+// been left in place, not deleted, pending approval.
 export default async function BarberPersonalDetailsPage() {
   const { supabase, user } = await requireRole("barber");
 
@@ -26,23 +27,5 @@ export default async function BarberPersonalDetailsPage() {
       .maybeSingle(),
   ]);
 
-  return (
-    <main className="mx-auto max-w-xl px-6 py-16">
-      <Link href="/dashboard/barber/account" className="text-sm text-polar-text underline">
-        ← Back to My Profile
-      </Link>
-
-      <h1 className="mt-4 text-xl font-semibold text-polar-text">Personal Details</h1>
-
-      <section className="mt-8">
-        <h2 className="text-sm font-semibold text-polar-text">Personal details</h2>
-        <PersonalDetailsForm phone={profile?.phone ?? ""} />
-      </section>
-
-      <section className="mt-8">
-        <h2 className="text-sm font-semibold text-polar-text">Addresses</h2>
-        <AddressesForm addresses={addresses ?? null} />
-      </section>
-    </main>
-  );
+  return <PersonalDetailsView phone={profile?.phone ?? ""} addresses={addresses ?? null} />;
 }
