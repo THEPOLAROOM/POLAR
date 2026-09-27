@@ -7,53 +7,23 @@ import { requireRole } from "@/lib/auth/require-role";
 // client accounts, per the polar_client_id_seq migration).
 const POLAR_ID_PLACEHOLDER = "P-000000";
 
-// The overlay renders at this fraction of the background's width
-// (height follows automatically since both share the exact same
-// 1672:941 aspect ratio), centred via equal insets on every side —
-// shrunk from 84% to 76% to expose the full POLAR LONDON wall logo
-// and give the panels more breathing room.
-const OVERLAY_SCALE = 0.76;
-const OVERLAY_INSET_PCT = `${((1 - OVERLAY_SCALE) / 2) * 100}%`;
-const OVERLAY_INSET = {
-  left: OVERLAY_INSET_PCT,
-  right: OVERLAY_INSET_PCT,
-  top: OVERLAY_INSET_PCT,
-  bottom: OVERLAY_INSET_PCT,
-};
-
-// Percentage boxes below are measured directly against the mastered
-// UI asset's native 1672x941 canvas (same canvas as the background),
-// so they stay locked to the artwork — now within the scaled-down
-// OVERLAY_INSET wrapper above rather than the full background box.
-// Re-measured against each panel's own visible neon border line
-// (pixel-level brightness-peak scan, not a rough eyeball crop) so
-// the hover glow sits exactly on the border instead of spilling
-// outside it. Do not adjust without re-measuring the asset.
-const CLICK_TARGETS = [
-  { href: "/dashboard/client/book", label: "Book appointment", box: { left: "3.47%", top: "17.75%", width: "22.73%", height: "46.65%" } },
-  { href: "/dashboard/client/bookings", label: "My appointments", box: { left: "73.80%", top: "17.75%", width: "22.73%", height: "46.65%" } },
+// Desktop: the final mastered Client Dashboard artwork (1670 × 942),
+// shown whole. Hotspots are % boxes measured on that canvas.
+const DESKTOP_ASSET = "/dashboard/polar-client-dashboard-final.webp";
+const DESKTOP_TARGETS = [
+  { href: "/dashboard/client/bookings", label: "Appointments", box: { left: "17.37%", top: "15.92%", width: "16.29%", height: "37.69%" } },
+  { href: "/dashboard/client/your-barber", label: "Your barber", box: { left: "41.20%", top: "19.64%", width: "15.57%", height: "6.37%" } },
+  { href: "/dashboard/client/profile", label: "Your POLAR card", box: { left: "60.06%", top: "26.75%", width: "18.92%", height: "30.79%" } },
+  { href: "/dashboard/client/services", label: "Services", box: { left: "85.39%", top: "32.17%", width: "13.83%", height: "6.48%" } },
+  // Tablet → future Settings. The page doesn't exist yet, so it stays here.
+  { href: "/dashboard/client", label: "Settings (coming soon)", box: { left: "0.84%", top: "48.83%", width: "10.66%", height: "14.01%" } },
 ] as const;
 
-// Your Barber / Services stay inert (no route yet) but still get the
-// same hover brighten/glow as the two clickable panels — a plain,
-// non-navigating box positioned over their baked artwork.
-const INERT_HOVER_PANELS = [
-  { label: "Your barber", box: { left: "3.59%", top: "67.16%", width: "45.69%", height: "21.89%" } },
-  { label: "Services", box: { left: "50.72%", top: "67.16%", width: "45.69%", height: "21.89%" } },
-] as const;
+// Live profiles.polar_id over the card's baked placeholder ID.
+const DESKTOP_POLAR_ID_BOX = { left: "70.90%", top: "52.97%", width: "6.95%", height: "2.87%" };
 
-// Subtle premium brighten + electric-blue glow on hover — no
-// movement/resizing, artwork itself is never touched, just a
-// translucent highlight layered on top of it.
-const PANEL_HOVER_CLASS =
-  "absolute rounded-2xl bg-transparent transition duration-200 ease-out hover:bg-white/[0.06] hover:shadow-[0_0_0_2px_rgba(91,155,255,0.55),0_0_28px_6px_rgba(91,155,255,0.5)]";
-
-// Covers the baked placeholder ID text ("P-000002") on the mastered
-// UI asset with a patch matching the card's sampled background
-// colour, then renders the real, dynamic profiles.polar_id in its
-// place — the asset supplies 100% of the visual design, this is the
-// one exception since the ID must never be baked into production.
-const POLAR_ID_PATCH_BOX = { left: "43.66%", top: "43.04%", width: "16.15%", height: "7.97%" };
+const HOTSPOT_CLASS =
+  "absolute rounded-xl transition duration-200 ease-out hover:bg-white/[0.06] hover:shadow-[0_0_0_2px_rgba(91,155,255,0.55),0_0_28px_6px_rgba(91,155,255,0.5)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-light";
 
 // Mobile ("app") two-asset pair — same technique as desktop, but
 // these mastered assets are meant to fill the frame directly (no
@@ -136,70 +106,30 @@ export default async function ClientDashboardPage() {
         </div>
       </main>
 
-      {/* Desktop — two-asset architecture: the room background plus
-          the mastered, fully-designed transparent UI overlay
-          (polar-client-dashboard-ui-asset-mastered.png). No CSS is
-          used to draw the panels/card — that visual design lives
-          entirely in the overlay PNG. The only real HTML on top is
-          (a) invisible click targets positioned over the baked Book
-          Appointment / Appointment History panels, and (b) a small
-          patch over the overlay's baked placeholder ID so the real,
-          live profiles.polar_id can render there instead.
-
-          The overlay (plus its click targets/patch) is scaled down
-          to OVERLAY_SCALE of the background's width and centred
-          within it via equal insets on all four sides — since the
-          background box already holds the artwork's exact 1672:941
-          aspect ratio, shrinking every side by the same percentage
-          preserves that ratio automatically without stretching. */}
+      {/* Desktop — the final mastered artwork, full width, centred
+          (overflow cropped top/bottom on wide screens), with the same
+          image blurred behind it to fill any letterbox space. */}
       <main className="relative hidden overflow-hidden bg-navy sm:block" style={{ height: "100dvh" }}>
+        <div
+          className="absolute inset-0 scale-110 bg-cover bg-center opacity-60 blur-2xl"
+          style={{ backgroundImage: `url(${DESKTOP_ASSET})` }}
+          aria-hidden="true"
+        />
         <div className="absolute inset-0 flex items-center justify-center overflow-hidden">
-          <div className="relative w-full aspect-[1672/941]">
-            <Image
-              src="/dashboard/polar-client-dashboard-desktop-background.png"
-              alt=""
-              fill
-              priority
-              className="object-cover"
-              aria-hidden="true"
-            />
+          <div className="relative w-full aspect-[1670/942]" style={{ containerType: "inline-size" }}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={DESKTOP_ASSET} alt="" className="absolute inset-0 h-full w-full" aria-hidden="true" />
 
-            <div className="absolute" style={OVERLAY_INSET}>
-              <Image
-                src="/dashboard/polar-client-dashboard-ui-asset-mastered.png"
-                alt=""
-                fill
-                priority
-                className="object-contain"
-                aria-hidden="true"
-              />
-
-              {/* Real, dynamic POLAR ID patched over the baked
-                  placeholder — never baked into production. */}
-              <div className="absolute" style={POLAR_ID_PATCH_BOX}>
-                <div className="absolute inset-0" style={{ backgroundColor: "#E2F1FB" }} aria-hidden="true" />
-                <p
-                  className="relative flex h-full w-full items-center whitespace-nowrap font-body font-extrabold text-black"
-                  style={{ fontSize: `${3.4 * OVERLAY_SCALE}vw`, lineHeight: 1 }}
-                >
-                  {polarId}
-                </p>
-              </div>
-
-              {CLICK_TARGETS.map(({ href, label, box }) => (
-                <Link
-                  key={href}
-                  href={href}
-                  aria-label={label}
-                  className={`${PANEL_HOVER_CLASS} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-light`}
-                  style={box}
-                />
-              ))}
-
-              {INERT_HOVER_PANELS.map(({ label, box }) => (
-                <div key={label} aria-hidden="true" className={PANEL_HOVER_CLASS} style={box} />
-              ))}
+            <div className="absolute" style={DESKTOP_POLAR_ID_BOX}>
+              <div className="absolute inset-0 rounded-sm" style={{ backgroundColor: "#060508" }} aria-hidden="true" />
+              <p className="relative flex h-full w-full items-center whitespace-nowrap font-body font-bold text-white" style={{ fontSize: "1.05cqw", lineHeight: 1 }}>
+                {polarId}
+              </p>
             </div>
+
+            {DESKTOP_TARGETS.map(({ href, label, box }) => (
+              <Link key={label} href={href} aria-label={label} className={HOTSPOT_CLASS} style={box} />
+            ))}
           </div>
         </div>
       </main>
