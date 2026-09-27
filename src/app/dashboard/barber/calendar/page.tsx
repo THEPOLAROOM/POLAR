@@ -7,12 +7,13 @@ import {
   type CalendarBooking,
   type DaySummary,
 } from "@/lib/queries/barber-calendar";
-import { CalendarView, type MonthCell, type ViewKind } from "./calendar-view";
+import { CalendarView, type MonthCell, type ReschedulingBooking, type ViewKind } from "./calendar-view";
 
 // Focus Mode tabs are Day / Week / Month / List; "year" is still served
 // for existing links but no longer has a tab.
 const VALID_VIEWS: ViewKind[] = ["day", "week", "month", "list", "year"];
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 function toDateStr(d: Date): string {
   return d.toISOString().slice(0, 10);
@@ -55,14 +56,48 @@ function buildMonthCells(year: number, month: number, summaries: Map<string, Day
 export default async function BarberCalendarPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string; date?: string; action?: string }>;
+  searchParams: Promise<{ view?: string; date?: string; action?: string; reschedule?: string }>;
 }) {
   const { supabase, user } = await requireRole("barber");
-  const { view: rawView, date: rawDate, action: rawAction } = await searchParams;
+  const { view: rawView, date: rawDate, action: rawAction, reschedule: rawReschedule } = await searchParams;
   const action = rawAction === "book" || rawAction === "walkin" || rawAction === "block" ? rawAction : null;
 
+  // Reschedule mode (Appointment Details → Reschedule): the booking
+  // being moved, scoped to this barber's own confirmed bookings. Only
+  // bookings with a service can be moved (the RPC needs its duration);
+  // anything else simply doesn't enter reschedule mode.
+  let rescheduling: ReschedulingBooking | null = null;
+  if (rawReschedule && UUID_RE.test(rawReschedule)) {
+    const { data: row } = await supabase
+      .from("bookings")
+      .select("id, client_profile_id, service_id, recurrence, start_date, start_time, is_barter, is_blocked, walk_in_label")
+      .eq("id", rawReschedule)
+      .eq("barber_profile_id", user.id)
+      .eq("status", "confirmed")
+      .maybeSingle();
+    if (row && row.service_id && !row.is_blocked) {
+      const [{ data: service }, { data: client }] = await Promise.all([
+        supabase.from("services").select("name, duration_minutes").eq("id", row.service_id).eq("barber_profile_id", user.id).maybeSingle(),
+        row.client_profile_id
+          ? supabase.from("profiles").select("full_name").eq("id", row.client_profile_id).maybeSingle()
+          : Promise.resolve({ data: null as { full_name: string } | null }),
+      ]);
+      if (service) {
+        rescheduling = {
+          id: row.id as string,
+          who: client?.full_name ?? (row.is_barter ? "Barter" : row.walk_in_label ? `Walk-in: ${row.walk_in_label}` : "Walk-in"),
+          serviceName: service.name as string,
+          durationMinutes: service.duration_minutes as number,
+          recurrence: row.recurrence as "one_off" | "weekly",
+          fromDate: row.start_date as string,
+          fromStart: row.start_time as string,
+        };
+      }
+    }
+  }
+
   const today = getShopToday();
-  const view: ViewKind = VALID_VIEWS.includes(rawView as ViewKind) ? (rawView as ViewKind) : "month";
+  const view: ViewKind = rescheduling ? "day" : VALID_VIEWS.includes(rawView as ViewKind) ? (rawView as ViewKind) : "month";
   const date = rawDate && DATE_RE.test(rawDate) ? rawDate : today;
 
   const [year, month] = date.split("-").map(Number);
@@ -186,6 +221,8 @@ export default async function BarberCalendarPage({
       weekDays={weekDays}
       listDays={listDays}
       action={action}
+      rescheduling={rescheduling}
+      nowTime={now}
       yearMonths={yearMonths}
     />
   );

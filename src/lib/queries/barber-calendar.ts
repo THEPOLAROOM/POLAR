@@ -17,6 +17,13 @@ export type CalendarBooking = {
   isWalkIn: boolean;
   label: string | null;
   barterNotes: string | null;
+  /** The calendar date this occurrence falls on. */
+  date: string;
+  serviceId: string | null;
+  /** The service's own length — what a reschedule must fit. */
+  serviceDurationMinutes: number | null;
+  recurrence: "one_off" | "weekly";
+  noShow: boolean;
 };
 
 export type AvailabilityWindow = { startTime: string; endTime: string };
@@ -37,6 +44,7 @@ type BookingRow = {
   is_break: boolean;
   walk_in_label: string | null;
   barter_notes: string | null;
+  no_show: boolean;
 };
 
 // Same recurrence-expansion rule as getBarberBookingsForDate
@@ -78,7 +86,7 @@ async function fetchAllConfirmedBookings(
   const { data } = await supabase
     .from("bookings")
     .select(
-      "id, barber_profile_id, client_profile_id, service_id, recurrence, start_date, end_date, start_time, end_time, recurrence_interval_weeks, is_barter, is_blocked, is_break, walk_in_label, barter_notes"
+      "id, barber_profile_id, client_profile_id, service_id, recurrence, start_date, end_date, start_time, end_time, recurrence_interval_weeks, is_barter, is_blocked, is_break, walk_in_label, barter_notes, no_show"
     )
     .eq("barber_profile_id", barberProfileId)
     .eq("status", "confirmed");
@@ -98,18 +106,22 @@ async function resolveClientNames(
 async function resolveServices(
   supabase: SupabaseClient,
   serviceIds: string[]
-): Promise<Map<string, { name: string; price: number }>> {
+): Promise<Map<string, { name: string; price: number; durationMinutes: number }>> {
   if (serviceIds.length === 0) return new Map();
-  const { data } = await supabase.from("services").select("id, name, price").in("id", serviceIds);
+  const { data } = await supabase.from("services").select("id, name, price, duration_minutes").in("id", serviceIds);
   return new Map(
-    ((data ?? []) as { id: string; name: string; price: number }[]).map((s) => [s.id, { name: s.name, price: Number(s.price) }])
+    ((data ?? []) as { id: string; name: string; price: number; duration_minutes: number }[]).map((s) => [
+      s.id,
+      { name: s.name, price: Number(s.price), durationMinutes: s.duration_minutes },
+    ])
   );
 }
 
 function toCalendarBooking(
   b: BookingRow,
+  date: string,
   nameById: Map<string, string>,
-  serviceById: Map<string, { name: string; price: number }>
+  serviceById: Map<string, { name: string; price: number; durationMinutes: number }>
 ): CalendarBooking {
   const isWalkIn = !b.client_profile_id && !b.is_barter && !b.is_blocked;
   const service = b.service_id ? serviceById.get(b.service_id) : undefined;
@@ -127,6 +139,11 @@ function toCalendarBooking(
     isWalkIn,
     label: b.walk_in_label,
     barterNotes: b.barter_notes,
+    date,
+    serviceId: b.service_id,
+    serviceDurationMinutes: service?.durationMinutes ?? null,
+    recurrence: b.recurrence,
+    noShow: b.no_show,
   };
 }
 
@@ -152,7 +169,7 @@ export async function getDayBookings(
     resolveServices(supabase, serviceIds),
   ]);
 
-  return todays.map((b) => toCalendarBooking(b, nameById, serviceById));
+  return todays.map((b) => toCalendarBooking(b, date, nameById, serviceById));
 }
 
 /** This barber's active weekly availability windows for `date`'s weekday. */

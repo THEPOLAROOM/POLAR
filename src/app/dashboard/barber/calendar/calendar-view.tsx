@@ -2,11 +2,12 @@
 
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { formatTime12h } from "@/lib/dates";
 import type { CalendarBooking } from "@/lib/queries/barber-calendar";
 import type { DayCapacity } from "@/lib/calendar/capacity";
 import { createWalkIn } from "@/lib/actions/walk-ins";
-import { cancelBookingAsBarber } from "@/lib/actions/barber-bookings";
+import { cancelBookingAsBarber, markBookingNoShow, rescheduleBookingInCalendar } from "@/lib/actions/barber-bookings";
 import { createBookingAsBarber, createBarterBooking, createBlockedTime } from "@/lib/actions/barber-calendar-actions";
 import { Barlow_Condensed, Permanent_Marker } from "next/font/google";
 import { FocusModeShell, ACCENTS, type FrameSplatter } from "@/components/focus-mode/focus-mode-shell";
@@ -269,6 +270,28 @@ function minutesToTime(total: number): string {
   return `${pad(h)}:${pad(m)}`;
 }
 
+/** The booking being moved while Calendar is in reschedule mode. */
+export type ReschedulingBooking = {
+  id: string;
+  who: string;
+  serviceName: string;
+  durationMinutes: number;
+  recurrence: "one_off" | "weekly";
+  fromDate: string;
+  fromStart: string;
+};
+
+/** Start times (5-minute steps) at which a booking of `duration` fits wholly inside [gapStart, gapEnd], never in the past. */
+function fittingStarts(gapStart: string, gapEnd: string, duration: number, date: string, today: string, nowTime: string): string[] {
+  if (date < today) return [];
+  const earliestNow = date === today ? timeToMinutes(nowTime.slice(0, 5)) + 1 : 0;
+  const out: string[] = [];
+  for (let m = timeToMinutes(gapStart); m + duration <= timeToMinutes(gapEnd); m += 5) {
+    if (m >= earliestNow) out.push(minutesToTime(m));
+  }
+  return out;
+}
+
 type TimelineSegment =
   | { kind: "available"; start: string; end: string }
   | { kind: "booking"; start: string; end: string; booking: CalendarBooking };
@@ -351,6 +374,8 @@ export function CalendarView({
   listDays,
   yearMonths,
   action = null,
+  rescheduling = null,
+  nowTime = "00:00:00",
 }: {
   view: ViewKind;
   date: string;
@@ -365,7 +390,13 @@ export function CalendarView({
   yearMonths: { month: number; label: string; cells: MonthCell[] }[] | null;
   /** Header action (Add Appointment / Walk-In / Block Time) carried into Day view. */
   action?: PickAction | null;
+  /** Reschedule mode: the booking being moved (Day view only). */
+  rescheduling?: ReschedulingBooking | null;
+  /** Shop-local time now ("HH:MM:SS") — past-time rules for reschedule/No Show. */
+  nowTime?: string;
 }) {
+  const router = useRouter();
+  const [moveSlot, setMoveSlot] = useState<{ start: string; end: string } | null>(null);
   const [activeSlot, setActiveSlot] = useState<{ start: string; end: string } | null>(null);
   const [modal, setModal] = useState<"book" | "walkin" | "barter" | "block" | null>(null);
   const [detail, setDetail] = useState<CalendarBooking | null>(null);
@@ -395,21 +426,34 @@ export function CalendarView({
     });
   }, [monthCells]);
 
+  // In reschedule mode, day-to-day navigation keeps the mode.
+  const keep = rescheduling ? `&reschedule=${rescheduling.id}` : "";
   const prevHref = useMemo(() => {
-    if (view === "day") return `?view=day&date=${addDays(date, -1)}`;
+    if (view === "day") return `?view=day&date=${addDays(date, -1)}${keep}`;
     if (view === "week") return `?view=week&date=${addDays(date, -7)}`;
     if (view === "year") return `?view=year&date=${addYears(date, -1)}`;
     return `?view=${view}&date=${addMonths(date, -1)}`;
-  }, [view, date]);
+  }, [view, date, keep]);
   const nextHref = useMemo(() => {
-    if (view === "day") return `?view=day&date=${addDays(date, 1)}`;
+    if (view === "day") return `?view=day&date=${addDays(date, 1)}${keep}`;
     if (view === "week") return `?view=week&date=${addDays(date, 7)}`;
     if (view === "year") return `?view=year&date=${addYears(date, 1)}`;
     return `?view=${view}&date=${addMonths(date, 1)}`;
-  }, [view, date]);
-  const todayHref = `?view=${view}&date=${today}`;
+  }, [view, date, keep]);
+  const todayHref = `?view=${view}&date=${today}${keep}`;
 
-  const timeline = useMemo(() => (dayData ? buildTimeline(dayData.availability, dayData.bookings) : []), [dayData]);
+  // While rescheduling, the booking being moved doesn't occupy its own
+  // slot (same rule as the old reschedule page).
+  const timeline = useMemo(
+    () =>
+      dayData
+        ? buildTimeline(
+            dayData.availability,
+            rescheduling ? dayData.bookings.filter((b) => b.id !== rescheduling.id) : dayData.bookings
+          )
+        : [],
+    [dayData, rescheduling]
+  );
 
   function closeModal() {
     setModal(null);
@@ -435,6 +479,33 @@ export function CalendarView({
       const fd = new FormData();
       fd.set("booking_id", bookingId);
       return cancelBookingAsBarber(fd);
+    });
+  }
+
+  function handleNoShow(bookingId: string) {
+    if (!window.confirm("Mark this appointment as a No Show? This can't be undone.")) return;
+    runAction(async () => {
+      const fd = new FormData();
+      fd.set("booking_id", bookingId);
+      return markBookingNoShow(fd);
+    });
+  }
+
+  function handleReschedule(startTime: string) {
+    if (!rescheduling) return;
+    setError(null);
+    startTransition(async () => {
+      const fd = new FormData();
+      fd.set("booking_id", rescheduling.id);
+      fd.set("date", date);
+      fd.set("start_time", startTime);
+      const result = await rescheduleBookingInCalendar(fd);
+      if (result && "error" in result) {
+        setError(result.error);
+        return;
+      }
+      setMoveSlot(null);
+      router.push(`?view=day&date=${date}`);
     });
   }
 
@@ -679,7 +750,23 @@ export function CalendarView({
                 Block whole day
               </button>
             </div>
-            {pickAction && (
+            {rescheduling && (
+              <div className="mb-3 flex shrink-0 items-center justify-between gap-4 rounded-lg border px-4 py-2.5 text-base" style={{ borderColor: `rgba(${PINK.rgb},0.6)`, background: `rgba(${PINK.rgb},0.08)` }}>
+                <span className="font-semibold text-white">
+                  Rescheduling {rescheduling.who} · {rescheduling.serviceName} ({rescheduling.durationMinutes}m)
+                  {rescheduling.recurrence === "weekly" ? " · weekly — the whole series moves" : ""}.{" "}
+                  <span className="font-normal text-white/70">
+                    {date < today
+                      ? "This day is in the past — use ‹ › to pick today or later."
+                      : "Choose a free slot below, or use ‹ › to pick another day."}
+                  </span>
+                </span>
+                <Link href={`?view=day&date=${date}`} className="shrink-0 text-sm font-bold text-white/60 hover:text-white">
+                  Cancel
+                </Link>
+              </div>
+            )}
+            {pickAction && !rescheduling && (
               <div className="mb-3 flex shrink-0 items-center justify-between rounded-lg border px-4 py-2.5 text-base" style={{ borderColor: `rgba(${PINK.rgb},0.6)`, background: `rgba(${PINK.rgb},0.08)` }}>
                 <span className="font-semibold text-white">
                   {timeline.some((s) => s.kind === "available")
@@ -698,7 +785,30 @@ export function CalendarView({
                 <ul className="space-y-2">
                   {timeline.map((seg, i) => (
                     <li key={i}>
-                      {seg.kind === "available" ? (
+                      {seg.kind === "available" && rescheduling ? (
+                        (() => {
+                          const fits = fittingStarts(seg.start, seg.end, rescheduling.durationMinutes, date, today, nowTime).length > 0;
+                          return (
+                            <button
+                              type="button"
+                              disabled={!fits}
+                              onClick={() => {
+                                setError(null);
+                                setMoveSlot({ start: seg.start, end: seg.end });
+                              }}
+                              className="flex w-full items-center justify-between rounded-lg border border-dashed px-4 py-3 text-left text-base text-white transition enabled:hover:bg-white/[0.05] disabled:cursor-not-allowed disabled:opacity-40"
+                              style={{ borderColor: fits ? PINK.hex : `rgba(${PINK.rgb},0.3)`, boxShadow: fits ? `0 0 12px -4px rgba(${PINK.rgb},0.8)` : undefined }}
+                            >
+                              <span className="font-semibold">
+                                {formatTime12h(seg.start)} – {formatTime12h(seg.end)}
+                              </span>
+                              <span className="text-sm tracking-[0.14em]" style={{ color: `rgba(${PINK.rgb},0.8)` }}>
+                                {fits ? "MOVE HERE" : date < today ? "PAST" : "DOESN'T FIT"}
+                              </span>
+                            </button>
+                          );
+                        })()
+                      ) : seg.kind === "available" ? (
                         <button
                           type="button"
                           onClick={() => {
@@ -999,8 +1109,16 @@ export function CalendarView({
             )}
             {detail.label && !detail.clientName && <p className="mt-1 text-sm text-white/70">{detail.isBarter ? "With: " : "Name: "}{detail.label}</p>}
             {detail.barterNotes && <p className="mt-1 text-sm text-white/50">Received: {detail.barterNotes}</p>}
+            {!detail.isBlocked && (
+              <p className="mt-1 text-xs uppercase tracking-[0.14em] text-white/45">
+                {detail.recurrence === "weekly" ? "Weekly booking" : "One-off booking"}
+              </p>
+            )}
+            {detail.noShow && (
+              <p className="mt-2 inline-block rounded border border-magenta/60 px-2 py-0.5 text-xs font-bold uppercase tracking-[0.14em] text-magenta">No Show</p>
+            )}
             {error && <p className="mt-2 text-xs text-polar-danger">{error}</p>}
-            <div className="mt-4 flex gap-2">
+            <div className="mt-4 flex flex-wrap gap-2">
               {detail.clientProfileId && (
                 <Link href={`/dashboard/barber/clients/${detail.clientProfileId}`} className="rounded border border-royal-light/40 px-3 py-1.5 text-xs text-royal-light hover:bg-royal-light/10">
                   View client
@@ -1009,8 +1127,80 @@ export function CalendarView({
               <button type="button" disabled={pending} onClick={() => handleCancel(detail.id)} className="rounded border border-magenta/50 px-3 py-1.5 text-xs text-magenta hover:bg-magenta/10 disabled:opacity-50">
                 {pending ? "…" : detail.isBlocked ? (detail.isBreak ? "Remove break" : "Unblock") : "Cancel"}
               </button>
+              {detail.serviceId && !detail.isBlocked && (
+                <Link
+                  href={`?view=day&date=${detail.date < today ? today : detail.date}&reschedule=${detail.id}`}
+                  onClick={() => setDetail(null)}
+                  className="rounded border border-royal-light/40 px-3 py-1.5 text-xs text-royal-light hover:bg-royal-light/10"
+                >
+                  Reschedule
+                </Link>
+              )}
+              {!detail.isBlocked &&
+                !detail.noShow &&
+                detail.recurrence === "one_off" &&
+                (detail.date < today || (detail.date === today && detail.endTime <= nowTime)) && (
+                  <button
+                    type="button"
+                    disabled={pending}
+                    onClick={() => handleNoShow(detail.id)}
+                    className="rounded border border-magenta/50 px-3 py-1.5 text-xs text-magenta hover:bg-magenta/10 disabled:opacity-50"
+                  >
+                    Mark No Show
+                  </button>
+                )}
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Reschedule — confirm the new start time inside the chosen gap */}
+      {rescheduling && moveSlot && (
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setMoveSlot(null)}>
+          <form
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="reschedule-title"
+            className="relative w-96 rounded-xl border border-royal-light/30 bg-navy-light p-5 shadow-[0_0_32px_-6px_rgba(91,155,255,0.3)]"
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleReschedule(String(new FormData(e.currentTarget).get("start_time") ?? ""));
+            }}
+          >
+            <button type="button" onClick={() => setMoveSlot(null)} aria-label="Close" className="absolute right-3 top-3 text-white/40 transition hover:text-white">
+              ✕
+            </button>
+            <p id="reschedule-title" className="pr-6 font-display text-white" style={{ fontSize: "1.1rem" }}>
+              Reschedule {rescheduling.who}
+            </p>
+            <p className="mt-1 text-sm text-white/70">
+              {rescheduling.serviceName} · {rescheduling.durationMinutes}m — currently {dayLabel(rescheduling.fromDate)}, {formatTime12h(rescheduling.fromStart)}
+            </p>
+            <p className="mt-3 text-sm text-white">New date: {dayLabel(date)}</p>
+            <label className="mt-2 block text-sm text-white">
+              <span className="mb-1 block text-white/70">New start time</span>
+              <select name="start_time" required className="w-full rounded border border-royal-light/40 bg-navy px-3 py-2 text-sm text-white [&>option]:bg-navy">
+                {fittingStarts(moveSlot.start, moveSlot.end, rescheduling.durationMinutes, date, today, nowTime).map((t) => (
+                  <option key={t} value={t}>
+                    {formatTime12h(t)} – {formatTime12h(minutesToTime(timeToMinutes(t) + rescheduling.durationMinutes))}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {rescheduling.recurrence === "weekly" && (
+              <p className="mt-2 text-xs text-white/55">Weekly booking — the whole series moves to this day and time.</p>
+            )}
+            {error && <p className="mt-2 text-xs text-polar-danger">{error}</p>}
+            <div className="mt-4 flex gap-2">
+              <button type="submit" disabled={pending} className="rounded-lg bg-gradient-to-r from-royal to-royal-dark px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+                {pending ? "Moving…" : "Confirm reschedule"}
+              </button>
+              <button type="button" onClick={() => setMoveSlot(null)} className="rounded border border-white/20 px-3 py-2 text-sm text-white/70 hover:text-white">
+                Back
+              </button>
+            </div>
+          </form>
         </div>
       )}
     </div>
