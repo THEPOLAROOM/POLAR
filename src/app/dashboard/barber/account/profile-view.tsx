@@ -1,5 +1,6 @@
 "use client";
 
+import { POLAR_DARK_CSS, PolarPhoneHeader } from "@/components/polar-ui/polar-plain-page";
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { updateBarberName } from "@/lib/actions/barber-account";
@@ -14,7 +15,8 @@ import { BarberRoom } from "../dashboard-scene";
 // Every pathway is either a real route or explicitly marked Coming soon —
 // no dead buttons and no invented data.
 // My Profile uses the POLAR blue identity (colour-only; layout unchanged).
-const PINK = ACCENTS.blue;
+// POLAR Barber system: hot pink dominant, cyan selective.
+const PINK = ACCENTS.magenta;
 
 const graffiti = Permanent_Marker({ subsets: ["latin"], weight: "400" });
 const ui = Barlow({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
@@ -96,7 +98,7 @@ function VerifiedBadge() {
     <span title="Official POLAR Barber account" className="inline-flex shrink-0">
       <svg viewBox="0 0 24 24" className="h-9 w-9" aria-label="Official POLAR Barber account" role="img">
         <path
-          fill={ACCENTS.blue.hex}
+          fill={ACCENTS.cyan.hex}
           d="M12 1.5l2.4 1.8 3-.2.9 2.9 2.5 1.7-1 2.8 1 2.8-2.5 1.7-.9 2.9-3-.2L12 22.5l-2.4-1.8-3 .2-.9-2.9-2.5-1.7 1-2.8-1-2.8 2.5-1.7.9-2.9 3 .2z"
         />
         <path d="M7.5 12.2l3 3 6-6.2" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
@@ -129,7 +131,7 @@ function PathwayCard({ p }: { p: Pathway }) {
         <span className={`${condensed.className} flex items-center gap-3 text-[22px] font-bold leading-tight tracking-wide ${live ? "text-white" : "text-white/55"}`}>
           {p.title}
           {!live && (
-            <span className="rounded-full border border-white/20 px-2.5 py-0.5 text-xs font-semibold tracking-[0.14em] text-white/50">Coming soon</span>
+            <span className="whitespace-nowrap rounded-full border border-white/20 px-2.5 py-0.5 text-xs font-semibold tracking-[0.14em] text-white/50">Coming soon</span>
           )}
         </span>
         <span className={`mt-0.5 block text-[15px] leading-snug ${live ? "text-white/80" : "text-white/40"}`}>{p.body}</span>
@@ -159,6 +161,7 @@ export function ProfileView({ name, location, email }: { name: string | null; lo
       {/* The shared barber nav lives in layout.tsx, which every other
           barber route still needs, so it's hidden for this page only. */}
       <style>{`
+        #barber-profile-page .profile-room > div { background: #060b1e !important; }
         div:has(> #barber-profile-page) > nav {
           display: none;
         }
@@ -182,8 +185,9 @@ export function ProfileView({ name, location, email }: { name: string | null; lo
       `}</style>
 
       {/* Mobile — existing simple functional layout (links to the same real pages). */}
-      <main className="mx-auto max-w-xl px-6 py-16 sm:hidden">
-        <h1 className="text-xl font-semibold text-polar-text">My Profile</h1>
+      <main className={`polar-dark min-h-[100dvh] bg-[#060b1e] px-6 py-10 sm:hidden ${ui.className}`}>
+        <style>{POLAR_DARK_CSS}</style>
+        <PolarPhoneHeader title="My Profile" backHref="/dashboard/barber" icon={<svg viewBox="0 0 24 24" width="44" height="44" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" /></svg>} />
         <p className="mt-2 text-sm text-polar-muted">Signed in as {email}.</p>
         <ul className="mt-6 space-y-2">
           <li>
@@ -210,13 +214,13 @@ export function ProfileView({ name, location, email }: { name: string | null; lo
         accent="blue"
         backdrop="lit"
         frameInset={FRAME_INSET}
-        room={<BarberRoom decorative src="/dashboard/profile-room-v1.webp" />}
+        room={<div className="profile-room absolute inset-0"><BarberRoom decorative src="/dashboard/profile-room-v1.webp" /></div>}
         className={ui.className}
         heading={
           <div className="flex min-w-0 flex-1 items-center gap-4">
-            <svg viewBox="0 0 80 64" className="h-14 w-16 shrink-0" fill="none" stroke={PINK.hex} strokeWidth="5" strokeLinejoin="round" aria-hidden="true" style={{ filter: `drop-shadow(0 0 8px rgba(${PINK.rgb},0.8))` }}>
-              <path d="M8 16l16 16 16-26 16 26 16-16-6 30H14z" />
-              <path d="M16 54c8-5 40-5 48 0" />
+            <svg viewBox="0 0 24 24" className="h-14 w-14 shrink-0" fill="none" stroke={PINK.hex} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ filter: `drop-shadow(0 0 6px rgba(${PINK.rgb},0.8))` }}>
+              <circle cx="12" cy="8" r="4" />
+              <path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" />
             </svg>
             <div>
               <h1 className={`${graffiti.className} profile-title whitespace-nowrap leading-none`} style={{ fontSize: "clamp(36px, 3vw, 56px)" }}>
@@ -224,6 +228,8 @@ export function ProfileView({ name, location, email }: { name: string | null; lo
               </h1>
               <p className="mt-1 whitespace-nowrap pl-2 text-sm font-medium uppercase tracking-[0.42em] text-white/85">Barber account</p>
             </div>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/dashboard/polar-ui/polar-crown.webp" alt="" aria-hidden="true" className="shrink-0 -translate-y-3" style={{ height: 54, width: "auto" }} />
           </div>
         }
       >
@@ -278,7 +284,7 @@ export function ProfileView({ name, location, email }: { name: string | null; lo
               type="button"
               onClick={() => setEditing(true)}
               className="flex h-14 shrink-0 items-center gap-3 self-start rounded-xl border-2 px-6 text-lg font-bold uppercase tracking-wide text-white transition hover:brightness-110"
-              style={{ borderColor: "#6fb2ff", background: `linear-gradient(180deg, #4a9bff 0%, ${PINK.hex} 55%, #0f5fd6 100%)`, boxShadow: `0 0 18px -2px rgba(${PINK.rgb},0.85)` }}
+              style={{ borderColor: "#ff6fcf", color: "#16000f", background: `linear-gradient(180deg, #ff3fc0 0%, ${PINK.hex} 55%, #d10f90 100%)`, boxShadow: `0 0 18px -2px rgba(${PINK.rgb},0.85)` }}
             >
               <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M4 20h4L19 9l-4-4L4 16z" />
@@ -313,7 +319,7 @@ function EditProfileDialog({ name, onClose }: { name: string | null; onClose: ()
         aria-modal="true"
         aria-labelledby="edit-profile-title"
         className={`${ui.className} w-[480px] max-w-full rounded-2xl border-2 p-7`}
-        style={{ borderColor: PINK.hex, background: "linear-gradient(180deg, #06112a 0%, #030a1c 100%)", boxShadow: `0 0 30px -6px rgba(${PINK.rgb},0.8)` }}
+        style={{ borderColor: PINK.hex, background: "linear-gradient(180deg, #081230 0%, #060b1e 100%)", boxShadow: `0 0 30px -6px rgba(${PINK.rgb},0.8)` }}
         onClick={(e) => e.stopPropagation()}
         onSubmit={(e) => {
           e.preventDefault();

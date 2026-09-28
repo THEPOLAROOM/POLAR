@@ -1,3 +1,4 @@
+import { PolarPlainPage } from "@/components/polar-ui/polar-plain-page";
 import { requireRole } from "@/lib/auth/require-role";
 import { getShopToday, formatTime12h } from "@/lib/dates";
 import { AddSlotForm } from "./add-slot-form";
@@ -31,8 +32,8 @@ export default async function BarberAvailabilityPage() {
   const today = getShopToday();
 
   return (
-    <main className="mx-auto max-w-xl px-6 py-16">
-      <h1 className="text-xl font-semibold text-polar-text">Availability</h1>
+    <PolarPlainPage id="availability" title="Availability" subtitle="Your weekly working hours" icon={<svg viewBox="0 0 24 24" width="52" height="52" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3.5 2" /></svg>} backHref="/dashboard/barber" backLabel="Back to dashboard">
+      <div className="mx-auto max-w-3xl">
 
       <section className="mt-8">
         <h2 className="text-sm font-semibold text-polar-text">Add a slot</h2>
@@ -68,6 +69,7 @@ export default async function BarberAvailabilityPage() {
           </p>
         )}
       </section>
-    </main>
+      </div>
+    </PolarPlainPage>
   );
 }

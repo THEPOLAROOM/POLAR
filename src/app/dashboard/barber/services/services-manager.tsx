@@ -1,5 +1,6 @@
 "use client";
 
+import { POLAR_DARK_CSS, PolarPhoneHeader } from "@/components/polar-ui/polar-plain-page";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { Barlow, Permanent_Marker } from "next/font/google";
 import {
@@ -33,7 +34,8 @@ export type ServiceWithImages = {
 // main screen is a clean directory; adding/editing/deleting happens in
 // the service dialog. All data and actions are the existing ones.
 const PINK = ACCENTS.magenta;
-const BLUE = ACCENTS.blue;
+// Selective cyan (status), per the POLAR Barber system.
+const BLUE = ACCENTS.cyan;
 const ROW_LINE = "rgba(255,255,255,0.07)";
 
 const graffiti = Permanent_Marker({ subsets: ["latin"], weight: "400" });
@@ -81,17 +83,9 @@ function ScissorsGlyph() {
 }
 
 function CrownGlyph() {
-  return (
-    <svg viewBox="0 0 80 64" className="h-16 w-20 shrink-0" fill="none" stroke={ACCENTS.magenta.hex} strokeWidth="5" strokeLinejoin="round" aria-hidden="true" style={{ filter: `drop-shadow(0 0 8px rgba(${ACCENTS.magenta.rgb},0.8))` }}>
-      <path d="M8 16l16 16 16-26 16 26 16-16-6 30H14z" />
-      <path d="M16 54c8-5 40-5 48 0" />
-      <g fill={ACCENTS.magenta.hex} stroke="none">
-        <circle cx="8" cy="14" r="3.5" />
-        <circle cx="40" cy="4" r="3.5" />
-        <circle cx="72" cy="14" r="3.5" />
-      </g>
-    </svg>
-  );
+  // The master's own crown artwork (CALENDAR-UI), not a drawn approximation.
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src="/dashboard/polar-ui/polar-crown.webp" alt="" aria-hidden="true" className="shrink-0 -translate-y-3" style={{ height: 58, width: "auto" }} />;
 }
 
 function SortIcon({ dir }: { dir: "asc" | "desc" | null }) {
@@ -107,9 +101,9 @@ function StatusPill({ active }: { active: boolean }) {
   return active ? (
     <span
       className="inline-flex items-center gap-2.5 rounded-full border px-4 py-1.5 text-sm font-semibold uppercase tracking-wide"
-      style={{ borderColor: `rgba(${BLUE.rgb},0.65)`, background: `rgba(${BLUE.rgb},0.14)`, color: "#5aa3ff", boxShadow: `0 0 10px -3px rgba(${BLUE.rgb},0.7)` }}
+      style={{ borderColor: `rgba(${BLUE.rgb},0.65)`, background: `rgba(${BLUE.rgb},0.14)`, color: "#8eeaff", boxShadow: `0 0 10px -3px rgba(${BLUE.rgb},0.7)` }}
     >
-      <span className="h-3 w-3 rounded-full" style={{ background: "#3d95ff", boxShadow: `0 0 8px rgba(${BLUE.rgb},0.9)` }} />
+      <span className="h-3 w-3 rounded-full" style={{ background: "#1fd6ff", boxShadow: `0 0 8px rgba(${BLUE.rgb},0.9)` }} />
       Active
     </span>
   ) : (
@@ -243,8 +237,9 @@ export function ServicesManager({ services }: { services: ServiceWithImages[] })
       `}</style>
 
       {/* Mobile — the existing simple functional layout. */}
-      <main className="mx-auto max-w-xl px-6 py-16 sm:hidden">
-        <h1 className="text-xl font-semibold text-polar-text">My Services</h1>
+      <main className={`polar-dark min-h-[100dvh] bg-[#060b1e] px-6 py-10 sm:hidden ${ui.className}`}>
+        <style>{POLAR_DARK_CSS}</style>
+        <PolarPhoneHeader title="My Services" backHref="/dashboard/barber" icon={<ScissorsGlyph />} />
         <input
           type="text"
           value={query}
@@ -307,13 +302,13 @@ export function ServicesManager({ services }: { services: ServiceWithImages[] })
           <div className="relative flex min-w-0 flex-1 items-center gap-5">
             <ScissorsGlyph />
             <div className="relative">
+              <div className="flex items-start gap-1">
               <h1 className={`${graffiti.className} services-title whitespace-nowrap leading-none`} style={{ fontSize: "clamp(40px, 3.6vw, 64px)" }}>
                 My Services
               </h1>
-              <p className="mt-1 whitespace-nowrap pl-2 text-sm font-medium uppercase tracking-[0.42em] text-white/85">Manage what you offer.</p>
-            </div>
-            <div className="relative ml-auto mr-[14%] hidden xl:block">
               <CrownGlyph />
+              </div>
+              <p className="mt-1 whitespace-nowrap pl-2 text-sm font-medium uppercase tracking-[0.42em] text-white/85">Manage what you offer.</p>
             </div>
           </div>
         }
@@ -374,7 +369,7 @@ export function ServicesManager({ services }: { services: ServiceWithImages[] })
                 </p>
               )}
               <table className="w-full table-fixed border-collapse text-white">
-                <thead className="sticky top-0 z-10" style={{ background: "linear-gradient(180deg, #3a0a2c 0%, #2a0720 100%)" }}>
+                <thead className="sticky top-0 z-10" style={{ background: "linear-gradient(180deg, #2a0a36 0%, #1a0828 100%)" }}>
                   <tr>
                     {headerCell("name", "Service", "w-[46%] pl-9")}
                     {headerCell("price", "Price", "w-[16%]")}
@@ -572,7 +567,7 @@ function ServiceDialog({
         aria-modal="true"
         aria-labelledby="service-dialog-title"
         className={`${className} services-scroll relative flex max-h-full w-[720px] max-w-full flex-col overflow-y-auto rounded-2xl border-2 p-7`}
-        style={{ borderColor: PINK.hex, background: "linear-gradient(180deg, #0c0510 0%, #07030a 100%)", boxShadow: `0 0 34px -6px rgba(${PINK.rgb},0.85)` }}
+        style={{ borderColor: PINK.hex, background: "linear-gradient(180deg, #081230 0%, #060b1e 100%)", boxShadow: `0 0 34px -6px rgba(${PINK.rgb},0.85)` }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4">
@@ -601,7 +596,7 @@ function ServiceDialog({
               <span className={label}>Hours</span>
               <select name="duration_hours" defaultValue={duration.hours} className={`${field} h-12`} style={fieldStyle}>
                 {HOUR_OPTIONS.map((h) => (
-                  <option key={h} value={h} className="bg-[#0c0510]">{h}h</option>
+                  <option key={h} value={h} className="bg-[#060b1e]">{h}h</option>
                 ))}
               </select>
             </label>
@@ -609,7 +604,7 @@ function ServiceDialog({
               <span className={label}>Minutes</span>
               <select name="duration_minutes" defaultValue={duration.minutes} className={`${field} h-12`} style={fieldStyle}>
                 {MINUTE_OPTIONS.map((m) => (
-                  <option key={m} value={m} className="bg-[#0c0510]">{m}m</option>
+                  <option key={m} value={m} className="bg-[#060b1e]">{m}m</option>
                 ))}
               </select>
             </label>

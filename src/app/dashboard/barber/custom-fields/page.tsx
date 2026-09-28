@@ -1,3 +1,4 @@
+import { PolarPlainPage } from "@/components/polar-ui/polar-plain-page";
 import Link from "next/link";
 import { requireRole } from "@/lib/auth/require-role";
 import {
@@ -39,8 +40,8 @@ export default async function CustomFieldsPage() {
   const customFields = (fields ?? []) as CustomFieldRow[];
 
   return (
-    <main className="mx-auto max-w-xl px-6 py-16">
-      <h1 className="text-xl font-semibold text-polar-text">Custom Fields</h1>
+    <PolarPlainPage id="custom-fields" title="Custom Fields" subtitle="On every client's profile card" icon={<svg viewBox="0 0 24 24" width="52" height="52" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12M20 18h0" /><circle cx="16" cy="6" r="2" /><circle cx="10" cy="12" r="2" /><circle cx="18" cy="18" r="2" /></svg>} backHref="/dashboard/barber/clients" backLabel="Back to Clients">
+      <div className="mx-auto max-w-3xl">
       <p className="mt-1 text-sm text-polar-muted">
         Active fields appear on every client&apos;s profile card.
       </p>
@@ -138,6 +139,7 @@ export default async function CustomFieldsPage() {
           </p>
         )}
       </section>
-    </main>
+      </div>
+    </PolarPlainPage>
   );
 }
