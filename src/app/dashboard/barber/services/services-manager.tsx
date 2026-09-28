@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
-import { Barlow, Permanent_Marker } from "next/font/google";
+import { Barlow_Condensed } from "next/font/google";
 import {
   saveService,
   deleteService,
@@ -10,7 +10,8 @@ import {
   deleteServiceImage,
   setCoverImage,
 } from "@/lib/actions/services";
-import { FocusModeShell, ACCENTS, type FrameSplatter } from "@/components/focus-mode/focus-mode-shell";
+import { ACCENTS } from "@/components/focus-mode/focus-mode-shell";
+import { PolarStage, POLAR } from "@/components/polar-ui/polar-stage";
 import { BarberRoom } from "../dashboard-scene";
 
 export type ServiceImage = { id: string; url: string; isCover: boolean };
@@ -26,31 +27,27 @@ export type ServiceWithImages = {
   images: ServiceImage[];
 };
 
-// My Services Focus Mode (desktop), built to the approved pink MY
-// SERVICES design as real HTML inside the shared FocusModeShell over the
-// darkened POLAR Room — this replaces the previous flat mastered-image
-// UI (and its permanent side-by-side Add Service form) entirely. The
-// main screen is a clean directory; adding/editing/deleting happens in
-// the service dialog. All data and actions are the existing ones.
-const PINK = ACCENTS.magenta;
+// My Services (desktop), in the Calendar's POLAR master language on the
+// same 1672 × 941 stage. Services keeps its own identity: hot-pink (its
+// established colour), with blue used only for the Active status. The
+// master's frame, drips, header bar, crown and corner paint are cut from
+// the master (services-*.webp); the SERVICES title is the official POLAR
+// display lettering (services-title.webp). Every control is live HTML at a
+// fixed native-px box. Behaviour is unchanged: search, column sort,
+// Reorder, Add Service, row → Service dialog (edit, images, delete),
+// full screen, close. All data and actions are the existing ones.
+const PINK = { hex: POLAR.pink, rgb: POLAR.pinkRgb };
 const BLUE = ACCENTS.blue;
-const ROW_LINE = "rgba(255,255,255,0.07)";
-
-const graffiti = Permanent_Marker({ subsets: ["latin"], weight: "400" });
-const ui = Barlow({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
-
-// Paint-only corner pieces shared with Calendar's frame.
-const SPLATTER: FrameSplatter = {
-  src: {
-    tl: "/dashboard/focus/calendar-splat-tl.webp",
-    tr: "/dashboard/focus/calendar-splat-tr.webp",
-    bl: "/dashboard/focus/calendar-splat-bl.webp",
-    br: "/dashboard/focus/calendar-splat-br.webp",
-  },
-  size: [240, 200],
-  corner: { tl: [60, 66], tr: [181, 66], bl: [60, 122], br: [181, 122] },
-  frameWidth: 1481,
+const ROW_LINE = `rgba(${POLAR.pinkRgb},0.18)`;
+const GRID = "rgba(214,10,132,0.62)";
+const NAVY = "#060b1e";
+const OUTLINE: React.CSSProperties = {
+  borderColor: PINK.hex,
+  boxShadow: `0 0 10px rgba(${PINK.rgb},0.55), inset 0 0 7px rgba(${PINK.rgb},0.22)`,
 };
+
+// Typography: the Calendar's exact UI rule (Barlow Condensed).
+const ui = Barlow_Condensed({ subsets: ["latin"], weight: ["500", "600", "700", "800"], style: ["normal", "italic"] });
 
 const HOUR_OPTIONS = Array.from({ length: 7 }, (_, i) => i); // 0h..6h
 const MINUTE_OPTIONS = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
@@ -72,7 +69,7 @@ function durationLabel(totalMinutes: number): string {
 
 function ScissorsGlyph() {
   return (
-    <svg viewBox="0 0 48 48" className="h-14 w-14 shrink-0" fill="none" stroke={ACCENTS.magenta.hex} strokeWidth="3.6" strokeLinecap="round" aria-hidden="true" style={{ filter: `drop-shadow(0 0 6px rgba(${ACCENTS.magenta.rgb},0.8))` }}>
+    <svg viewBox="0 0 48 48" width="80" height="80" className="shrink-0" fill="none" stroke={PINK.hex} strokeWidth="3.4" strokeLinecap="round" aria-hidden="true" style={{ filter: `drop-shadow(0 0 6px rgba(${PINK.rgb},0.8))` }}>
       <circle cx="12" cy="36" r="6" />
       <circle cx="36" cy="36" r="6" />
       <path d="M16.5 32L38 5M31.5 32L10 5" />
@@ -80,25 +77,11 @@ function ScissorsGlyph() {
   );
 }
 
-function CrownGlyph() {
-  return (
-    <svg viewBox="0 0 80 64" className="h-16 w-20 shrink-0" fill="none" stroke={ACCENTS.magenta.hex} strokeWidth="5" strokeLinejoin="round" aria-hidden="true" style={{ filter: `drop-shadow(0 0 8px rgba(${ACCENTS.magenta.rgb},0.8))` }}>
-      <path d="M8 16l16 16 16-26 16 26 16-16-6 30H14z" />
-      <path d="M16 54c8-5 40-5 48 0" />
-      <g fill={ACCENTS.magenta.hex} stroke="none">
-        <circle cx="8" cy="14" r="3.5" />
-        <circle cx="40" cy="4" r="3.5" />
-        <circle cx="72" cy="14" r="3.5" />
-      </g>
-    </svg>
-  );
-}
-
 function SortIcon({ dir }: { dir: "asc" | "desc" | null }) {
   return (
-    <svg viewBox="0 0 12 18" className="h-4 w-3" aria-hidden="true">
-      <path d="M6 1l5 6H1z" fill={ACCENTS.magenta.hex} opacity={dir === "desc" ? 0.3 : 1} />
-      <path d="M6 17l5-6H1z" fill={ACCENTS.magenta.hex} opacity={dir === "asc" ? 0.3 : 1} />
+    <svg viewBox="0 0 12 18" width="13" height="19" aria-hidden="true">
+      <path d="M6 1l5 6H1z" fill={PINK.hex} opacity={dir === "desc" ? 0.3 : 1} />
+      <path d="M6 17l5-6H1z" fill={PINK.hex} opacity={dir === "asc" ? 0.3 : 1} />
     </svg>
   );
 }
@@ -106,14 +89,14 @@ function SortIcon({ dir }: { dir: "asc" | "desc" | null }) {
 function StatusPill({ active }: { active: boolean }) {
   return active ? (
     <span
-      className="inline-flex items-center gap-2.5 rounded-full border px-4 py-1.5 text-sm font-semibold uppercase tracking-wide"
+      className="inline-flex items-center gap-2.5 rounded-full border px-4 py-1.5 text-[17px] font-bold uppercase tracking-wide"
       style={{ borderColor: `rgba(${BLUE.rgb},0.65)`, background: `rgba(${BLUE.rgb},0.14)`, color: "#5aa3ff", boxShadow: `0 0 10px -3px rgba(${BLUE.rgb},0.7)` }}
     >
       <span className="h-3 w-3 rounded-full" style={{ background: "#3d95ff", boxShadow: `0 0 8px rgba(${BLUE.rgb},0.9)` }} />
       Active
     </span>
   ) : (
-    <span className="inline-flex items-center gap-2.5 rounded-full border border-white/15 bg-white/[0.04] px-4 py-1.5 text-sm font-semibold uppercase tracking-wide text-white/45">
+    <span className="inline-flex items-center gap-2.5 rounded-full border border-white/15 bg-white/[0.04] px-4 py-1.5 text-[17px] font-bold uppercase tracking-wide text-white/45">
       <span className="h-3 w-3 rounded-full bg-white/25" />
       Inactive
     </span>
@@ -193,10 +176,10 @@ export function ServicesManager({ services }: { services: ServiceWithImages[] })
     <button
       type="button"
       onClick={() => setDialog("new")}
-      className="flex h-14 shrink-0 items-center gap-5 rounded-xl border-2 px-7 text-lg font-bold uppercase tracking-wide text-white transition hover:brightness-110"
-      style={{ borderColor: "#ff6fcf", background: `linear-gradient(180deg, #ff3fc0 0%, ${PINK.hex} 55%, #d10f90 100%)`, boxShadow: `0 0 18px -2px rgba(${PINK.rgb},0.85)` }}
+      className="flex h-[55px] w-[240px] shrink-0 items-center justify-center gap-3 rounded-[10px] border-2 text-[22px] font-bold uppercase tracking-wide transition hover:brightness-110"
+      style={{ background: PINK.hex, borderColor: PINK.hex, color: "#16000f", boxShadow: `0 0 16px -2px rgba(${PINK.rgb},0.85)` }}
     >
-      <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" aria-hidden="true">
         <path d="M12 4v16M4 12h16" />
       </svg>
       Add Service
@@ -204,12 +187,12 @@ export function ServicesManager({ services }: { services: ServiceWithImages[] })
   );
 
   const headerCell = (key: SortKey, label: string, className = "") => (
-    <th scope="col" className={`py-4 text-left font-semibold ${className}`}>
+    <th scope="col" className={`h-[55px] text-left ${className}`}>
       <button
         type="button"
         disabled={reorderMode}
         onClick={() => toggleSort(key)}
-        className="inline-flex items-center gap-3 text-lg uppercase tracking-wide text-white disabled:cursor-default"
+        className="inline-flex items-center gap-3 text-[24px] font-bold uppercase text-white disabled:cursor-default"
         aria-label={`Sort by ${label.toLowerCase()}`}
       >
         {label}
@@ -226,19 +209,9 @@ export function ServicesManager({ services }: { services: ServiceWithImages[] })
         div:has(> #barber-services-page) > nav {
           display: none;
         }
-        .services-title {
-          display: inline-block;
-          transform: rotate(-2deg) skewX(-6deg);
-          background: linear-gradient(180deg, #ffffff 0%, #fff4fb 55%, #f3c9e4 80%, #ffffff 100%);
-          -webkit-background-clip: text;
-          background-clip: text;
-          color: transparent;
-          filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.8)) drop-shadow(0 0 10px rgba(255, 31, 180, 0.55));
-          padding: 0.05em 0.1em;
-        }
         .services-scroll {
           scrollbar-width: thin;
-          scrollbar-color: rgba(255, 31, 180, 0.8) transparent;
+          scrollbar-color: rgba(253, 18, 200, 0.8) transparent;
         }
       `}</style>
 
@@ -296,91 +269,78 @@ export function ServicesManager({ services }: { services: ServiceWithImages[] })
         </form>
       </main>
 
-      {/* Desktop — My Services Focus Mode. */}
-      <FocusModeShell
-        id="services"
-        accent="magenta"
-        room={<BarberRoom decorative />}
-        className={ui.className}
-        splatter={SPLATTER}
-        heading={
-          <div className="relative flex min-w-0 flex-1 items-center gap-5">
-            <ScissorsGlyph />
-            <div className="relative">
-              <h1 className={`${graffiti.className} services-title whitespace-nowrap leading-none`} style={{ fontSize: "clamp(40px, 3.6vw, 64px)" }}>
-                My Services
-              </h1>
-              <p className="mt-1 whitespace-nowrap pl-2 text-sm font-medium uppercase tracking-[0.42em] text-white/85">Manage what you offer.</p>
-            </div>
-            <div className="relative ml-auto mr-[14%] hidden xl:block">
-              <CrownGlyph />
-            </div>
-          </div>
-        }
-        toolbar={
-          <>
-            <label
-              className="flex h-14 min-w-0 flex-1 items-center gap-4 rounded-xl border-2 px-5"
-              style={{ borderColor: `rgba(${PINK.rgb},0.85)`, boxShadow: `0 0 14px -3px rgba(${PINK.rgb},0.7), inset 0 0 8px rgba(${PINK.rgb},0.15)` }}
-            >
-              <svg viewBox="0 0 24 24" className="h-7 w-7 shrink-0" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
-                <circle cx="10.5" cy="10.5" r="6.5" />
-                <path d="M20 20l-4.5-4.5" />
-              </svg>
-              <input
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search services..."
-                aria-label="Search services"
-                className="h-full min-w-0 flex-1 bg-transparent text-lg text-white outline-none placeholder:text-white/70"
-              />
-            </label>
-            <button
-              type="button"
-              onClick={() => setReorderMode((v) => !v)}
-              aria-pressed={reorderMode}
-              disabled={!hasAnyServices}
-              className="flex h-14 shrink-0 items-center gap-4 rounded-xl border-2 px-6 text-lg font-semibold text-white transition hover:bg-white/5 disabled:opacity-40"
-              style={{
-                borderColor: `rgba(${PINK.rgb},0.85)`,
-                background: reorderMode ? `rgba(${PINK.rgb},0.22)` : "rgba(0,0,0,0.3)",
-                boxShadow: `0 0 12px -3px rgba(${PINK.rgb},0.6)`,
-              }}
-            >
-              <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M7 20V4M3 8l4-4 4 4M17 4v16M13 16l4 4 4-4" />
-              </svg>
-              {reorderMode ? "Done" : "Reorder"}
-            </button>
-            {addButton}
-          </>
-        }
-      >
-        <div
-          className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border"
-          style={{ borderColor: `rgba(${PINK.rgb},0.4)`, background: "rgba(4,6,14,0.7)" }}
+      {/* Desktop — My Services on the POLAR master stage (native 1672 × 941 px). */}
+      <PolarStage id="services" chromeSrc="/dashboard/polar-ui/services-chrome.webp" room={<BarberRoom decorative />} className={ui.className}>
+        {/* Header — Calendar/Clients title geometry: oversized official lettering
+            breaking out of the header bar, crown after the title. */}
+        <div className="absolute" style={{ left: 150, top: 116 }}>
+          <ScissorsGlyph />
+        </div>
+        <p className="absolute whitespace-nowrap text-[16px] font-semibold uppercase tracking-[0.36em] text-white/85" style={{ left: 272, top: 184 }}>
+          Manage what you offer.
+        </p>
+        <h1 className="absolute" style={{ left: 254, top: 87, width: 444, height: 108 }}>
+          <span className="sr-only">My Services</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/dashboard/polar-ui/services-title.webp" alt="" aria-hidden="true" width={444} height={108} className="block" />
+        </h1>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/dashboard/polar-ui/services-crown.webp" alt="" aria-hidden="true" className="absolute" style={{ left: 697, top: 112 }} width={70} height={62} />
+
+        {/* Toolbar row (Calendar's toolbar line). */}
+        <label className="absolute flex items-center gap-4 rounded-[10px] border-2 px-5" style={{ ...OUTLINE, left: 136, top: 227, width: 978, height: 55, background: NAVY }}>
+          <svg viewBox="0 0 24 24" width="28" height="28" className="shrink-0" fill="none" stroke="#fff" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true">
+            <circle cx="10.5" cy="10.5" r="6.5" />
+            <path d="M20 20l-4.5-4.5" />
+          </svg>
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search services..."
+            aria-label="Search services"
+            className="h-full min-w-0 flex-1 bg-transparent text-[22px] font-medium text-white outline-none placeholder:text-white/55"
+          />
+        </label>
+        <button
+          type="button"
+          onClick={() => setReorderMode((v) => !v)}
+          aria-pressed={reorderMode}
+          disabled={!hasAnyServices}
+          className="absolute flex items-center justify-center gap-3 rounded-[10px] border-2 text-[22px] font-bold text-white transition hover:brightness-125 disabled:opacity-40"
+          style={{ ...OUTLINE, left: 1128, top: 227, width: 170, height: 55, background: reorderMode ? `rgba(${PINK.rgb},0.24)` : NAVY }}
         >
+          <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke={PINK.hex} strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M7 20V4M3 8l4-4 4 4M17 4v16M13 16l4 4 4-4" />
+          </svg>
+          {reorderMode ? "Done" : "Reorder"}
+        </button>
+        <div className="absolute" style={{ left: 1312, top: 227 }}>
+          {addButton}
+        </div>
+
+        {/* Body — the master's grid box. */}
+        <div className="absolute flex flex-col overflow-hidden rounded-[12px] border-2" style={{ left: 134, top: 308, width: 1419, height: 531, borderColor: POLAR.gridStrong, boxShadow: `0 0 10px rgba(${PINK.rgb},0.35)`, background: NAVY }}>
           {!hasAnyServices ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-3 text-center">
-              <p className="text-2xl font-bold text-white">No services yet</p>
-              <p className="text-base text-white/60">Add your first service to start building your booking menu.</p>
+              <p className="text-[34px] font-bold text-white">No services yet</p>
+              <p className="text-[20px] text-white/60">Add your first service to start building your booking menu.</p>
             </div>
           ) : (
             <div className="services-scroll min-h-0 flex-1 overflow-y-auto">
               {reorderMode && (
-                <p className="px-9 py-2 text-sm text-white/65" style={{ background: `rgba(${PINK.rgb},0.1)` }}>
+                <p className="px-9 py-2.5 text-[18px] text-white/75" style={{ background: `rgba(${PINK.rgb},0.12)` }}>
                   Reorder mode — use the arrows to move a service up or down. This is the order clients see.
                 </p>
               )}
               <table className="w-full table-fixed border-collapse text-white">
-                <thead className="sticky top-0 z-10" style={{ background: "linear-gradient(180deg, #3a0a2c 0%, #2a0720 100%)" }}>
+                <thead className="sticky top-0 z-10" style={{ background: "linear-gradient(180deg, #2a0a36 0%, #1a0828 100%)", boxShadow: `inset 0 -2px 0 ${GRID}` }}>
                   <tr>
-                    {headerCell("name", "Service", "w-[46%] pl-9")}
+                    {headerCell("name", "Service", "w-[43%] pl-9")}
                     {headerCell("price", "Price", "w-[16%]")}
                     {headerCell("duration", "Duration", "w-[18%]")}
                     {headerCell("status", "Status", "w-[14%]")}
-                    <th scope="col" className="w-[6%]">
+                    <th scope="col" className="w-[9%]">
                       <span className="sr-only">Open</span>
                     </th>
                   </tr>
@@ -388,21 +348,21 @@ export function ServicesManager({ services }: { services: ServiceWithImages[] })
                 <tbody>
                   {visible.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="px-9 py-6 text-lg text-white/60">
+                      <td colSpan={5} className="px-9 py-6 text-[22px] text-white/60">
                         No services match &quot;{query}&quot;.
                       </td>
                     </tr>
                   ) : (
-                    visible.map((service) => {
+                    visible.map((service, rowIdx) => {
                       const index = orderedIds.indexOf(service.id);
                       return (
                         <tr
                           key={service.id}
                           onClick={reorderMode ? undefined : () => setDialog(service.id)}
-                          className={`text-xl transition ${reorderMode ? "" : "cursor-pointer hover:bg-white/[0.04]"}`}
-                          style={{ borderTop: `1px solid ${ROW_LINE}` }}
+                          className={`text-[24px] transition ${reorderMode ? "" : "cursor-pointer hover:bg-[rgba(253,18,200,0.08)]"}`}
+                          style={rowIdx ? { borderTop: `1px solid ${ROW_LINE}` } : undefined}
                         >
-                          <td className="truncate py-4 pl-9 pr-4 font-medium">
+                          <td className="truncate py-4 pl-9 pr-4 font-semibold">
                             {reorderMode ? (
                               service.name
                             ) : (
@@ -411,37 +371,37 @@ export function ServicesManager({ services }: { services: ServiceWithImages[] })
                               </button>
                             )}
                           </td>
-                          <td className="py-4 tabular-nums">{money(service.price)}</td>
-                          <td className="py-4 tabular-nums">{service.durationMinutes} min</td>
+                          <td className="py-4 font-semibold tabular-nums">{money(service.price)}</td>
+                          <td className="py-4 font-semibold tabular-nums">{service.durationMinutes} min</td>
                           <td className="py-4">
                             <StatusPill active={service.isActive} />
                           </td>
                           <td className="py-4 pr-6 text-right">
                             {reorderMode ? (
-                              <span className="inline-flex gap-1">
+                              <span className="inline-flex gap-1.5">
                                 <button
                                   type="button"
                                   aria-label={`Move ${service.name} up`}
                                   disabled={pending || index === 0}
                                   onClick={() => handleReorder(service.id, "up")}
-                                  className="flex h-9 w-9 items-center justify-center rounded-lg border text-base disabled:opacity-25"
-                                  style={{ borderColor: `rgba(${PINK.rgb},0.6)` }}
+                                  className="flex h-10 w-10 items-center justify-center rounded-lg border-2 text-white transition hover:brightness-125 disabled:opacity-25"
+                                  style={OUTLINE}
                                 >
-                                  ▲
+                                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 15l7-7 7 7" /></svg>
                                 </button>
                                 <button
                                   type="button"
                                   aria-label={`Move ${service.name} down`}
                                   disabled={pending || index === orderedIds.length - 1}
                                   onClick={() => handleReorder(service.id, "down")}
-                                  className="flex h-9 w-9 items-center justify-center rounded-lg border text-base disabled:opacity-25"
-                                  style={{ borderColor: `rgba(${PINK.rgb},0.6)` }}
+                                  className="flex h-10 w-10 items-center justify-center rounded-lg border-2 text-white transition hover:brightness-125 disabled:opacity-25"
+                                  style={OUTLINE}
                                 >
-                                  ▼
+                                  <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 9l7 7 7-7" /></svg>
                                 </button>
                               </span>
                             ) : (
-                              <svg viewBox="0 0 24 24" className="ml-auto h-7 w-7 text-white/90" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                              <svg viewBox="0 0 24 24" width="26" height="26" className="ml-auto text-white/80" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                                 <path d="M9 5l7 7-7 7" />
                               </svg>
                             )}
@@ -455,7 +415,10 @@ export function ServicesManager({ services }: { services: ServiceWithImages[] })
             </div>
           )}
         </div>
-      </FocusModeShell>
+
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/dashboard/polar-ui/services-corner-splat.webp" alt="" aria-hidden="true" className="pointer-events-none absolute z-10 select-none" style={{ left: 1476, top: 784, width: 74, height: 52 }} />
+      </PolarStage>
 
       {/* Service dialog (Add / Details & Edit) — outside the Focus panel so
           it overlays the whole page, including in Full Screen. */}
@@ -561,26 +524,26 @@ function ServiceDialog({
     });
   }
 
-  const field = "w-full rounded-lg border-2 bg-black/30 px-4 text-base text-white outline-none placeholder:text-white/35 focus:border-[#ff1fb4]";
+  const field = "w-full rounded-lg border-2 bg-[#0b1330] px-4 text-lg text-white outline-none placeholder:text-white/35 focus:border-[#fd12c8]";
   const fieldStyle = { borderColor: `rgba(${PINK.rgb},0.45)` };
-  const label = "mb-1.5 block text-sm font-semibold uppercase tracking-wide text-white/70";
+  const label = "mb-1.5 block text-[15px] font-bold uppercase tracking-wide text-white/75";
 
   return (
-    <div className="fixed inset-0 z-50 hidden items-center justify-center bg-black/75 p-6 backdrop-blur-sm sm:flex" onClick={onClose}>
+    <div className="fixed inset-0 z-50 hidden items-center justify-center bg-[#030612]/80 p-6 backdrop-blur-sm sm:flex" onClick={onClose}>
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="service-dialog-title"
         className={`${className} services-scroll relative flex max-h-full w-[720px] max-w-full flex-col overflow-y-auto rounded-2xl border-2 p-7`}
-        style={{ borderColor: PINK.hex, background: "linear-gradient(180deg, #0c0510 0%, #07030a 100%)", boxShadow: `0 0 34px -6px rgba(${PINK.rgb},0.85)` }}
+        style={{ borderColor: PINK.hex, background: NAVY, boxShadow: `0 0 28px -4px rgba(${PINK.rgb},0.7)` }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-4">
-          <p id="service-dialog-title" className="text-2xl font-bold uppercase tracking-wide text-white">
+          <p id="service-dialog-title" className="text-[28px] font-bold uppercase tracking-wide text-white">
             {service ? "Service details" : "Add service"}
           </p>
-          <button type="button" onClick={onClose} aria-label="Close" className="text-2xl leading-none text-white/60 hover:text-white">
-            ✕
+          <button type="button" onClick={onClose} aria-label="Close" className="grid h-10 w-10 place-items-center rounded-lg text-white/60 transition hover:bg-white/5 hover:text-[#fd12c8]">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19" /></svg>
           </button>
         </div>
 
@@ -601,7 +564,7 @@ function ServiceDialog({
               <span className={label}>Hours</span>
               <select name="duration_hours" defaultValue={duration.hours} className={`${field} h-12`} style={fieldStyle}>
                 {HOUR_OPTIONS.map((h) => (
-                  <option key={h} value={h} className="bg-[#0c0510]">{h}h</option>
+                  <option key={h} value={h} className="bg-[#0b1330]">{h}h</option>
                 ))}
               </select>
             </label>
@@ -609,7 +572,7 @@ function ServiceDialog({
               <span className={label}>Minutes</span>
               <select name="duration_minutes" defaultValue={duration.minutes} className={`${field} h-12`} style={fieldStyle}>
                 {MINUTE_OPTIONS.map((m) => (
-                  <option key={m} value={m} className="bg-[#0c0510]">{m}m</option>
+                  <option key={m} value={m} className="bg-[#0b1330]">{m}m</option>
                 ))}
               </select>
             </label>
@@ -694,8 +657,8 @@ function ServiceDialog({
               <button
                 type="submit"
                 disabled={pending}
-                className="rounded-lg px-6 py-2.5 text-base font-bold uppercase tracking-wide text-white disabled:opacity-60"
-                style={{ background: `linear-gradient(180deg, #ff3fc0 0%, ${PINK.hex} 55%, #d10f90 100%)`, boxShadow: `0 0 14px -3px rgba(${PINK.rgb},0.8)` }}
+                className="rounded-lg px-6 py-2.5 text-lg font-bold uppercase tracking-wide disabled:opacity-60"
+                style={{ background: PINK.hex, color: "#16000f", boxShadow: `0 0 14px -3px rgba(${PINK.rgb},0.8)` }}
               >
                 {pending ? "Saving…" : "Save service"}
               </button>
