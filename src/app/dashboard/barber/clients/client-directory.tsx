@@ -2,23 +2,36 @@
 
 import { useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
-import { Barlow, Permanent_Marker } from "next/font/google";
+import { Barlow, Barlow_Condensed } from "next/font/google";
 import { linkClientByEmail } from "@/lib/actions/barber-client-links";
-import { FocusModeShell, ACCENTS } from "@/components/focus-mode/focus-mode-shell";
+import { ACCENTS } from "@/components/focus-mode/focus-mode-shell";
+import { PolarStage } from "@/components/polar-ui/polar-stage";
 import { BarberRoom } from "../dashboard-scene";
 
 type Client = { id: string; full_name: string };
 
-// Clients Focus Mode (desktop), built to the approved blue CLIENTS
-// reference as real HTML inside the shared FocusModeShell, over the
-// darkened POLAR Room — this replaces the previous flat mastered-image
-// UI entirely. The directory is names only: find person → click person.
-// Details, editing and removal live on the client's own page.
+// Clients (desktop), in the Calendar's POLAR master language on the same
+// 1672 × 941 stage: the master's own frame, drips, header bar, crown and
+// corner paint, translated to the Clients blue/cyan identity
+// (clients-*.webp), over POLAR navy. Every control is live HTML at a fixed
+// native-px box. Behaviour is unchanged: search, A–Z jump, grouped list,
+// Add Client (link by email), full screen, close. The directory is names
+// only: find person → click person.
 const BLUE = ACCENTS.blue;
-const ROW_LINE = `rgba(${ACCENTS.blue.rgb},0.22)`;
+const CYAN = { hex: "#22e4ff", rgb: "34,228,255" };
+const ROW_LINE = `rgba(${BLUE.rgb},0.28)`;
+const GRID = "rgba(30,123,255,0.62)";
+const NAVY = "#060b1e";
+const OUTLINE: React.CSSProperties = {
+  borderColor: BLUE.hex,
+  boxShadow: `0 0 10px rgba(${BLUE.rgb},0.55), inset 0 0 7px rgba(${BLUE.rgb},0.22)`,
+};
 
-const graffiti = Permanent_Marker({ subsets: ["latin"], weight: "400" });
-const ui = Barlow({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
+// Typography: the Calendar's exact rules — Barlow Condensed for the UI
+// voice, full-width Barlow 800 italic (Calendar's .cal-period display
+// rule) for the page title.
+const ui = Barlow_Condensed({ subsets: ["latin"], weight: ["500", "600", "700", "800"], style: ["normal", "italic"] });
+const wide = Barlow({ subsets: ["latin"], weight: ["600", "700", "800"], style: ["normal", "italic"] });
 
 const ALPHABET = ["#", ...Array.from({ length: 26 }, (_, i) => String.fromCharCode(65 + i))];
 
@@ -29,21 +42,11 @@ function groupKey(fullName: string): string {
 
 function PeopleGlyph() {
   return (
-    <svg viewBox="0 0 48 40" className="h-14 w-16 shrink-0" fill="none" stroke="#18d4ff" strokeWidth="3.6" strokeLinecap="round" aria-hidden="true" style={{ filter: "drop-shadow(0 0 6px rgba(24,212,255,0.7))" }}>
+    <svg viewBox="0 0 48 40" width="88" height="74" className="shrink-0" fill="none" stroke="#22e4ff" strokeWidth="3.4" strokeLinecap="round" aria-hidden="true" style={{ filter: "drop-shadow(0 0 6px rgba(24,212,255,0.7))" }}>
       <circle cx="17" cy="11" r="7" />
       <path d="M3 37c0-8 6.3-13 14-13s14 5 14 13z" />
       <circle cx="33" cy="12" r="6" />
       <path d="M34 24c6.5.5 11 5 11 12h-9" />
-    </svg>
-  );
-}
-
-function CrownGlyph() {
-  return (
-    <svg viewBox="0 0 80 64" className="h-16 w-20 shrink-0" fill="none" stroke={ACCENTS.blue.hex} strokeWidth="5" strokeLinejoin="round" aria-hidden="true" style={{ filter: `drop-shadow(0 0 8px rgba(${ACCENTS.blue.rgb},0.8))` }}>
-      <path d="M8 16l16 16 16-26 16 26 16-16-6 30H14z" />
-      <path d="M16 54c8-5 40-5 48 0" />
-      <path d="M22 50v10M40 48v14M58 50v8" strokeLinecap="round" strokeWidth="3" />
     </svg>
   );
 }
@@ -106,10 +109,10 @@ export function ClientDirectory({ clients }: { clients: Client[] }) {
     <button
       type="button"
       onClick={openAdd}
-      className="flex h-14 shrink-0 items-center gap-6 rounded-xl border-2 px-8 text-lg font-bold uppercase tracking-wide text-white transition hover:bg-white/5"
-      style={{ borderColor: BLUE.hex, boxShadow: `0 0 16px -2px rgba(${BLUE.rgb},0.75), inset 0 0 10px rgba(${BLUE.rgb},0.3)` }}
+      className="flex h-[55px] w-[240px] shrink-0 items-center justify-center gap-3 rounded-[10px] border-2 text-[22px] font-bold uppercase tracking-wide text-white transition hover:brightness-110"
+      style={{ background: BLUE.hex, borderColor: "#6fb2ff", boxShadow: `0 0 16px -2px rgba(${BLUE.rgb},0.9)` }}
     >
-      <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="#18d4ff" strokeWidth="3" strokeLinecap="round" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" aria-hidden="true">
         <path d="M12 4v16M4 12h16" />
       </svg>
       Add Client
@@ -124,16 +127,22 @@ export function ClientDirectory({ clients }: { clients: Client[] }) {
         div:has(> #barber-clients-page) > nav {
           display: none;
         }
+        /* Calendar's .cal-period display rule, reused for the page title. */
         .clients-title {
-          display: inline-block;
-          transform: rotate(-3deg) skewX(-6deg);
-          background: linear-gradient(180deg, #ffffff 0%, #eef3ff 50%, #b9c6de 75%, #ffffff 100%);
-          -webkit-background-clip: text;
-          background-clip: text;
-          color: transparent;
-          filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.8)) drop-shadow(0 0 8px rgba(30, 123, 255, 0.45));
-          padding: 0.05em 0.1em;
+          font-weight: 800;
+          font-style: italic;
+          letter-spacing: 0.01em;
+          line-height: 1;
+          color: #fff;
+          text-shadow: 0 2px 0 rgba(0, 0, 0, 0.7), 0 0 18px rgba(30, 123, 255, 0.55);
         }
+        /* Stage icon buttons in the Clients blue (scoped — Calendar keeps pink). */
+        #barber-clients-page .polar-icon-btn {
+          border-color: #1e7bff;
+          box-shadow: 0 0 12px rgba(30, 123, 255, 0.6), inset 0 0 9px rgba(30, 123, 255, 0.28);
+        }
+        #barber-clients-page a.polar-icon-btn { color: #22e4ff !important; }
+        #barber-clients-page ::selection { background: rgba(30, 123, 255, 0.45); }
         .clients-scroll {
           scrollbar-width: thin;
           scrollbar-color: rgba(30, 123, 255, 0.9) transparent;
@@ -182,148 +191,136 @@ export function ClientDirectory({ clients }: { clients: Client[] }) {
         )}
       </main>
 
-      {/* Desktop — Clients Focus Mode. */}
-      <FocusModeShell
-        id="clients"
-        accent="blue"
-        room={<BarberRoom decorative />}
-        className={ui.className}
-        heading={
-          <div className="relative flex min-w-0 flex-1 items-center gap-5">
-            {/* Faint diagonal light streaks behind the header, as in the reference. */}
-            <div
-              aria-hidden="true"
-              className="pointer-events-none absolute inset-y-[-24px] left-[38%] right-[18%]"
-              style={{ background: `repeating-linear-gradient(115deg, transparent 0 70px, rgba(${BLUE.rgb},0.07) 70px 110px, transparent 110px 170px)` }}
-            />
-            <PeopleGlyph />
-            <div className="relative">
-              <h1 className={`${graffiti.className} clients-title leading-none`} style={{ fontSize: "clamp(40px, 3.6vw, 64px)" }}>
-                Clients
+      {/* Desktop — Clients on the POLAR master stage (native 1672 × 941 px). */}
+      <PolarStage id="clients" chromeSrc="/dashboard/polar-ui/clients-chrome.webp" room={<BarberRoom decorative />} className={ui.className}>
+        {/* Header: icon, title, tagline, crown — inside the master header bar. */}
+        <div className="absolute flex items-center gap-5" style={{ left: 146, top: 113, height: 86 }}>
+          <PeopleGlyph />
+          <div>
+            <div className="flex items-start gap-2">
+              <h1 className={`${wide.className} clients-title`} style={{ fontSize: 58 }}>
+                CLIENTS
               </h1>
-              <p className="mt-1 whitespace-nowrap pl-3 text-sm font-medium uppercase tracking-[0.42em]" style={{ color: "#8fb6ff" }}>
-                Real people. Real progress.
-              </p>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/dashboard/polar-ui/clients-crown.webp" alt="" aria-hidden="true" className="-mt-5" width={62} height={55} />
             </div>
-            <div className="relative ml-auto mr-[14%] hidden xl:block">
-              <CrownGlyph />
-            </div>
+            <p className="mt-1.5 whitespace-nowrap pl-1 text-[17px] font-semibold uppercase tracking-[0.36em]" style={{ color: CYAN.hex }}>
+              Real people. Real progress.
+            </p>
           </div>
-        }
-        toolbar={
-          <>
-            <label className="flex h-14 min-w-0 flex-1 items-center gap-4 rounded-xl border-2 px-5" style={{ borderColor: BLUE.hex, boxShadow: `0 0 14px -3px rgba(${BLUE.rgb},0.7), inset 0 0 8px rgba(${BLUE.rgb},0.2)` }}>
-              <svg viewBox="0 0 24 24" className="h-7 w-7 shrink-0" fill="none" stroke="#fff" strokeWidth="2.4" strokeLinecap="round" aria-hidden="true">
-                <circle cx="10.5" cy="10.5" r="6.5" />
-                <path d="M20 20l-4.5-4.5" />
-              </svg>
-              <input
-                type="search"
-                value={query}
-                onChange={(e) => {
-                  setQuery(e.target.value);
-                  setActiveLetter(null);
-                }}
-                placeholder="Search clients..."
-                aria-label="Search clients"
-                className="h-full min-w-0 flex-1 bg-transparent text-lg text-white outline-none placeholder:text-white/70"
-              />
-            </label>
-            {addButton}
-          </>
-        }
-      >
-        {/* A–Z — jumps the list to that letter; letters with no clients are dimmed. */}
-        <nav
-          aria-label="Jump to letter"
-          className="mb-3 flex shrink-0 items-center justify-between rounded-xl border px-2 py-1.5"
-          style={{ borderColor: `rgba(${BLUE.rgb},0.35)`, background: "rgba(3,10,28,0.6)" }}
-        >
-          {ALPHABET.map((letter) => {
-            const has = availableLetters.has(letter);
-            const active = activeLetter === letter;
-            return (
-              <button
-                key={letter}
-                type="button"
-                disabled={!has}
-                onClick={() => jumpToLetter(letter)}
-                aria-label={`Jump to ${letter === "#" ? "numbers and symbols" : letter}`}
-                aria-pressed={active}
-                className={`flex h-10 min-w-9 flex-1 items-center justify-center rounded-lg text-lg transition ${letter === "#" ? "max-w-12 border font-bold" : "max-w-12"} ${has ? "text-white hover:bg-white/5" : "cursor-default text-white/25"}`}
-                style={{
-                  ...(letter === "#" ? { borderColor: `rgba(${BLUE.rgb},0.5)` } : {}),
-                  ...(active ? { background: `rgba(${BLUE.rgb},0.35)`, borderWidth: 2, borderStyle: "solid", borderColor: BLUE.hex, boxShadow: `0 0 12px rgba(${BLUE.rgb},0.7)`, fontWeight: 700 } : {}),
-                }}
-              >
-                {letter}
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* Directory — real linked clients, names only. */}
-        <div ref={listRef} className="clients-scroll relative min-h-0 flex-1 overflow-y-auto pr-3">
-          {!hasAnyClients ? (
-            <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
-              <p className="text-2xl font-bold text-white">No clients yet</p>
-              <p className="text-base text-white/60">Add your first client to get started.</p>
-              <div className="mt-3">{addButton}</div>
-            </div>
-          ) : filtered.length === 0 ? (
-            <p className="pt-4 text-lg text-white/60">No clients match &quot;{query}&quot;.</p>
-          ) : (
-            <div className="space-y-3">
-              {ALPHABET.map((letter) => {
-                const items = groups.get(letter) ?? [];
-                if (items.length === 0) return null;
-                return (
-                  <section
-                    key={letter}
-                    id={`client-group-${letter}`}
-                    aria-label={letter}
-                    className="overflow-hidden rounded-xl border"
-                    style={{ borderColor: `rgba(${BLUE.rgb},0.45)` }}
-                  >
-                    <h2
-                      className="px-5 py-1.5 text-2xl font-bold text-white"
-                      style={{ background: "linear-gradient(180deg, #0f3fa6 0%, #0a2f82 100%)" }}
-                    >
-                      {letter}
-                    </h2>
-                    <ul>
-                      {items.map((client, i) => (
-                        <li key={client.id} style={i ? { borderTop: `1px solid ${ROW_LINE}` } : undefined}>
-                          <Link
-                            href={`/dashboard/barber/clients/${client.id}`}
-                            className="flex items-center justify-between px-10 py-2.5 text-xl font-medium text-white transition hover:bg-white/[0.05]"
-                            style={{ background: "rgba(2,8,24,0.55)" }}
-                          >
-                            <span className="truncate">{client.full_name}</span>
-                            <svg viewBox="0 0 24 24" className="h-6 w-6 shrink-0 text-white/85" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                              <path d="M9 5l7 7-7 7" />
-                            </svg>
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  </section>
-                );
-              })}
-            </div>
-          )}
         </div>
-      </FocusModeShell>
+
+        {/* Toolbar row (Calendar's toolbar line). */}
+        <label className="absolute flex items-center gap-4 rounded-[10px] border-2 px-5" style={{ ...OUTLINE, left: 136, top: 227, width: 1162, height: 55, background: NAVY }}>
+          <svg viewBox="0 0 24 24" width="28" height="28" className="shrink-0" fill="none" stroke={CYAN.hex} strokeWidth="2.6" strokeLinecap="round" aria-hidden="true">
+            <circle cx="10.5" cy="10.5" r="6.5" />
+            <path d="M20 20l-4.5-4.5" />
+          </svg>
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setActiveLetter(null);
+            }}
+            placeholder="Search clients..."
+            aria-label="Search clients"
+            className="h-full min-w-0 flex-1 bg-transparent text-[22px] font-medium text-white outline-none placeholder:text-white/55"
+          />
+        </label>
+        <div className="absolute" style={{ left: 1312, top: 227 }}>
+          {addButton}
+        </div>
+
+        {/* Body — the master's grid box. */}
+        <div className="absolute flex flex-col overflow-hidden rounded-[12px] border-2" style={{ left: 134, top: 308, width: 1419, height: 531, borderColor: BLUE.hex, boxShadow: `0 0 10px rgba(${BLUE.rgb},0.35)`, background: NAVY }}>
+          {/* A–Z — jumps the list to that letter; letters with no clients are dimmed. */}
+          <nav aria-label="Jump to letter" className="flex shrink-0 items-stretch" style={{ height: 55, borderBottom: `2px solid ${GRID}` }}>
+            {ALPHABET.map((letter, i) => {
+              const has = availableLetters.has(letter);
+              const active = activeLetter === letter;
+              return (
+                <button
+                  key={letter}
+                  type="button"
+                  disabled={!has}
+                  onClick={() => jumpToLetter(letter)}
+                  aria-label={`Jump to ${letter === "#" ? "numbers and symbols" : letter}`}
+                  aria-pressed={active}
+                  className={`flex flex-1 items-center justify-center text-[24px] font-bold transition ${has ? "text-white hover:bg-white/[0.06]" : "cursor-default text-white/25"}`}
+                  style={{
+                    borderLeft: i ? `1px solid rgba(${BLUE.rgb},0.22)` : undefined,
+                    ...(letter === "#" && has && !active ? { color: CYAN.hex } : {}),
+                    ...(active ? { background: BLUE.hex, color: "#fff", boxShadow: `0 0 16px rgba(${BLUE.rgb},0.8)` } : {}),
+                  }}
+                >
+                  {letter}
+                </button>
+              );
+            })}
+          </nav>
+
+          {/* Directory — real linked clients, names only. */}
+          <div ref={listRef} className="clients-scroll relative min-h-0 flex-1 overflow-y-auto px-5 pb-5 pt-4">
+            {!hasAnyClients ? (
+              <div className="flex h-full flex-col items-center justify-center gap-3 text-center">
+                <p className="text-[34px] font-bold text-white">No clients yet</p>
+                <p className="text-[20px] text-white/60">Add your first client to get started.</p>
+                <div className="mt-3">{addButton}</div>
+              </div>
+            ) : filtered.length === 0 ? (
+              <p className="pt-4 text-[22px] text-white/60">No clients match &quot;{query}&quot;.</p>
+            ) : (
+              <div className="space-y-4">
+                {ALPHABET.map((letter) => {
+                  const items = groups.get(letter) ?? [];
+                  if (items.length === 0) return null;
+                  return (
+                    <section key={letter} id={`client-group-${letter}`} aria-label={letter} className="overflow-hidden rounded-[10px] border-2" style={{ borderColor: GRID }}>
+                      <h2
+                        className={`${wide.className} flex items-center gap-3 px-5 py-1.5 text-[28px] font-extrabold italic text-white`}
+                        style={{ background: "linear-gradient(180deg, #0d2c6e 0%, #081d4d 100%)", borderBottom: `2px solid ${GRID}` }}
+                      >
+                        <span>{letter}</span>
+                        <span className="h-[2px] flex-1" style={{ background: `linear-gradient(90deg, rgba(${CYAN.rgb},0.7), transparent)` }} aria-hidden="true" />
+                        <span className="text-[17px] font-semibold not-italic text-white/60">{items.length}</span>
+                      </h2>
+                      <ul>
+                        {items.map((client, i) => (
+                          <li key={client.id} style={i ? { borderTop: `1px solid ${ROW_LINE}` } : undefined}>
+                            <Link
+                              href={`/dashboard/barber/clients/${client.id}`}
+                              className="group flex items-center justify-between px-8 py-3 text-[24px] font-semibold text-white transition hover:bg-[rgba(30,123,255,0.12)]"
+                            >
+                              <span className="truncate">{client.full_name}</span>
+                              <svg viewBox="0 0 24 24" width="26" height="26" className="shrink-0 text-white/70 transition group-hover:text-[#22e4ff]" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                                <path d="M9 5l7 7-7 7" />
+                              </svg>
+                            </Link>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/dashboard/polar-ui/clients-corner-splat.webp" alt="" aria-hidden="true" className="pointer-events-none absolute z-10 select-none" style={{ left: 1476, top: 784, width: 74, height: 52 }} />
+      </PolarStage>
 
       {/* Add Client — the existing link-by-email flow. */}
       {addOpen && (
-        <div className="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 backdrop-blur-sm sm:flex" onClick={() => setAddOpen(false)}>
+        <div className="fixed inset-0 z-50 hidden items-center justify-center bg-[#030612]/80 backdrop-blur-sm sm:flex" onClick={() => setAddOpen(false)}>
           <div
             role="dialog"
             aria-modal="true"
             aria-labelledby="add-client-title"
             className={`${ui.className} relative w-[440px] rounded-2xl border-2 p-6`}
-            style={{ borderColor: BLUE.hex, background: "linear-gradient(180deg, #06112a 0%, #030a1c 100%)", boxShadow: `0 0 30px -6px rgba(${BLUE.rgb},0.8)` }}
+            style={{ borderColor: BLUE.hex, background: NAVY, boxShadow: `0 0 28px -4px rgba(${BLUE.rgb},0.7)` }}
             onClick={(e) => e.stopPropagation()}
           >
             <p id="add-client-title" className="text-2xl font-bold uppercase tracking-wide text-white">Add client</p>
@@ -352,7 +349,7 @@ export function ClientDirectory({ clients }: { clients: Client[] }) {
                     required
                     autoFocus
                     placeholder="client@example.com"
-                    className="h-12 w-full rounded-lg border-2 bg-black/30 px-4 text-base text-white outline-none placeholder:text-white/35"
+                    className="h-12 w-full rounded-lg border-2 bg-[#0b1330] px-4 text-lg text-white outline-none placeholder:text-white/35 focus:shadow-[0_0_10px_rgba(30,123,255,0.6)]"
                     style={{ borderColor: `rgba(${BLUE.rgb},0.6)` }}
                   />
                 </label>
