@@ -1,6 +1,5 @@
 "use client";
 
-import { POLAR_DARK_CSS, PolarPhoneHeader } from "@/components/polar-ui/polar-plain-page";
 import { useMemo, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { Barlow, Permanent_Marker } from "next/font/google";
@@ -15,9 +14,8 @@ type Client = { id: string; full_name: string };
 // darkened POLAR Room — this replaces the previous flat mastered-image
 // UI entirely. The directory is names only: find person → click person.
 // Details, editing and removal live on the client's own page.
-// POLAR Barber system: hot pink dominant (the name is kept to limit churn).
-const BLUE = ACCENTS.magenta;
-const ROW_LINE = `rgba(${ACCENTS.magenta.rgb},0.22)`;
+const BLUE = ACCENTS.blue;
+const ROW_LINE = `rgba(${ACCENTS.blue.rgb},0.22)`;
 
 const graffiti = Permanent_Marker({ subsets: ["latin"], weight: "400" });
 const ui = Barlow({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
@@ -31,7 +29,7 @@ function groupKey(fullName: string): string {
 
 function PeopleGlyph() {
   return (
-    <svg viewBox="0 0 48 40" className="h-14 w-16 shrink-0" fill="none" stroke="#fd12c8" strokeWidth="3.6" strokeLinecap="round" aria-hidden="true" style={{ filter: "drop-shadow(0 0 6px rgba(253,18,200,255,0.7))" }}>
+    <svg viewBox="0 0 48 40" className="h-14 w-16 shrink-0" fill="none" stroke="#18d4ff" strokeWidth="3.6" strokeLinecap="round" aria-hidden="true" style={{ filter: "drop-shadow(0 0 6px rgba(24,212,255,0.7))" }}>
       <circle cx="17" cy="11" r="7" />
       <path d="M3 37c0-8 6.3-13 14-13s14 5 14 13z" />
       <circle cx="33" cy="12" r="6" />
@@ -41,9 +39,13 @@ function PeopleGlyph() {
 }
 
 function CrownGlyph() {
-  // The master's own crown artwork (CALENDAR-UI), not a drawn approximation.
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img src="/dashboard/polar-ui/polar-crown.webp" alt="" aria-hidden="true" className="shrink-0 -translate-y-3" style={{ height: 58, width: "auto" }} />;
+  return (
+    <svg viewBox="0 0 80 64" className="h-16 w-20 shrink-0" fill="none" stroke={ACCENTS.blue.hex} strokeWidth="5" strokeLinejoin="round" aria-hidden="true" style={{ filter: `drop-shadow(0 0 8px rgba(${ACCENTS.blue.rgb},0.8))` }}>
+      <path d="M8 16l16 16 16-26 16 26 16-16-6 30H14z" />
+      <path d="M16 54c8-5 40-5 48 0" />
+      <path d="M22 50v10M40 48v14M58 50v8" strokeLinecap="round" strokeWidth="3" />
+    </svg>
+  );
 }
 
 export function ClientDirectory({ clients }: { clients: Client[] }) {
@@ -104,10 +106,10 @@ export function ClientDirectory({ clients }: { clients: Client[] }) {
     <button
       type="button"
       onClick={openAdd}
-      className="flex h-14 shrink-0 items-center gap-6 rounded-xl border-2 px-8 text-lg font-bold uppercase tracking-wide text-white transition hover:brightness-110"
-      style={{ borderColor: "#ff6fcf", background: `linear-gradient(180deg, #ff3fc0 0%, ${BLUE.hex} 55%, #d10f90 100%)`, boxShadow: `0 0 18px -2px rgba(${BLUE.rgb},0.85)` }}
+      className="flex h-14 shrink-0 items-center gap-6 rounded-xl border-2 px-8 text-lg font-bold uppercase tracking-wide text-white transition hover:bg-white/5"
+      style={{ borderColor: BLUE.hex, boxShadow: `0 0 16px -2px rgba(${BLUE.rgb},0.75), inset 0 0 10px rgba(${BLUE.rgb},0.3)` }}
     >
-      <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" aria-hidden="true">
+      <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="#18d4ff" strokeWidth="3" strokeLinecap="round" aria-hidden="true">
         <path d="M12 4v16M4 12h16" />
       </svg>
       Add Client
@@ -141,9 +143,8 @@ export function ClientDirectory({ clients }: { clients: Client[] }) {
       `}</style>
 
       {/* Mobile — unchanged simple functional layout. */}
-      <main className={`polar-dark min-h-[100dvh] bg-[#060b1e] px-6 py-10 sm:hidden ${ui.className}`}>
-        <style>{POLAR_DARK_CSS}</style>
-        <PolarPhoneHeader title="Clients" backHref="/dashboard/barber" icon={<PeopleGlyph />} />
+      <main className="mx-auto max-w-xl px-6 py-16 sm:hidden">
+        <h1 className="text-xl font-semibold text-polar-text">Clients</h1>
 
         <form onSubmit={handleAddSubmit} className="mt-4 flex gap-2">
           <input
@@ -189,17 +190,23 @@ export function ClientDirectory({ clients }: { clients: Client[] }) {
         className={ui.className}
         heading={
           <div className="relative flex min-w-0 flex-1 items-center gap-5">
+            {/* Faint diagonal light streaks behind the header, as in the reference. */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-[-24px] left-[38%] right-[18%]"
+              style={{ background: `repeating-linear-gradient(115deg, transparent 0 70px, rgba(${BLUE.rgb},0.07) 70px 110px, transparent 110px 170px)` }}
+            />
             <PeopleGlyph />
             <div className="relative">
-              <div className="flex items-start gap-1">
               <h1 className={`${graffiti.className} clients-title leading-none`} style={{ fontSize: "clamp(40px, 3.6vw, 64px)" }}>
                 Clients
               </h1>
-              <CrownGlyph />
-              </div>
-              <p className="mt-1 whitespace-nowrap pl-3 text-sm font-medium uppercase tracking-[0.42em]" style={{ color: "rgba(255,255,255,0.8)" }}>
+              <p className="mt-1 whitespace-nowrap pl-3 text-sm font-medium uppercase tracking-[0.42em]" style={{ color: "#8fb6ff" }}>
                 Real people. Real progress.
               </p>
+            </div>
+            <div className="relative ml-auto mr-[14%] hidden xl:block">
+              <CrownGlyph />
             </div>
           </div>
         }
@@ -230,7 +237,7 @@ export function ClientDirectory({ clients }: { clients: Client[] }) {
         <nav
           aria-label="Jump to letter"
           className="mb-3 flex shrink-0 items-center justify-between rounded-xl border px-2 py-1.5"
-          style={{ borderColor: `rgba(${BLUE.rgb},0.35)`, background: "rgba(6,11,30,0.7)" }}
+          style={{ borderColor: `rgba(${BLUE.rgb},0.35)`, background: "rgba(3,10,28,0.6)" }}
         >
           {ALPHABET.map((letter) => {
             const has = availableLetters.has(letter);
@@ -280,7 +287,7 @@ export function ClientDirectory({ clients }: { clients: Client[] }) {
                   >
                     <h2
                       className="px-5 py-1.5 text-2xl font-bold text-white"
-                      style={{ background: "linear-gradient(180deg, #2a0a36 0%, #1a0828 100%)", borderBottom: `1px solid rgba(${ACCENTS.magenta.rgb},0.45)` }}
+                      style={{ background: "linear-gradient(180deg, #0f3fa6 0%, #0a2f82 100%)" }}
                     >
                       {letter}
                     </h2>
@@ -316,7 +323,7 @@ export function ClientDirectory({ clients }: { clients: Client[] }) {
             aria-modal="true"
             aria-labelledby="add-client-title"
             className={`${ui.className} relative w-[440px] rounded-2xl border-2 p-6`}
-            style={{ borderColor: BLUE.hex, background: "linear-gradient(180deg, #081230 0%, #060b1e 100%)", boxShadow: `0 0 30px -6px rgba(${BLUE.rgb},0.8)` }}
+            style={{ borderColor: BLUE.hex, background: "linear-gradient(180deg, #06112a 0%, #030a1c 100%)", boxShadow: `0 0 30px -6px rgba(${BLUE.rgb},0.8)` }}
             onClick={(e) => e.stopPropagation()}
           >
             <p id="add-client-title" className="text-2xl font-bold uppercase tracking-wide text-white">Add client</p>

@@ -4,10 +4,6 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 
 // Focus Mode — "the room switches off, the selected feature wakes up".
-// Restyled to the approved CALENDAR-UI master system (see PRODUCT.md):
-// the panel frame, corner paint and drips are the master's own artwork,
-// applied as a 9-slice that scales with the panel; POLAR navy base,
-// hot-pink neon. Behaviour and API are unchanged.
 // Reusable shell for the Barber Dashboard's five destinations: the
 // exact same POLAR Room (passed in as `room`, drawn with the dashboard's
 // own crop behaviour) sits underneath a very strong dark overlay so it
@@ -22,9 +18,8 @@ import Link from "next/link";
 export type FocusAccent = "magenta" | "cyan" | "blue";
 
 export const ACCENTS: Record<FocusAccent, { hex: string; rgb: string }> = {
-  // POLAR Barber hot pink (the master's neon) and selective cyan.
-  magenta: { hex: "#fd12c8", rgb: "253,18,200" },
-  cyan: { hex: "#1fd6ff", rgb: "31,214,255" },
+  magenta: { hex: "#ff1fb4", rgb: "255,31,180" },
+  cyan: { hex: "#22e4ff", rgb: "34,228,255" },
   // POLAR electric blue — Clients / Workflow Mode / My Profile.
   blue: { hex: "#1e7bff", rgb: "30,123,255" },
 };
@@ -43,39 +38,16 @@ export type FrameSplatter = {
   frameWidth: number;
 };
 
-// POLAR navy panel base (never black).
-const NAVY = "#060b1e";
-const PINK = ACCENTS.magenta;
-
-// The master's frame ring (1672 × 941, panel body at 97,86 → 1585,870).
-// Sizes below are master px, expressed in cqw of the panel so the art
-// scales with the panel instead of distorting.
-const FRAME_SRC = "/dashboard/polar-ui/polar-frame.webp";
-const BODY_W = 1488;
-const cq = (px: number) => `${((px / BODY_W) * 100).toFixed(4)}cqw`;
-const FRAME_STYLE: React.CSSProperties = {
-  borderStyle: "solid",
-  borderWidth: 0,
-  borderImageSource: `url(${FRAME_SRC})`,
-  borderImageSlice: "130 340 120 340",
-  borderImageWidth: `${cq(130)} ${cq(340)} ${cq(120)} ${cq(340)}`,
-  borderImageOutset: `${cq(86)} ${cq(87)} ${cq(71)} ${cq(97)}`,
-  borderImageRepeat: "stretch",
+// Panel interior per accent (magenta = Calendar's original value).
+const SURFACES: Record<FocusAccent, string> = {
+  magenta: "linear-gradient(180deg, #0c0510 0%, #07030a 100%)",
+  cyan: "linear-gradient(180deg, #04101a 0%, #03080f 100%)",
+  blue: "linear-gradient(180deg, #06112a 0%, #030a1c 100%)",
 };
 
-// The master's header bar (dark bar + neon rails), 3-sliced so its ends keep their shape.
-const HEADER_BAR_STYLE: React.CSSProperties = {
-  borderStyle: "solid",
-  borderWidth: 0,
-  borderImageSource: "url(/dashboard/polar-ui/polar-header-bar.webp)",
-  borderImageSlice: "0 40 0 40 fill",
-  borderImageWidth: `0 ${cq(40)} 0 ${cq(40)}`,
-  borderImageRepeat: "stretch",
-};
-
-// Focus Mode backdrop ("lights off" under a deep-navy night).
-const FOCUS_ROOM_FILTER = "saturate(0.15) brightness(0.4) blur(2.5px)";
-const FOCUS_OVERLAY = "rgba(3,6,18,0.9)";
+// Focus Mode backdrop ("lights off"), shared by every destination.
+const FOCUS_ROOM_FILTER = "saturate(0.15) brightness(0.42) blur(2.5px)";
+const FOCUS_OVERLAY = "rgba(2,2,5,0.92)";
 
 // Full Screen is remembered for the browser tab so it survives the
 // feature's own in-page navigation (e.g. Calendar's view/date links).
@@ -114,9 +86,7 @@ export function FocusModeShell({
   /** Panel position in normal Focus Mode (CSS inset). Default: centred ~90%. */
   frameInset?: string;
 }) {
-  // Every destination now wears the master's pink frame; `accent` is kept for API compatibility.
-  void accent;
-  const { hex, rgb } = PINK;
+  const { hex, rgb } = ACCENTS[accent];
   const [fullScreen, setFullScreen] = useState(false);
 
   useEffect(() => {
@@ -145,11 +115,11 @@ export function FocusModeShell({
   }, [fullScreen, setFs]);
 
   const iconBtn =
-    "flex h-14 w-14 shrink-0 items-center justify-center rounded-[13px] border-[2.5px] transition hover:brightness-125 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2";
-  const neon = `0 0 12px rgba(${rgb},0.6), inset 0 0 9px rgba(${rgb},0.28)`;
+    "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border-2 bg-black/40 transition hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2";
+  const neon = `0 0 10px rgba(${rgb},0.55), inset 0 0 8px rgba(${rgb},0.25)`;
 
   return (
-    <main className={`relative hidden h-[100dvh] overflow-hidden sm:block ${className ?? ""}`} style={{ background: NAVY }}>
+    <main className={`relative hidden h-[100dvh] overflow-hidden bg-black sm:block ${className ?? ""}`}>
       {/* The POLAR Room, lights OFF. Applied uniformly to the whole room
           layer (never object-by-object): colour is drained and brightness
           cut so no neon label, sign or object can glow through, then a
@@ -161,7 +131,7 @@ export function FocusModeShell({
       <div
         aria-hidden="true"
         className="absolute inset-0 transition-[background-color] duration-500"
-        style={{ backgroundColor: fullScreen ? "rgba(3,6,18,0.995)" : backdrop === "off" ? FOCUS_OVERLAY : "transparent" }}
+        style={{ backgroundColor: fullScreen ? "rgba(1,1,3,0.99)" : backdrop === "off" ? FOCUS_OVERLAY : "transparent" }}
       />
 
       {/* Frame wrapper: positions the panel and carries the corner paint,
@@ -170,26 +140,21 @@ export function FocusModeShell({
         className="absolute transition-all duration-300 ease-out"
         style={{ inset: fullScreen ? "0" : frameInset, containerType: "inline-size" }}
       >
-        {/* The master's frame now carries the corner paint; per-page splatter is retired. */}
-        {splatter && null}
+        {splatter && !fullScreen && <CornerSplatter splatter={splatter} />}
 
         <section
           aria-label={id}
           className="absolute inset-0 flex flex-col overflow-hidden"
-          style={
-            fullScreen
-              ? { borderRadius: 0, border: `2px solid rgba(${rgb},0.4)`, background: NAVY }
-              : { ...FRAME_STYLE, borderRadius: cq(44), background: NAVY, overflow: "visible" }
-          }
+          style={{
+            borderRadius: fullScreen ? 0 : 26,
+            border: `3px solid ${fullScreen ? `rgba(${rgb},0.35)` : hex}`,
+            background: SURFACES[accent],
+            boxShadow: fullScreen
+              ? "none"
+              : `0 0 22px rgba(${rgb},0.75), 0 0 60px -10px rgba(${rgb},0.6), inset 0 0 0 5px #0a0409, inset 0 0 0 6.5px rgba(${rgb},0.55), inset 0 0 40px -12px rgba(${rgb},0.45)`,
+          }}
         >
-          {!fullScreen && (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src="/dashboard/polar-ui/polar-header-drips.webp" alt="" aria-hidden="true" className="pointer-events-none absolute select-none" style={{ right: cq(233), top: cq(20), width: cq(130) }} />
-          )}
-          <header
-            className="relative flex shrink-0 items-center gap-4 px-8 pb-4 pt-4"
-            style={fullScreen ? undefined : { ...HEADER_BAR_STYLE, margin: `${cq(20)} ${cq(15)} ${cq(4)} ${cq(21)}` }}
-          >
+          <header className="relative flex shrink-0 items-center gap-4 px-7 pb-3 pt-5">
             <div className="flex min-w-0 flex-1 items-center">{heading}</div>
             <button
               type="button"
@@ -197,7 +162,7 @@ export function FocusModeShell({
               aria-label={fullScreen ? "Exit full screen" : "Full screen"}
               title={fullScreen ? "Exit full screen (Esc)" : "Full screen"}
               className={`${iconBtn} text-white`}
-              style={{ borderColor: hex, boxShadow: neon, outlineColor: hex, background: NAVY }}
+              style={{ borderColor: hex, boxShadow: neon, outlineColor: hex }}
             >
               {fullScreen ? (
                 <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -215,7 +180,7 @@ export function FocusModeShell({
                 aria-label="Close and return to dashboard"
                 title="Back to dashboard"
                 className={iconBtn}
-                style={{ borderColor: hex, boxShadow: neon, color: hex, outlineColor: hex, background: NAVY }}
+                style={{ borderColor: hex, boxShadow: neon, color: hex, outlineColor: hex }}
               >
                 <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true">
                   <path d="M6 6l12 12M18 6L6 18" />
@@ -224,14 +189,14 @@ export function FocusModeShell({
             )}
           </header>
           <div
-            className={`mx-8 h-[2px] shrink-0 rounded-full ${fullScreen ? "" : "hidden"}`}
-            style={{ background: hex, boxShadow: `0 0 8px rgba(${rgb},0.7)` }}
+            className="mx-7 h-[2px] shrink-0 rounded-full"
+            style={{ background: `linear-gradient(90deg, rgba(${rgb},0.9), rgba(${rgb},0.25) 70%, rgba(${rgb},0.6))`, boxShadow: `0 0 8px rgba(${rgb},0.6)` }}
             aria-hidden="true"
           />
 
-          {toolbar && <div className="relative flex shrink-0 flex-wrap items-center gap-3 px-8 pb-3 pt-4">{toolbar}</div>}
+          {toolbar && <div className="relative flex shrink-0 flex-wrap items-center gap-3 px-7 pb-3 pt-4">{toolbar}</div>}
 
-          <div className="relative flex min-h-0 flex-1 flex-col overflow-hidden px-8 pb-7">{children}</div>
+          <div className="relative flex min-h-0 flex-1 flex-col px-7 pb-6">{children}</div>
         </section>
       </div>
     </main>

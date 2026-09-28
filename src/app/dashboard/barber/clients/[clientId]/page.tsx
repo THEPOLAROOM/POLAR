@@ -1,4 +1,3 @@
-import { PolarPlainPage } from "@/components/polar-ui/polar-plain-page";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { requireRole } from "@/lib/auth/require-role";
@@ -107,11 +106,13 @@ export default async function ClientProfileCardPage({
     : null;
 
   return (
-    <PolarPlainPage id="client-record" title={profile.full_name} subtitle="Client record" icon={<svg viewBox="0 0 24 24" width="52" height="52" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" /></svg>} backHref="/dashboard/barber/clients" backLabel="Back to Clients">
-      <div className="mx-auto max-w-3xl">
+    <main className="mx-auto max-w-xl px-6 py-16">
       <Link href="/dashboard/barber/clients" className="text-sm text-polar-muted">
         ‹ Back to Clients
       </Link>
+      <h1 className="mt-4 text-xl font-semibold text-polar-text">
+        {profile.full_name}
+      </h1>
       <p className="mt-1 text-sm text-polar-muted">{profile.phone}</p>
       {profile.polar_id && <p className="mt-1 text-sm text-polar-muted">POLAR ID {profile.polar_id}</p>}
 
@@ -146,7 +147,7 @@ export default async function ClientProfileCardPage({
         <div className="flex items-center gap-2">
           <h2 className="text-sm font-semibold text-polar-text">Barber Insights</h2>
           <Link href="/dashboard/barber/insights" aria-label="Manage insight questions" title="Manage insight questions" className="text-xs text-polar-muted">
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z" /><path d="M13.5 6.5l4 4" /></svg>
+            ✏️
           </Link>
         </div>
         <p className="text-xs text-polar-muted">Private to you — never shown to the client.</p>
@@ -164,7 +165,7 @@ export default async function ClientProfileCardPage({
             title="Manage custom fields"
             className="text-xs text-polar-muted"
           >
-            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z" /><path d="M13.5 6.5l4 4" /></svg>
+            ✏️
           </Link>
         </div>
         {customFields.length > 0 ? (
@@ -261,8 +262,7 @@ export default async function ClientProfileCardPage({
       <section className="mt-12 border-t border-polar-border pt-6">
         <RemoveClientButton clientId={clientId} clientName={profile.full_name} />
       </section>
-      </div>
-    </PolarPlainPage>
+    </main>
   );
 }
 
