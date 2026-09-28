@@ -9,8 +9,8 @@ import type { DayCapacity } from "@/lib/calendar/capacity";
 import { createWalkIn } from "@/lib/actions/walk-ins";
 import { cancelBookingAsBarber, markBookingNoShow, rescheduleBookingInCalendar } from "@/lib/actions/barber-bookings";
 import { createBookingAsBarber, createBarterBooking, createBlockedTime } from "@/lib/actions/barber-calendar-actions";
-import { Barlow_Condensed, Permanent_Marker } from "next/font/google";
-import { FocusModeShell, ACCENTS, type FrameSplatter } from "@/components/focus-mode/focus-mode-shell";
+import { Barlow, Barlow_Condensed } from "next/font/google";
+import { PolarStage, POLAR } from "@/components/polar-ui/polar-stage";
 import { BarberRoom } from "../dashboard-scene";
 
 export type ViewKind = "day" | "week" | "month" | "list" | "year";
@@ -18,44 +18,35 @@ export type MonthCell = { date: string; day: number; count: number; isFullyBooke
 type Service = { id: string; name: string; durationMinutes: number; price: number };
 type Client = { id: string; fullName: string };
 
-// Calendar Focus Mode (desktop), built to the approved CALENDAR-UI
-// reference: real HTML inside the reusable FocusModeShell, over the
-// darkened POLAR Room. Only the paint splatter at the frame corners is
-// imagery (paint only, cut from the reference); every word, date and
-// booking is live. All booking data, actions and modals are unchanged.
-const PINK = ACCENTS.magenta;
-const GRID_LINE = `rgba(${ACCENTS.magenta.rgb},0.34)`;
+// Calendar (desktop), built to the approved CALENDAR-UI master
+// (design-masters/barber-calendar-master.png) on the POLAR stage: the
+// page is authored at the master's native 1672 × 941 canvas and scaled
+// to fit. Frame, drips, title lettering, icon and crown are the
+// master's own artwork (navy-tinted chrome); every control, date and
+// booking is live HTML. All booking data, actions and modals unchanged.
+const PINK = { hex: POLAR.pink, rgb: POLAR.pinkRgb };
+const CYAN = { hex: POLAR.cyan, rgb: POLAR.cyanRgb };
+const GRID_LINE = POLAR.grid;
 const PINK_OUTLINE: React.CSSProperties = {
-  borderColor: `rgba(${ACCENTS.magenta.rgb},0.85)`,
-  boxShadow: `0 0 10px -2px rgba(${ACCENTS.magenta.rgb},0.6), inset 0 0 6px rgba(${ACCENTS.magenta.rgb},0.2)`,
+  borderColor: PINK.hex,
+  boxShadow: `0 0 10px rgba(${PINK.rgb},0.55), inset 0 0 7px rgba(${PINK.rgb},0.22)`,
 };
-const BTN = "flex h-11 shrink-0 items-center rounded-xl border-2 bg-black/40 text-white transition hover:bg-white/5";
+const BTN = "flex shrink-0 items-center justify-center rounded-[10px] border-2 bg-[#060b1e] text-white transition hover:brightness-125";
 
-// POLAR graffiti identity for the title; bold condensed italic for the
-// period ("SEPTEMBER 2026" etc.) and condensed UI text — defined once,
-// so every month/year renders with the identical treatment.
-const graffiti = Permanent_Marker({ subsets: ["latin"], weight: "400" });
+// Bold condensed UI voice, as in the master.
 const ui = Barlow_Condensed({ subsets: ["latin"], weight: ["500", "600", "700", "800"], style: ["normal", "italic"] });
+// Full-width Barlow for the master's date numerals and period title.
+const wide = Barlow({ subsets: ["latin"], weight: ["600", "700", "800"], style: ["normal", "italic"] });
 
-const SPLATTER: FrameSplatter = {
-  src: {
-    tl: "/dashboard/focus/calendar-splat-tl.webp",
-    tr: "/dashboard/focus/calendar-splat-tr.webp",
-    bl: "/dashboard/focus/calendar-splat-bl.webp",
-    br: "/dashboard/focus/calendar-splat-br.webp",
-  },
-  size: [240, 200],
-  corner: { tl: [60, 66], tr: [181, 66], bl: [60, 122], br: [181, 122] },
-  frameWidth: 1481,
-};
-
-const TABS: { view: ViewKind; label: string }[] = [
-  { view: "day", label: "Day" },
-  { view: "week", label: "Week" },
-  { view: "month", label: "Month" },
-  { view: "list", label: "List" },
+const TABS: { view: ViewKind; label: string; width: number }[] = [
+  { view: "day", label: "Day", width: 77 },
+  { view: "week", label: "Week", width: 78 },
+  { view: "month", label: "Month", width: 82 },
+  { view: "list", label: "List", width: 71 },
 ];
 const WEEKDAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
+// The master's own column widths (px, inside the 2px grid frame).
+const MONTH_COLS = "210px 199px 197px 199px 199px 200px 211px";
 
 type PickAction = "book" | "walkin" | "block";
 const ACTION_META: Record<PickAction, { label: string; verb: string }> = {
@@ -64,34 +55,9 @@ const ACTION_META: Record<PickAction, { label: string; verb: string }> = {
   block: { label: "Block Time", verb: "block time" },
 };
 
-function CalendarGlyph() {
-  return (
-    <svg viewBox="0 0 48 48" className="h-14 w-14 shrink-0" fill="none" stroke={ACCENTS.magenta.hex} strokeWidth="3.4" strokeLinecap="round" aria-hidden="true" style={{ filter: `drop-shadow(0 0 6px rgba(${ACCENTS.magenta.rgb},0.8))` }}>
-      <rect x="5" y="9" width="38" height="34" rx="6" />
-      <path d="M5 18h38M15 5v8M33 5v8" />
-      <g fill={ACCENTS.magenta.hex} stroke="none">
-        <circle cx="15" cy="27" r="2.6" />
-        <circle cx="24" cy="27" r="2.6" />
-        <circle cx="33" cy="27" r="2.6" />
-        <circle cx="15" cy="35" r="2.6" />
-        <circle cx="24" cy="35" r="2.6" />
-      </g>
-    </svg>
-  );
-}
-
-function CrownGlyph() {
-  return (
-    <svg viewBox="0 0 48 34" className="h-10 w-14 shrink-0 -translate-y-2" fill="none" stroke={ACCENTS.magenta.hex} strokeWidth="3" strokeLinejoin="round" aria-hidden="true" style={{ filter: `drop-shadow(0 0 6px rgba(${ACCENTS.magenta.rgb},0.8))` }}>
-      <path d="M4 10l9 9 11-15 11 15 9-9-4 20H8z" />
-      <path d="M10 30h28" />
-    </svg>
-  );
-}
-
 function Chevron({ dir }: { dir: "left" | "right" }) {
   return (
-    <svg viewBox="0 0 24 24" className="h-6 w-6" fill="none" stroke={ACCENTS.magenta.hex} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke={PINK.hex} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d={dir === "left" ? "M15 5l-7 7 7 7" : "M9 5l7 7-7 7"} />
     </svg>
   );
@@ -119,7 +85,7 @@ function CapacityFill({ capacity }: { capacity: DayCapacity | undefined }) {
   }
   const pct = Math.min(1, Math.max(0, capacity.ratio!)) * 100;
   if (pct === 0) return null;
-  const { rgb } = ACCENTS.magenta;
+  const { rgb } = PINK;
   return (
     <span
       aria-hidden="true"
@@ -133,31 +99,49 @@ function CapacityFill({ capacity }: { capacity: DayCapacity | undefined }) {
   );
 }
 
-/** "SEPTEMBER 2026" style period title — any trailing year is pink. */
+/** "SEPTEMBER 2026" style period title — any trailing year is pink —
+ * over the master's own paint splash. Long labels shrink to fit the
+ * master's title slot (x 462–792). */
 function PeriodTitle({ text }: { text: string }) {
   const m = text.toUpperCase().match(/^(.*?)(\s\d{4})?$/);
+  const size = Math.min(40, Math.floor(590 / Math.max(1, text.length)));
   return (
-    <div className="relative mx-1 shrink-0 2xl:mx-3">
-      <p className="cal-period relative z-10 whitespace-nowrap" style={{ fontSize: "clamp(24px, 2.1vw, 40px)" }}>
+    <>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src="/dashboard/polar-ui/calendar-period-splat.webp" alt="" aria-hidden="true" className="pointer-events-none absolute select-none" style={{ left: 425, top: 274, width: 367, height: 32 }} />
+      <p className={`cal-period ${wide.className} absolute flex items-center whitespace-nowrap`} style={{ left: 462, top: 227, height: 50, width: 330, fontSize: size }}>
         {m?.[1]}
-        {m?.[2] && <span style={{ color: ACCENTS.magenta.hex }}>{m[2]}</span>}
+        {m?.[2] && (
+          <span className="relative" style={{ color: PINK.hex, marginLeft: "0.26em" }}>
+            {m[2].trim()}
+            <svg viewBox="0 0 16 12" className="absolute" style={{ right: "-0.34em", top: "0.02em", width: "0.4em", height: "0.3em" }} aria-hidden="true">
+              <path d="M0 11.5 L15.5 0 L6 9.5 Z" fill={PINK.hex} />
+            </svg>
+          </span>
+        )}
       </p>
-      {/* Pink paint swash under the period, as in the reference. */}
-      <svg viewBox="0 0 300 18" preserveAspectRatio="none" className="absolute -bottom-2 left-[-4%] h-3 w-[108%]" aria-hidden="true">
-        <path d="M2 11c60-6 140-8 220-6 30 1 55 2 76 4-24 2-50 3-78 3-70 1-150 3-218 2z" fill={ACCENTS.magenta.hex} opacity="0.9" />
-        <path d="M120 12c2 3 1 5 0 6M150 12c1 2 1 3 0 4M95 12c1 2 0 3 0 3" stroke={ACCENTS.magenta.hex} strokeWidth="2" strokeLinecap="round" />
-      </svg>
-    </div>
+    </>
   );
 }
 
+const ACTION_BOX: Record<PickAction, { left: number; width: number }> = {
+  book: { left: 1122, width: 154 },
+  walkin: { left: 1289, width: 127 },
+  block: { left: 1430, width: 122 },
+};
+
 function ActionButton({ kind, onPick, view, date }: { kind: PickAction; onPick: (k: PickAction) => void; view: ViewKind; date: string }) {
-  const style: React.CSSProperties =
-    kind === "book"
-      ? { background: ACCENTS.magenta.hex, borderColor: ACCENTS.magenta.hex, boxShadow: `0 0 16px -2px rgba(${ACCENTS.magenta.rgb},0.8)` }
+  const style: React.CSSProperties = {
+    position: "absolute",
+    top: 227,
+    height: 55,
+    ...ACTION_BOX[kind],
+    ...(kind === "book"
+      ? { background: PINK.hex, borderColor: PINK.hex, color: "#16000f", boxShadow: `0 0 16px -2px rgba(${PINK.rgb},0.85)` }
       : kind === "walkin"
-        ? { borderColor: ACCENTS.cyan.hex, color: ACCENTS.cyan.hex, boxShadow: `0 0 12px -2px rgba(${ACCENTS.cyan.rgb},0.7), inset 0 0 6px rgba(${ACCENTS.cyan.rgb},0.2)` }
-        : PINK_OUTLINE;
+        ? { borderColor: CYAN.hex, color: CYAN.hex, boxShadow: `0 0 12px -2px rgba(${CYAN.rgb},0.7), inset 0 0 6px rgba(${CYAN.rgb},0.2)` }
+        : PINK_OUTLINE),
+  };
   const icon =
     kind === "book" ? (
       <path d="M12 5v14M5 12h14" />
@@ -172,15 +156,21 @@ function ActionButton({ kind, onPick, view, date }: { kind: PickAction; onPick: 
         <path d="M9 9l6 6M15 9l-6 6" />
       </>
     );
-  const inner = (
+  const inner = kind !== "book" ? (
     <>
-      <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={kind === "block" ? { color: ACCENTS.magenta.hex } : undefined}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={kind === "walkin" ? "/dashboard/polar-ui/icon-walkin.webp" : "/dashboard/polar-ui/icon-block.webp"} alt="" aria-hidden="true" width={kind === "walkin" ? 25 : 30} height={kind === "walkin" ? 35 : 30} />
+      {ACTION_META[kind].label}
+    </>
+  ) : (
+    <>
+      <svg viewBox="0 0 24 24" width={28} height={28} fill="none" stroke="currentColor" strokeWidth={3.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
         {icon}
       </svg>
       {ACTION_META[kind].label}
     </>
   );
-  const cls = `${BTN} gap-2 px-3 text-base font-bold 2xl:px-4`;
+  const cls = `${BTN} gap-[7px] whitespace-nowrap px-1 text-[17px] font-bold tracking-[-0.01em]`;
   // Actions need a real free slot: in Day view they highlight the free
   // slots to pick from; elsewhere they open the selected date's Day view
   // in that mode. The existing booking dialogs do the rest.
@@ -345,9 +335,9 @@ function bookingKindLabel(b: CalendarBooking): string {
   return b.clientName ?? "Appointment";
 }
 
-// Six visually distinct-but-restrained treatments (Day view
-// requirement 6) drawn only from the existing POLAR palette
-// (royal/ice/magenta/white) — nothing invented. A faint state-tinted
+// Visually distinct-but-restrained treatments (Day view requirement
+// 6) from the POLAR Barber palette: pink appointments, cyan walk-ins,
+// violet barter, neutral blocks. A faint state-tinted
 // fill (in addition to the border) gives the timeline a POLAR "card"
 // feel at a glance rather than reading as plain bordered HTML rows.
 function bookingKindClass(b: CalendarBooking): string {
@@ -356,9 +346,9 @@ function bookingKindClass(b: CalendarBooking): string {
       ? "border-dashed border-white/30 bg-white/[0.02] text-white/70"
       : "border-white/15 bg-white/[0.015] text-white/40";
   }
-  if (b.isBarter) return "border-magenta/40 bg-magenta/[0.05] text-magenta";
-  if (b.isWalkIn) return "border-ice-glow/40 bg-ice-glow/[0.05] text-ice-100";
-  return "border-royal/50 bg-royal/[0.07] text-white";
+  if (b.isBarter) return "border-[#b37bff]/55 bg-[#b37bff]/[0.07] text-[#dcc6ff]";
+  if (b.isWalkIn) return "border-[#1fd6ff]/55 bg-[#1fd6ff]/[0.06] text-[#c9f6ff]";
+  return "border-[#fd12c8]/60 bg-[#fd12c8]/[0.08] text-white";
 }
 
 export function CalendarView({
@@ -526,16 +516,6 @@ export function CalendarView({
         div:has(> #barber-calendar-page) > nav {
           display: none;
         }
-        .cal-title {
-          display: inline-block;
-          transform: rotate(-4deg) skewX(-8deg);
-          background: linear-gradient(180deg, #ffffff 0%, #e8e8ee 45%, #a9a9b6 70%, #f4f4f8 100%);
-          -webkit-background-clip: text;
-          background-clip: text;
-          color: transparent;
-          filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.8)) drop-shadow(0 0 8px rgba(255, 31, 180, 0.35));
-          padding: 0.05em 0.1em;
-        }
         .cal-period {
           font-weight: 800;
           font-style: italic;
@@ -549,16 +529,17 @@ export function CalendarView({
       {/* Mobile — simple functional placeholder; the immersive layered
           design below is desktop-only, matching the rest of the
           Barber Portal. */}
-      <main className="mx-auto max-w-xl px-6 py-16 sm:hidden">
-        <h1 className="text-xl font-semibold text-polar-text">Calendar</h1>
-        <p className="mt-2 text-sm text-polar-muted">
+      <main className={`min-h-[100dvh] bg-[#060b1e] px-6 py-16 text-white sm:hidden ${ui.className}`}>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/dashboard/polar-ui/calendar-wordmark.webp" alt="Calendar" className="h-auto w-[240px]" />
+        <p className="mt-6 text-lg text-white/85">
           {todaySummary.count === 0
             ? "No appointments today."
             : `${todaySummary.count} appointment${todaySummary.count === 1 ? "" : "s"} today${
                 todaySummary.nextTime ? `, next at ${formatTime12h(todaySummary.nextTime)}` : ""
               }.`}
         </p>
-        <p className="mt-4 text-sm text-polar-muted">
+        <p className="mt-4 text-base text-white/60">
           Full calendar management is available on desktop.
         </p>
       </main>
@@ -566,99 +547,87 @@ export function CalendarView({
       {/* Desktop — Calendar Focus Mode: the POLAR Room with its lights
           off, and the approved neon Calendar panel on top. Every label,
           date and booking below is live HTML driven by real data. */}
-      <FocusModeShell
-        id="calendar"
-        accent="magenta"
-        room={<BarberRoom decorative />}
-        className={ui.className}
-        splatter={SPLATTER}
-        heading={
-          <div className="flex items-center gap-4">
-            <CalendarGlyph />
-            <h1 className={`${graffiti.className} cal-title leading-none`} style={{ fontSize: "clamp(40px, 3.6vw, 64px)" }}>
-              Calendar
-            </h1>
-            <CrownGlyph />
-          </div>
-        }
-        toolbar={
-          <>
-            <Link href={todayHref} className={`${BTN} px-4 text-lg font-bold 2xl:px-5`} style={{ ...PINK_OUTLINE, color: PINK.hex }}>
-              Today
-            </Link>
-            <Link href={prevHref} aria-label="Previous" className={`${BTN} w-11 justify-center 2xl:w-12`} style={PINK_OUTLINE}>
-              <Chevron dir="left" />
-            </Link>
-            <Link href={nextHref} aria-label="Next" className={`${BTN} w-11 justify-center 2xl:w-12`} style={PINK_OUTLINE}>
-              <Chevron dir="right" />
-            </Link>
+      <PolarStage id="calendar" chromeSrc="/dashboard/polar-ui/calendar-chrome.webp" room={<BarberRoom decorative />} className={ui.className}>
+        <h1 className="sr-only">Calendar</h1>
 
-            <PeriodTitle text={periodLabel(view, date)} />
+        {/* Toolbar — every control at the master's own box (native px). */}
+        <Link href={todayHref} className={`${BTN} absolute text-[26px] font-bold`} style={{ ...PINK_OUTLINE, color: PINK.hex, left: 136, top: 227, width: 128, height: 55 }}>
+          Today
+        </Link>
+        <Link href={prevHref} aria-label="Previous" className={`${BTN} absolute`} style={{ ...PINK_OUTLINE, left: 282, top: 227, width: 60, height: 55 }}>
+          <Chevron dir="left" />
+        </Link>
+        <Link href={nextHref} aria-label="Next" className={`${BTN} absolute`} style={{ ...PINK_OUTLINE, left: 358, top: 227, width: 61, height: 55 }}>
+          <Chevron dir="right" />
+        </Link>
 
-            <div className="ml-auto flex flex-wrap items-center gap-2 2xl:gap-3">
-              <div role="tablist" aria-label="Calendar view" className="flex h-11 overflow-hidden rounded-xl border-2" style={{ borderColor: `rgba(${PINK.rgb},0.7)` }}>
-                {TABS.map(({ view: v, label }) => {
-                  const active = view === v;
-                  return (
-                    <Link
-                      key={v}
-                      role="tab"
-                      aria-selected={active}
-                      href={`?view=${v}&date=${date}`}
-                      className={`flex items-center px-3.5 text-base font-bold transition 2xl:px-5 ${active ? "text-white" : "text-white/90 hover:bg-white/5"}`}
-                      style={active ? { background: PINK.hex, boxShadow: `0 0 16px rgba(${PINK.rgb},0.7)` } : undefined}
-                    >
-                      {label}
-                    </Link>
-                  );
-                })}
-              </div>
-              <ActionButton kind="book" onPick={startPick} view={view} date={date} />
-              <ActionButton kind="walkin" onPick={startPick} view={view} date={date} />
-              <ActionButton kind="block" onPick={startPick} view={view} date={date} />
-            </div>
-          </>
-        }
-      >
+        <PeriodTitle text={periodLabel(view, date)} />
+
+        <div role="tablist" aria-label="Calendar view" className="absolute flex overflow-hidden rounded-[10px] border-2" style={{ left: 800, top: 227, width: 308, height: 55, ...PINK_OUTLINE }}>
+          {TABS.map(({ view: v, label, width }) => {
+            const active = view === v;
+            return (
+              <Link
+                key={v}
+                role="tab"
+                aria-selected={active}
+                href={`?view=${v}&date=${date}`}
+                className={`flex items-center justify-center text-[23px] font-bold transition ${active ? "" : "text-white hover:bg-white/[0.06]"}`}
+                style={{ width, ...(active ? { background: PINK.hex, color: "#16000f", boxShadow: `0 0 16px rgba(${PINK.rgb},0.7)` } : {}) }}
+              >
+                {label}
+              </Link>
+            );
+          })}
+        </div>
+        <ActionButton kind="book" onPick={startPick} view={view} date={date} />
+        <ActionButton kind="walkin" onPick={startPick} view={view} date={date} />
+        <ActionButton kind="block" onPick={startPick} view={view} date={date} />
+
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/dashboard/polar-ui/calendar-corner-splat.webp" alt="" aria-hidden="true" className="pointer-events-none absolute z-10 select-none" style={{ left: 1476, top: 784, width: 86, height: 68 }} />
+
+        {/* Body — the master's grid box. */}
+        <div className="absolute flex flex-col" style={{ left: 134, top: 308, width: 1419, height: 531 }}>
         {/* MONTH */}
         {view === "month" && monthGrid && (
-          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-xl border-2" style={{ borderColor: GRID_LINE }}>
-            <div className="grid shrink-0 grid-cols-7">
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[12px] border-2" style={{ borderColor: POLAR.gridStrong, boxShadow: `0 0 10px rgba(${PINK.rgb},0.35)` }}>
+            <div className="grid shrink-0" style={{ height: 55, gridTemplateColumns: MONTH_COLS }}>
               {WEEKDAYS.map((d, i) => (
                 <div
                   key={d}
-                  className="py-2 text-center text-lg font-bold tracking-wide"
-                  style={{ color: i === 6 ? PINK.hex : "#fff", borderLeft: i ? `1px solid ${GRID_LINE}` : undefined, borderBottom: `1.5px solid ${GRID_LINE}` }}
+                  className="flex items-center justify-center text-[26px] font-bold italic"
+                  style={{ color: i === 6 ? PINK.hex : "#fff", borderLeft: i ? `2px solid ${GRID_LINE}` : undefined, borderBottom: `2px solid ${GRID_LINE}` }}
                 >
                   {d}
                 </div>
               ))}
             </div>
-            <div className="grid min-h-0 flex-1 grid-cols-7" style={{ gridTemplateRows: `repeat(${monthGrid.length / 7}, minmax(0, 1fr))` }}>
+            <div className="grid min-h-0 flex-1" style={{ gridTemplateColumns: MONTH_COLS, gridTemplateRows: monthGrid.length === 35 ? "99px 99px 99px 98px 77px" : "79px 79px 79px 79px 79px 77px" }}>
               {monthGrid.map((cell, i) => {
                 const col = i % 7;
                 const lastRow = i >= monthGrid.length - 7;
                 const isToday = cell.inMonth && cell.date === today;
                 const isSelected = cell.inMonth && cell.date === date && !isToday;
-                const lines = { borderLeft: col ? `1px solid ${GRID_LINE}` : undefined, borderBottom: lastRow ? undefined : `1px solid ${GRID_LINE}` };
-                const numberColor = !cell.inMonth ? "rgba(255,255,255,0.35)" : isToday || col === 6 ? PINK.hex : "#fff";
+                const lines = { borderLeft: col ? `2px solid ${GRID_LINE}` : undefined, borderBottom: lastRow ? undefined : `2px solid ${GRID_LINE}` };
+                const numberColor = !cell.inMonth ? "rgba(196,184,214,0.42)" : isToday || col === 6 ? PINK.hex : "#fff";
                 return (
                   <Link
                     key={cell.date}
                     href={`?view=day&date=${cell.date}`}
                     aria-label={`${dayLabel(cell.date)}${cell.count > 0 ? `, ${cell.count} booking${cell.count === 1 ? "" : "s"}` : ""}${cell.inMonth ? capacityLabel(cell.capacity) : ""}`}
                     title={cell.inMonth ? capacityLabel(cell.capacity).replace(/^, /, "") || undefined : undefined}
-                    className="relative flex min-h-0 flex-col px-3 pb-2 pt-2 transition hover:bg-white/[0.035]"
+                    className="relative flex min-h-0 flex-col pb-2 pl-[12px] pr-3 pt-[8px] transition hover:bg-white/[0.035]"
                     style={lines}
                   >
                     {cell.inMonth && <CapacityFill capacity={cell.capacity} />}
                     <span
-                      className="relative flex h-11 w-11 flex-col items-center justify-center rounded-full text-2xl font-bold leading-none"
+                      className={`${wide.className} relative flex h-[44px] w-[44px] flex-col items-center justify-center rounded-full text-[27px] font-semibold leading-none`}
                       style={{
                         color: numberColor,
                         textShadow: cell.inMonth ? "0 1px 2px rgba(0,0,0,0.6)" : undefined,
                         ...(isToday
-                          ? { border: `3px solid ${PINK.hex}`, boxShadow: `0 0 14px rgba(${PINK.rgb},0.85), inset 0 0 8px rgba(${PINK.rgb},0.45)`, marginLeft: -6 }
+                          ? { width: 80, height: 80, marginTop: -12, marginLeft: -6, border: `4px solid ${PINK.hex}`, boxShadow: `0 0 16px rgba(${PINK.rgb},0.9), inset 0 0 10px rgba(${PINK.rgb},0.45)` }
                           : isSelected
                             ? { border: `1.5px solid rgba(${PINK.rgb},0.8)`, marginLeft: -6 }
                             : undefined),
@@ -696,35 +665,35 @@ export function CalendarView({
             {weekDays.map((d, i) => {
               const isToday = d.date === today;
               return (
-                <div key={d.date} className="flex min-h-0 flex-col" style={{ borderLeft: i ? `1px solid ${GRID_LINE}` : undefined }}>
+                <div key={d.date} className="flex min-h-0 flex-col" style={{ borderLeft: i ? `2px solid ${GRID_LINE}` : undefined }}>
                   <Link
                     href={`?view=day&date=${d.date}`}
                     className="flex shrink-0 items-center justify-between px-3 py-2 transition hover:bg-white/[0.04]"
-                    style={{ borderBottom: `1.5px solid ${GRID_LINE}` }}
+                    style={{ borderBottom: `2px solid ${GRID_LINE}` }}
                   >
-                    <span className="text-lg font-bold" style={{ color: i === 6 ? PINK.hex : "#fff" }}>
+                    <span className="text-[22px] font-bold" style={{ color: i === 6 ? PINK.hex : "#fff" }}>
                       {WEEKDAYS[i]}
                     </span>
                     <span
-                      className="flex h-10 w-10 items-center justify-center rounded-full text-xl font-bold"
+                      className="flex h-12 w-12 items-center justify-center rounded-full text-[25px] font-bold"
                       style={{ color: isToday || i === 6 ? PINK.hex : "#fff", ...(isToday ? { border: `3px solid ${PINK.hex}`, boxShadow: `0 0 12px rgba(${PINK.rgb},0.8)` } : {}) }}
                     >
                       {Number(d.date.slice(8))}
                     </span>
                   </Link>
-                  <div className="min-h-0 flex-1 space-y-1.5 overflow-y-auto p-2">
+                  <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-2">
                     {d.bookings.length === 0 ? (
-                      <p className="px-1 pt-1 text-sm text-white/30">{d.hasAvailability ? "Available" : "Unavailable"}</p>
+                      <p className="px-1 pt-1 text-[17px] text-white/30">{d.hasAvailability ? "Available" : "Unavailable"}</p>
                     ) : (
                       d.bookings.map((b) => (
                         <button
                           key={b.id}
                           type="button"
                           onClick={() => setDetail(b)}
-                          className={`block w-full rounded-md border px-2 py-1.5 text-left transition hover:bg-white/[0.06] ${bookingKindClass(b)}`}
+                          className={`block w-full rounded-md border px-2 py-2 text-left transition hover:bg-white/[0.06] ${bookingKindClass(b)}`}
                         >
-                          <span className="block text-xs opacity-75">{formatTime12h(b.startTime)} – {formatTime12h(b.endTime)}</span>
-                          <span className="block truncate text-sm font-bold">{bookingKindLabel(b)}</span>
+                          <span className="block text-[15px] opacity-75">{formatTime12h(b.startTime)} – {formatTime12h(b.endTime)}</span>
+                          <span className="block truncate text-[17px] font-bold">{bookingKindLabel(b)}</span>
                         </button>
                       ))
                     )}
@@ -739,19 +708,19 @@ export function CalendarView({
         {view === "day" && dayData && (
           <div className="flex min-h-0 flex-1 flex-col">
             <div className="flex shrink-0 items-center justify-between pb-3">
-              <p className="text-xl font-bold text-white">{dayLabel(date)}</p>
+              <p className="text-[25px] font-bold text-white">{dayLabel(date)}</p>
               <button
                 type="button"
                 onClick={handleBlockWholeDay}
                 disabled={pending}
-                className={`${BTN} px-4 text-base font-bold disabled:opacity-50`}
+                className={`${BTN} px-4 text-[20px] font-bold disabled:opacity-50`}
                 style={{ ...PINK_OUTLINE, color: PINK.hex }}
               >
                 Block whole day
               </button>
             </div>
             {rescheduling && (
-              <div className="mb-3 flex shrink-0 items-center justify-between gap-4 rounded-lg border px-4 py-2.5 text-base" style={{ borderColor: `rgba(${PINK.rgb},0.6)`, background: `rgba(${PINK.rgb},0.08)` }}>
+              <div className="mb-3 flex shrink-0 items-center justify-between gap-4 rounded-lg border px-5 py-4 text-[20px]" style={{ borderColor: `rgba(${PINK.rgb},0.6)`, background: `rgba(${PINK.rgb},0.08)` }}>
                 <span className="font-semibold text-white">
                   Rescheduling {rescheduling.who} · {rescheduling.serviceName} ({rescheduling.durationMinutes}m)
                   {rescheduling.recurrence === "weekly" ? " · weekly — the whole series moves" : ""}.{" "}
@@ -761,26 +730,26 @@ export function CalendarView({
                       : "Choose a free slot below, or use ‹ › to pick another day."}
                   </span>
                 </span>
-                <Link href={`?view=day&date=${date}`} className="shrink-0 text-sm font-bold text-white/60 hover:text-white">
+                <Link href={`?view=day&date=${date}`} className="shrink-0 text-[17px] font-bold text-white/60 hover:text-white">
                   Cancel
                 </Link>
               </div>
             )}
             {pickAction && !rescheduling && (
-              <div className="mb-3 flex shrink-0 items-center justify-between rounded-lg border px-4 py-2.5 text-base" style={{ borderColor: `rgba(${PINK.rgb},0.6)`, background: `rgba(${PINK.rgb},0.08)` }}>
+              <div className="mb-3 flex shrink-0 items-center justify-between rounded-lg border px-5 py-4 text-[20px]" style={{ borderColor: `rgba(${PINK.rgb},0.6)`, background: `rgba(${PINK.rgb},0.08)` }}>
                 <span className="font-semibold text-white">
                   {timeline.some((s) => s.kind === "available")
                     ? `Choose a free slot below to ${ACTION_META[pickAction].verb}.`
                     : "No free slots on this day — use ‹ › to pick another day."}
                 </span>
-                <button type="button" onClick={() => setPickAction(null)} className="text-sm font-bold text-white/60 hover:text-white">
+                <button type="button" onClick={() => setPickAction(null)} className="text-[17px] font-bold text-white/60 hover:text-white">
                   Cancel
                 </button>
               </div>
             )}
             <div className="min-h-0 flex-1 overflow-y-auto pr-1">
               {timeline.length === 0 ? (
-                <p className="pt-2 text-base text-white/45">Unavailable — no working hours set for this day.</p>
+                <p className="pt-2 text-[20px] text-white/45">Unavailable — no working hours set for this day.</p>
               ) : (
                 <ul className="space-y-2">
                   {timeline.map((seg, i) => (
@@ -796,13 +765,13 @@ export function CalendarView({
                                 setError(null);
                                 setMoveSlot({ start: seg.start, end: seg.end });
                               }}
-                              className="flex w-full items-center justify-between rounded-lg border border-dashed px-4 py-3 text-left text-base text-white transition enabled:hover:bg-white/[0.05] disabled:cursor-not-allowed disabled:opacity-40"
+                              className="flex w-full items-center justify-between rounded-lg border border-dashed px-5 py-4 text-left text-[20px] text-white transition enabled:hover:bg-white/[0.05] disabled:cursor-not-allowed disabled:opacity-40"
                               style={{ borderColor: fits ? PINK.hex : `rgba(${PINK.rgb},0.3)`, boxShadow: fits ? `0 0 12px -4px rgba(${PINK.rgb},0.8)` : undefined }}
                             >
                               <span className="font-semibold">
                                 {formatTime12h(seg.start)} – {formatTime12h(seg.end)}
                               </span>
-                              <span className="text-sm tracking-[0.14em]" style={{ color: `rgba(${PINK.rgb},0.8)` }}>
+                              <span className="text-[17px] tracking-[0.14em]" style={{ color: `rgba(${PINK.rgb},0.8)` }}>
                                 {fits ? "MOVE HERE" : date < today ? "PAST" : "DOESN'T FIT"}
                               </span>
                             </button>
@@ -818,24 +787,24 @@ export function CalendarView({
                               setPickAction(null);
                             }
                           }}
-                          className="flex w-full items-center justify-between rounded-lg border border-dashed px-4 py-3 text-left text-base text-white transition hover:bg-white/[0.05]"
+                          className="flex w-full items-center justify-between rounded-lg border border-dashed px-5 py-4 text-left text-[20px] text-white transition hover:bg-white/[0.05]"
                           style={{ borderColor: pickAction ? PINK.hex : `rgba(${PINK.rgb},0.4)`, boxShadow: pickAction ? `0 0 12px -4px rgba(${PINK.rgb},0.8)` : undefined }}
                         >
                           <span className="font-semibold">
                             {formatTime12h(seg.start)} – {formatTime12h(seg.end)}
                           </span>
-                          <span className="text-sm tracking-[0.14em]" style={{ color: `rgba(${PINK.rgb},0.8)` }}>AVAILABLE</span>
+                          <span className="text-[17px] tracking-[0.14em]" style={{ color: `rgba(${PINK.rgb},0.8)` }}>AVAILABLE</span>
                         </button>
                       ) : (
                         <button
                           type="button"
                           onClick={() => setDetail(seg.booking)}
-                          className={`flex w-full items-center justify-between rounded-lg border px-4 py-3 text-left text-base transition hover:bg-white/[0.06] ${bookingKindClass(seg.booking)}`}
+                          className={`flex w-full items-center justify-between rounded-lg border px-5 py-4 text-left text-[20px] transition hover:bg-white/[0.06] ${bookingKindClass(seg.booking)}`}
                         >
                           <span className="font-semibold">
                             {formatTime12h(seg.start)} – {formatTime12h(seg.end)} ({timeToMinutes(seg.end) - timeToMinutes(seg.start)}m) · {bookingKindLabel(seg.booking)}
                           </span>
-                          {seg.booking.serviceName && <span className="text-sm text-white/45">{seg.booking.serviceName}</span>}
+                          {seg.booking.serviceName && <span className="text-[17px] text-white/45">{seg.booking.serviceName}</span>}
                         </button>
                       )}
                     </li>
@@ -850,32 +819,32 @@ export function CalendarView({
         {view === "list" && listDays && (
           <div className="min-h-0 flex-1 overflow-y-auto pr-1">
             {listDays.length === 0 ? (
-              <p className="pt-2 text-base text-white/45">No bookings in {monthLabel(date)}.</p>
+              <p className="pt-2 text-[20px] text-white/45">No bookings in {monthLabel(date)}.</p>
             ) : (
               <div className="space-y-5">
                 {listDays.map((d) => (
                   <section key={d.date}>
                     <Link
                       href={`?view=day&date=${d.date}`}
-                      className="mb-2 inline-flex items-center gap-2 text-lg font-bold transition hover:text-white"
+                      className="mb-2 inline-flex items-center gap-2 text-[22px] font-bold transition hover:text-white"
                       style={{ color: d.date === today ? PINK.hex : "rgba(255,255,255,0.85)" }}
                     >
                       {dayLabel(d.date)}
-                      {d.date === today && <span className="text-xs tracking-[0.14em]">TODAY</span>}
+                      {d.date === today && <span className="text-[15px] tracking-[0.14em]">TODAY</span>}
                     </Link>
-                    <ul className="space-y-1.5">
+                    <ul className="space-y-2">
                       {d.bookings.map((b) => (
                         <li key={b.id}>
                           <button
                             type="button"
                             onClick={() => setDetail(b)}
-                            className={`flex w-full items-center justify-between gap-4 rounded-lg border px-4 py-2.5 text-left text-base transition hover:bg-white/[0.06] ${bookingKindClass(b)}`}
+                            className={`flex w-full items-center justify-between gap-4 rounded-lg border px-5 py-4 text-left text-[20px] transition hover:bg-white/[0.06] ${bookingKindClass(b)}`}
                           >
                             <span className="w-48 shrink-0 tabular-nums opacity-80">
                               {formatTime12h(b.startTime)} – {formatTime12h(b.endTime)}
                             </span>
                             <span className="min-w-0 flex-1 truncate font-bold">{bookingKindLabel(b)}</span>
-                            {b.serviceName && <span className="shrink-0 text-sm text-white/45">{b.serviceName}</span>}
+                            {b.serviceName && <span className="shrink-0 text-[17px] text-white/45">{b.serviceName}</span>}
                           </button>
                         </li>
                       ))}
@@ -897,7 +866,7 @@ export function CalendarView({
                 className="flex flex-col rounded-lg border p-3 transition hover:bg-white/[0.05]"
                 style={{ borderColor: GRID_LINE }}
               >
-                <span className="text-base font-bold text-white">{m.label}</span>
+                <span className="text-[20px] font-bold text-white">{m.label}</span>
                 <div className="mt-2 grid grid-cols-7 gap-[2px]">
                   {m.cells.map((c, i) => (
                     <span
@@ -911,40 +880,41 @@ export function CalendarView({
             ))}
           </div>
         )}
-      </FocusModeShell>
+        </div>
+      </PolarStage>
 
       {/* Booking dialogs — rendered outside the Focus panel (whose
           backdrop blur would otherwise contain these fixed overlays). */}
       {/* Slot action menu (Day view) */}
       {activeSlot && !modal && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setActiveSlot(null)}>
+        <div className={`fixed inset-0 z-40 flex items-center justify-center bg-[#030612]/80 backdrop-blur-sm ${ui.className}`} onClick={() => setActiveSlot(null)}>
           <div
-            className="relative w-72 rounded-xl border border-royal-light/30 bg-navy-light p-4 shadow-[0_0_32px_-6px_rgba(91,155,255,0.3)]"
+            className="relative w-80 rounded-xl border-2 border-[#fd12c8] bg-[#060b1e] p-4 shadow-[0_0_28px_-4px_rgba(253,18,200,0.6)]"
             onClick={(e) => e.stopPropagation()}
           >
             <button
               type="button"
               onClick={() => setActiveSlot(null)}
               aria-label="Close"
-              className="absolute right-3 top-3 text-white/40 transition hover:text-white"
+              className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-lg text-white/60 transition hover:bg-white/5 hover:text-[#fd12c8]"
             >
-              ✕
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19" /></svg>
             </button>
-            <p className="pr-6 font-display text-sm text-white">
+            <p className="pr-10 text-[21px] font-bold text-white">
               {formatTime12h(activeSlot.start)} – {formatTime12h(activeSlot.end)}
             </p>
-            <p className="text-[10px] uppercase tracking-wide text-royal-light/60">Available slot</p>
+            <p className="text-[15px] text-white/55">Free slot</p>
             <div className="mt-3 flex flex-col gap-2">
-              <button type="button" onClick={() => setModal("book")} className="rounded-lg bg-gradient-to-r from-royal to-royal-dark px-3 py-2 text-left text-sm font-medium text-white shadow-[0_0_10px_-4px_rgba(91,155,255,0.6)] transition hover:brightness-110">
+              <button type="button" onClick={() => setModal("book")} className="rounded-lg bg-[#fd12c8] !text-[#16000f] px-4 py-2.5 text-left text-[16px] font-medium text-white shadow-[0_0_12px_-4px_rgba(253,18,200,0.85)] transition hover:brightness-110">
                 Book Appointment
               </button>
-              <button type="button" onClick={() => setModal("walkin")} className="rounded-lg border border-royal-light/30 px-3 py-2 text-left text-sm text-white transition hover:bg-royal-light/10">
+              <button type="button" onClick={() => setModal("walkin")} className="rounded-lg border border-[#1fd6ff]/50 px-4 py-2.5 text-left text-[16px] text-white transition hover:bg-[#1fd6ff]/10">
                 Add Walk-In
               </button>
-              <button type="button" onClick={() => setModal("barter")} className="rounded-lg border border-magenta/40 px-3 py-2 text-left text-sm text-magenta transition hover:bg-magenta/10">
+              <button type="button" onClick={() => setModal("barter")} className="rounded-lg border border-[#fd12c8]/40 px-4 py-2.5 text-left text-[16px] text-[#fd12c8] transition hover:bg-[#fd12c8]/10">
                 Add Barter
               </button>
-              <button type="button" onClick={() => setModal("block")} className="rounded-lg border border-white/15 px-3 py-2 text-left text-sm text-white/70 transition hover:bg-white/5">
+              <button type="button" onClick={() => setModal("block")} className="rounded-lg border border-white/15 px-4 py-2.5 text-left text-[16px] text-white/70 transition hover:bg-white/5">
                 Block Time
               </button>
             </div>
@@ -954,23 +924,23 @@ export function CalendarView({
 
       {/* Book / Walk-in / Barter / Block forms */}
       {activeSlot && modal && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={closeModal}>
-          <div className="relative w-96 rounded-xl border border-royal-light/30 bg-navy-light p-5 shadow-[0_0_32px_-6px_rgba(91,155,255,0.3)]" onClick={(e) => e.stopPropagation()}>
+        <div className={`fixed inset-0 z-40 flex items-center justify-center bg-[#030612]/80 backdrop-blur-sm ${ui.className}`} onClick={closeModal}>
+          <div className="relative w-[440px] rounded-xl border-2 border-[#fd12c8] bg-[#060b1e] p-5 shadow-[0_0_28px_-4px_rgba(253,18,200,0.6)]" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
               onClick={closeModal}
               aria-label="Close"
-              className="absolute right-3 top-3 text-white/40 transition hover:text-white"
+              className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-lg text-white/60 transition hover:bg-white/5 hover:text-[#fd12c8]"
             >
-              ✕
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19" /></svg>
             </button>
-            <p className="pr-6 font-display text-white" style={{ fontSize: "1.1rem" }}>
+            <p className="pr-6 text-[22px] font-bold uppercase tracking-wide text-white">
               {modal === "book" && "Book Appointment"}
               {modal === "walkin" && "Add Walk-In"}
               {modal === "barter" && "Add Barter"}
               {modal === "block" && "Block Time"}
             </p>
-            <p className="mt-1 text-xs text-white/50">
+            <p className="mt-1 text-[15px] text-white/50">
               {formatTime12h(activeSlot.start)} – {formatTime12h(activeSlot.end)} on {dayLabel(date)}
             </p>
 
@@ -984,16 +954,16 @@ export function CalendarView({
                   runAction(() => createBookingAsBarber(fd));
                 }}
               >
-                <select name="client_profile_id" required className="w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm text-white">
+                <select name="client_profile_id" required className="w-full rounded border border-[#fd12c8]/45 bg-[#0b1330] px-4 py-2.5 text-[16px] text-white">
                   <option value="">Choose a client…</option>
                   {clients.map((c) => (
                     <option key={c.id} value={c.id}>{c.fullName}</option>
                   ))}
                 </select>
-                {clients.length === 0 && <p className="text-xs text-white/40">No linked clients yet — link one from the Clients page first.</p>}
+                {clients.length === 0 && <p className="text-[15px] text-white/40">No linked clients yet — link one from the Clients page first.</p>}
                 <ServiceAndStartFields services={services} gapStart={activeSlot.start} gapEnd={activeSlot.end} />
-                {error && <p className="text-xs text-polar-danger">{error}</p>}
-                <button type="submit" disabled={pending} className="w-full rounded bg-royal py-2 text-sm font-semibold text-white disabled:opacity-60">
+                {error && <p className="text-[15px] text-[#ff6b9a]">{error}</p>}
+                <button type="submit" disabled={pending} className="w-full rounded bg-[#fd12c8] py-3 text-[16px] font-bold text-[#16000f] disabled:opacity-60">
                   {pending ? "Booking…" : "Confirm Booking"}
                 </button>
               </form>
@@ -1009,10 +979,10 @@ export function CalendarView({
                   runAction(() => createWalkIn(fd));
                 }}
               >
-                <input name="label" type="text" placeholder="Name (optional)" className="w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm text-white placeholder:text-white/30" />
+                <input name="label" type="text" placeholder="Name (optional)" className="w-full rounded border border-[#fd12c8]/45 bg-[#0b1330] px-4 py-2.5 text-[16px] text-white placeholder:text-white/30" />
                 <ServiceAndStartFields services={services} gapStart={activeSlot.start} gapEnd={activeSlot.end} />
-                {error && <p className="text-xs text-polar-danger">{error}</p>}
-                <button type="submit" disabled={pending} className="w-full rounded bg-royal py-2 text-sm font-semibold text-white disabled:opacity-60">
+                {error && <p className="text-[15px] text-[#ff6b9a]">{error}</p>}
+                <button type="submit" disabled={pending} className="w-full rounded bg-[#fd12c8] py-3 text-[16px] font-bold text-[#16000f] disabled:opacity-60">
                   {pending ? "Adding…" : "Add Walk-In"}
                 </button>
               </form>
@@ -1028,12 +998,12 @@ export function CalendarView({
                   runAction(() => createBarterBooking(fd));
                 }}
               >
-                <input name="with_label" type="text" placeholder="Who was it with?" className="w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm text-white placeholder:text-white/30" />
+                <input name="with_label" type="text" placeholder="Who was it with?" className="w-full rounded border border-[#fd12c8]/45 bg-[#0b1330] px-4 py-2.5 text-[16px] text-white placeholder:text-white/30" />
                 <ServiceAndStartFields services={services} gapStart={activeSlot.start} gapEnd={activeSlot.end} />
-                <textarea name="notes" placeholder="What was received in exchange?" className="w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm text-white placeholder:text-white/30" />
-                <p className="text-xs text-white/40">Amount charged will be recorded as £0 — barter value is never counted as cash revenue.</p>
-                {error && <p className="text-xs text-polar-danger">{error}</p>}
-                <button type="submit" disabled={pending} className="w-full rounded bg-magenta py-2 text-sm font-semibold text-white disabled:opacity-60">
+                <textarea name="notes" placeholder="What was received in exchange?" className="w-full rounded border border-[#fd12c8]/45 bg-[#0b1330] px-4 py-2.5 text-[16px] text-white placeholder:text-white/30" />
+                <p className="text-[15px] text-white/40">Amount charged will be recorded as £0 — barter value is never counted as cash revenue.</p>
+                {error && <p className="text-[15px] text-[#ff6b9a]">{error}</p>}
+                <button type="submit" disabled={pending} className="w-full rounded bg-[#b37bff] py-3 text-[16px] font-bold text-[#12001f] disabled:opacity-60">
                   {pending ? "Adding…" : "Add Barter"}
                 </button>
               </form>
@@ -1056,7 +1026,7 @@ export function CalendarView({
                 {/* Break vs Blocked — both occupy the time the same
                     way; this only distinguishes a normal scheduled
                     break from other planned unavailable time. */}
-                <div className="flex gap-3 text-xs text-white/70">
+                <div className="flex gap-3 text-[15px] text-white/70">
                   <label className="flex items-center gap-1.5">
                     <input type="radio" name="is_break" value="false" defaultChecked />
                     Blocked
@@ -1066,18 +1036,18 @@ export function CalendarView({
                     Break
                   </label>
                 </div>
-                <label className="block text-xs text-white/60">
+                <label className="block text-[15px] text-white/60">
                   Block for
-                  <select name="duration" defaultValue={30} className="mt-1 w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm text-white">
+                  <select name="duration" defaultValue={30} className="mt-1 w-full rounded border border-[#fd12c8]/45 bg-[#0b1330] px-4 py-2.5 text-[16px] text-white">
                     <option value={15}>15 minutes</option>
                     <option value={30}>30 minutes</option>
                     <option value={60}>1 hour</option>
                     <option value={120}>2 hours</option>
                   </select>
                 </label>
-                <input name="label" type="text" placeholder="Reason (optional)" className="w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm text-white placeholder:text-white/30" />
-                {error && <p className="text-xs text-polar-danger">{error}</p>}
-                <button type="submit" disabled={pending} className="w-full rounded border border-white/30 py-2 text-sm font-semibold text-white hover:bg-white/5 disabled:opacity-60">
+                <input name="label" type="text" placeholder="Reason (optional)" className="w-full rounded border border-[#fd12c8]/45 bg-[#0b1330] px-4 py-2.5 text-[16px] text-white placeholder:text-white/30" />
+                {error && <p className="text-[15px] text-[#ff6b9a]">{error}</p>}
+                <button type="submit" disabled={pending} className="w-full rounded border border-white/30 py-3 text-[16px] font-semibold text-white hover:bg-white/5 disabled:opacity-60">
                   {pending ? "Blocking…" : "Block Time"}
                 </button>
               </form>
@@ -1088,50 +1058,50 @@ export function CalendarView({
 
       {/* Existing appointment detail */}
       {detail && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setDetail(null)}>
-          <div className="relative w-96 rounded-xl border border-royal-light/30 bg-navy-light p-5 shadow-[0_0_32px_-6px_rgba(91,155,255,0.3)]" onClick={(e) => e.stopPropagation()}>
+        <div className={`fixed inset-0 z-40 flex items-center justify-center bg-[#030612]/80 backdrop-blur-sm ${ui.className}`} onClick={() => setDetail(null)}>
+          <div className="relative w-[440px] rounded-xl border-2 border-[#fd12c8] bg-[#060b1e] p-5 shadow-[0_0_28px_-4px_rgba(253,18,200,0.6)]" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
               onClick={() => setDetail(null)}
               aria-label="Close"
-              className="absolute right-3 top-3 text-white/40 transition hover:text-white"
+              className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-lg text-white/60 transition hover:bg-white/5 hover:text-[#fd12c8]"
             >
-              ✕
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19" /></svg>
             </button>
-            <p className="pr-6 font-display text-white" style={{ fontSize: "1.1rem" }}>{bookingKindLabel(detail)}</p>
-            <p className="mt-1 text-sm text-white/70">
+            <p className="pr-6 text-[22px] font-bold uppercase tracking-wide text-white">{bookingKindLabel(detail)}</p>
+            <p className="mt-1 text-[16px] text-white/70">
               {formatTime12h(detail.startTime)} – {formatTime12h(detail.endTime)}
             </p>
             {detail.serviceName && (
-              <p className="mt-2 text-sm text-white">
+              <p className="mt-2 text-[16px] text-white">
                 {detail.serviceName} {detail.isBarter ? "(barter — £0 charged)" : detail.servicePrice != null ? `· ${money(detail.servicePrice)}` : ""}
               </p>
             )}
-            {detail.label && !detail.clientName && <p className="mt-1 text-sm text-white/70">{detail.isBarter ? "With: " : "Name: "}{detail.label}</p>}
-            {detail.barterNotes && <p className="mt-1 text-sm text-white/50">Received: {detail.barterNotes}</p>}
+            {detail.label && !detail.clientName && <p className="mt-1 text-[16px] text-white/70">{detail.isBarter ? "With: " : "Name: "}{detail.label}</p>}
+            {detail.barterNotes && <p className="mt-1 text-[16px] text-white/50">Received: {detail.barterNotes}</p>}
             {!detail.isBlocked && (
-              <p className="mt-1 text-xs uppercase tracking-[0.14em] text-white/45">
+              <p className="mt-1 text-[15px] text-white/60">
                 {detail.recurrence === "weekly" ? "Weekly booking" : "One-off booking"}
               </p>
             )}
             {detail.noShow && (
-              <p className="mt-2 inline-block rounded border border-magenta/60 px-2 py-0.5 text-xs font-bold uppercase tracking-[0.14em] text-magenta">No Show</p>
+              <p className="mt-2 inline-block rounded border border-[#fd12c8]/60 px-2 py-0.5 text-[15px] font-bold uppercase tracking-[0.14em] text-[#fd12c8]">No Show</p>
             )}
-            {error && <p className="mt-2 text-xs text-polar-danger">{error}</p>}
+            {error && <p className="mt-2 text-[15px] text-[#ff6b9a]">{error}</p>}
             <div className="mt-4 flex flex-wrap gap-2">
               {detail.clientProfileId && (
-                <Link href={`/dashboard/barber/clients/${detail.clientProfileId}`} className="rounded border border-royal-light/40 px-3 py-1.5 text-xs text-royal-light hover:bg-royal-light/10">
+                <Link href={`/dashboard/barber/clients/${detail.clientProfileId}`} className="rounded border border-[#1fd6ff]/60 px-4 py-2.5 text-[15px] text-[#1fd6ff] hover:bg-[#1fd6ff]/10">
                   View client
                 </Link>
               )}
-              <button type="button" disabled={pending} onClick={() => handleCancel(detail.id)} className="rounded border border-magenta/50 px-3 py-1.5 text-xs text-magenta hover:bg-magenta/10 disabled:opacity-50">
+              <button type="button" disabled={pending} onClick={() => handleCancel(detail.id)} className="rounded border border-[#fd12c8]/50 px-4 py-2.5 text-[15px] text-[#fd12c8] hover:bg-[#fd12c8]/10 disabled:opacity-50">
                 {pending ? "…" : detail.isBlocked ? (detail.isBreak ? "Remove break" : "Unblock") : "Cancel"}
               </button>
               {detail.serviceId && !detail.isBlocked && (
                 <Link
                   href={`?view=day&date=${detail.date < today ? today : detail.date}&reschedule=${detail.id}`}
                   onClick={() => setDetail(null)}
-                  className="rounded border border-royal-light/40 px-3 py-1.5 text-xs text-royal-light hover:bg-royal-light/10"
+                  className="rounded border border-[#1fd6ff]/60 px-4 py-2.5 text-[15px] text-[#1fd6ff] hover:bg-[#1fd6ff]/10"
                 >
                   Reschedule
                 </Link>
@@ -1144,7 +1114,7 @@ export function CalendarView({
                     type="button"
                     disabled={pending}
                     onClick={() => handleNoShow(detail.id)}
-                    className="rounded border border-magenta/50 px-3 py-1.5 text-xs text-magenta hover:bg-magenta/10 disabled:opacity-50"
+                    className="rounded border border-[#fd12c8]/50 px-4 py-2.5 text-[15px] text-[#fd12c8] hover:bg-[#fd12c8]/10 disabled:opacity-50"
                   >
                     Mark No Show
                   </button>
@@ -1156,31 +1126,31 @@ export function CalendarView({
 
       {/* Reschedule — confirm the new start time inside the chosen gap */}
       {rescheduling && moveSlot && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm" onClick={() => setMoveSlot(null)}>
+        <div className={`fixed inset-0 z-40 flex items-center justify-center bg-[#030612]/80 backdrop-blur-sm ${ui.className}`} onClick={() => setMoveSlot(null)}>
           <form
             role="dialog"
             aria-modal="true"
             aria-labelledby="reschedule-title"
-            className="relative w-96 rounded-xl border border-royal-light/30 bg-navy-light p-5 shadow-[0_0_32px_-6px_rgba(91,155,255,0.3)]"
+            className="relative w-[440px] rounded-xl border-2 border-[#fd12c8] bg-[#060b1e] p-5 shadow-[0_0_28px_-4px_rgba(253,18,200,0.6)]"
             onClick={(e) => e.stopPropagation()}
             onSubmit={(e) => {
               e.preventDefault();
               handleReschedule(String(new FormData(e.currentTarget).get("start_time") ?? ""));
             }}
           >
-            <button type="button" onClick={() => setMoveSlot(null)} aria-label="Close" className="absolute right-3 top-3 text-white/40 transition hover:text-white">
-              ✕
+            <button type="button" onClick={() => setMoveSlot(null)} aria-label="Close" className="absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-lg text-white/60 transition hover:bg-white/5 hover:text-[#fd12c8]">
+              <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19" /></svg>
             </button>
-            <p id="reschedule-title" className="pr-6 font-display text-white" style={{ fontSize: "1.1rem" }}>
+            <p id="reschedule-title" className="pr-6 text-[22px] font-bold uppercase tracking-wide text-white">
               Reschedule {rescheduling.who}
             </p>
-            <p className="mt-1 text-sm text-white/70">
+            <p className="mt-1 text-[16px] text-white/70">
               {rescheduling.serviceName} · {rescheduling.durationMinutes}m — currently {dayLabel(rescheduling.fromDate)}, {formatTime12h(rescheduling.fromStart)}
             </p>
-            <p className="mt-3 text-sm text-white">New date: {dayLabel(date)}</p>
-            <label className="mt-2 block text-sm text-white">
+            <p className="mt-3 text-[16px] text-white">New date: {dayLabel(date)}</p>
+            <label className="mt-2 block text-[16px] text-white">
               <span className="mb-1 block text-white/70">New start time</span>
-              <select name="start_time" required className="w-full rounded border border-royal-light/40 bg-navy px-3 py-2 text-sm text-white [&>option]:bg-navy">
+              <select name="start_time" required className="w-full rounded border border-royal-light/40 bg-navy px-4 py-2.5 text-[16px] text-white [&>option]:bg-navy">
                 {fittingStarts(moveSlot.start, moveSlot.end, rescheduling.durationMinutes, date, today, nowTime).map((t) => (
                   <option key={t} value={t}>
                     {formatTime12h(t)} – {formatTime12h(minutesToTime(timeToMinutes(t) + rescheduling.durationMinutes))}
@@ -1189,14 +1159,14 @@ export function CalendarView({
               </select>
             </label>
             {rescheduling.recurrence === "weekly" && (
-              <p className="mt-2 text-xs text-white/55">Weekly booking — the whole series moves to this day and time.</p>
+              <p className="mt-2 text-[15px] text-white/55">Weekly booking — the whole series moves to this day and time.</p>
             )}
-            {error && <p className="mt-2 text-xs text-polar-danger">{error}</p>}
+            {error && <p className="mt-2 text-[15px] text-[#ff6b9a]">{error}</p>}
             <div className="mt-4 flex gap-2">
-              <button type="submit" disabled={pending} className="rounded-lg bg-gradient-to-r from-royal to-royal-dark px-4 py-2 text-sm font-semibold text-white disabled:opacity-50">
+              <button type="submit" disabled={pending} className="rounded-lg bg-[#fd12c8] !text-[#16000f] px-4 py-2 text-[16px] font-semibold text-white disabled:opacity-50">
                 {pending ? "Moving…" : "Confirm reschedule"}
               </button>
-              <button type="button" onClick={() => setMoveSlot(null)} className="rounded border border-white/20 px-3 py-2 text-sm text-white/70 hover:text-white">
+              <button type="button" onClick={() => setMoveSlot(null)} className="rounded border border-white/20 px-4 py-2.5 text-[16px] text-white/70 hover:text-white">
                 Back
               </button>
             </div>
@@ -1241,7 +1211,7 @@ function ServiceAndStartFields({ services, gapStart, gapEnd }: { services: Servi
           setServiceId(e.target.value);
           setStartTime(gapStart);
         }}
-        className="w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm text-white"
+        className="w-full rounded border border-[#fd12c8]/45 bg-[#0b1330] px-4 py-2.5 text-[16px] text-white"
       >
         <option value="">Choose a service…</option>
         {fitting.map((s) => (
@@ -1251,14 +1221,14 @@ function ServiceAndStartFields({ services, gapStart, gapEnd }: { services: Servi
         ))}
       </select>
       {services.length > 0 && fitting.length === 0 && (
-        <p className="text-xs text-white/40">No service fits this {gapMinutes}-minute gap.</p>
+        <p className="text-[15px] text-white/40">No service fits this {gapMinutes}-minute gap.</p>
       )}
       {selected && startOptions.length > 1 && (
         <select
           name="start_time"
           value={startTime}
           onChange={(e) => setStartTime(e.target.value)}
-          className="w-full rounded border border-polar-border bg-polar-surface px-3 py-2 text-sm text-white"
+          className="w-full rounded border border-[#fd12c8]/45 bg-[#0b1330] px-4 py-2.5 text-[16px] text-white"
         >
           {startOptions.map((t) => (
             <option key={t} value={t}>{formatTime12h(t)}</option>
