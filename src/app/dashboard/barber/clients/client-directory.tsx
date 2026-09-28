@@ -198,13 +198,16 @@ export function ClientDirectory({ clients }: { clients: Client[] }) {
           <PeopleGlyph />
           <div>
             <div className="flex items-start gap-2">
-              <h1 className={`${wide.className} clients-title`} style={{ fontSize: 58 }}>
-                CLIENTS
+              {/* Official POLAR display lettering (design-masters/polar-display-alphabet.png), blue edge. */}
+              <h1 className="relative">
+                <span className="sr-only">Clients</span>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/dashboard/polar-ui/clients-title.webp" alt="" aria-hidden="true" width={202} height={65} className="block" />
               </h1>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img src="/dashboard/polar-ui/clients-crown.webp" alt="" aria-hidden="true" className="-mt-5" width={62} height={55} />
             </div>
-            <p className="mt-1.5 whitespace-nowrap pl-1 text-[17px] font-semibold uppercase tracking-[0.36em]" style={{ color: CYAN.hex }}>
+            <p className="mt-0.5 whitespace-nowrap pl-1 text-[16px] font-semibold uppercase tracking-[0.36em]" style={{ color: CYAN.hex }}>
               Real people. Real progress.
             </p>
           </div>
