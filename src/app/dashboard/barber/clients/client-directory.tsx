@@ -193,25 +193,23 @@ export function ClientDirectory({ clients }: { clients: Client[] }) {
 
       {/* Desktop — Clients on the POLAR master stage (native 1672 × 941 px). */}
       <PolarStage id="clients" chromeSrc="/dashboard/polar-ui/clients-chrome.webp" room={<BarberRoom decorative />} className={ui.className}>
-        {/* Header: icon, title, tagline, crown — inside the master header bar. */}
-        <div className="absolute flex items-center gap-5" style={{ left: 146, top: 113, height: 86 }}>
+        {/* Header — matched to Calendar's title geometry (master px): letter body
+            86px tall at y 93–179, spikes breaking above the header bar (to y≈76)
+            and down across the tagline, crown in Calendar's crown position. */}
+        <div className="absolute" style={{ left: 146, top: 119 }}>
           <PeopleGlyph />
-          <div>
-            <div className="flex items-start gap-2">
-              {/* Official POLAR display lettering (design-masters/polar-display-alphabet.png), blue edge. */}
-              <h1 className="relative">
-                <span className="sr-only">Clients</span>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/dashboard/polar-ui/clients-title.webp" alt="" aria-hidden="true" width={202} height={65} className="block" />
-              </h1>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src="/dashboard/polar-ui/clients-crown.webp" alt="" aria-hidden="true" className="-mt-5" width={62} height={55} />
-            </div>
-            <p className="mt-0.5 whitespace-nowrap pl-1 text-[16px] font-semibold uppercase tracking-[0.36em]" style={{ color: CYAN.hex }}>
-              Real people. Real progress.
-            </p>
-          </div>
         </div>
+        {/* Official POLAR display lettering (design-masters/polar-display-alphabet.png), blue edge. */}
+        <p className="absolute whitespace-nowrap text-[16px] font-semibold uppercase tracking-[0.36em]" style={{ left: 272, top: 184, color: CYAN.hex }}>
+          Real people. Real progress.
+        </p>
+        <h1 className="absolute" style={{ left: 254, top: 78, width: 341, height: 116 }}>
+          <span className="sr-only">Clients</span>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/dashboard/polar-ui/clients-title.webp" alt="" aria-hidden="true" width={341} height={116} className="block" />
+        </h1>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/dashboard/polar-ui/clients-crown.webp" alt="" aria-hidden="true" className="absolute" style={{ left: 594, top: 112 }} width={70} height={62} />
 
         {/* Toolbar row (Calendar's toolbar line). */}
         <label className="absolute flex items-center gap-4 rounded-[10px] border-2 px-5" style={{ ...OUTLINE, left: 136, top: 227, width: 1162, height: 55, background: NAVY }}>
