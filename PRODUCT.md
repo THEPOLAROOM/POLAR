@@ -54,6 +54,7 @@ POLAR is the barber's own booking and client-management system wrapped in the PO
   - Artwork such as lettering, frames, drips and splatter is cut from the master, never approximated with CSS or fonts.
   - Controls, text and data are live HTML.
   - Do not redesign or add to a master without approval.
+  - An approved master image outranks any written brief. When a brief and a master conflict, ask the owner; never resolve it silently. Build to the master measurably, and record owner-approved differences in a deviation register.
 - **POLAR UI design rule (locked 2026-09-28).**
   - **Calendar is the master for design language, not colour.** Translate its frame construction, header composition, paint/drip/splatter treatment, border depth and glow, spacing, typography hierarchy, button construction and neon finish into each page's own colour.
   - **Every page keeps its existing dominant colour.** Blue stays blue, cyan stays cyan, pink stays pink, and a deliberate combination stays that combination. Inspect the page and name its colour before changing it. Clients is blue/cyan.

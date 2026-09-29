@@ -3,95 +3,103 @@
 import { useLayoutEffect } from "react";
 import Link from "next/link";
 import { Barlow_Condensed } from "next/font/google";
+import SPEC from "./profile-hub-spec.json";
 
-// MY PROFILE — POLAR's profile world (desktop): the production POLAR
-// profile scene after closing time (profile-hub-room.webp, baked from
-// profile-room-v1.webp: room dark, POLAR centred and lit), the MY PROFILE
-// title in the official POLAR display lettering, and five compact
-// navigation controls around him. The hub shows no data; each area holds
-// its own information:
-//   DETAILS    → personal/account information (name, phone, addresses)
-//   CAREER     → the POLAR CV (experience, qualifications, achievements)
-//   ePORTFOLIO → the barber's work
-//   ANALYTICS  → Smart Analytics
-//   SETTINGS   → account controls (signed-in account, log out)
-// Authored at the native 1672 × 941 canvas and scaled to fit.
+// MY PROFILE — built to the approved visual master
+// (design-masters/my-profile-hub-concept.png). Every position and size
+// comes from profile-hub-spec.json, measured from that master by the
+// design-masters/tools/my-profile-*.cjs scripts; don't hand-tune it here.
+// design-masters/tools/my-profile-fidelity.cjs scores the render against the master.
+//
+// Layer stack (back → front), all on the 1672 × 941 authored stage:
+//   1 room        — profile-room-v1.webp, untouched, positioned 1:1 so POLAR stands centred
+//   2 treatment   — CSS fades into the navy base + dimming of the chair beside POLAR
+//   3 back-glow   — blue light behind POLAR
+//   4 POLAR       — the same untouched file again, clipped to his silhouette matte,
+//                   so his original pixels sit above every room treatment
+//   5 connectors  — SVG, measured from the master
+//   6–8 strips    — CSS panel, frame/splatter art cut from the master, live icon/label/chevron
+//   9 title       — official POLAR display lettering at the master's letter height
+//  10 ✕           — back to the dashboard
+// The hub shows no data; each area holds its own information.
 
-const ui = Barlow_Condensed({ subsets: ["latin"], weight: ["600", "700"] });
+const ui = Barlow_Condensed({ subsets: ["latin"], weight: ["600"] });
 
-const STAGE_W = 1672;
-const STAGE_H = 941;
-const CYAN = "#1fd6ff";
-const CYAN_RGB = "31,214,255";
+const STAGE_W = SPEC.stage.width;
+const STAGE_H = SPEC.stage.height;
 const BG = "#03060f";
+const BG_RGB = "3,6,15";
+const rgb = (c: number[]) => `rgb(${c.join(",")})`;
+const ICON_C = rgb(SPEC.colours.icon);
+const CHEV_C = rgb(SPEC.colours.chevron);
+const CYAN = "#1fd6ff";
 
-type Area = { label: string; href: string; icon: React.ReactNode; place: React.CSSProperties; corner: "tl" | "tr" | "bl" | "br" };
+type Key = keyof typeof SPEC.strips;
 
-const ICON = (d: React.ReactNode) => (
-  <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-    {d}
-  </svg>
-);
-
-const AREAS: Area[] = [
-  {
-    label: "Details",
-    href: "/dashboard/barber/account/personal-details",
-    icon: ICON(<><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" /></>),
-    place: { right: STAGE_W - 545, top: 262 },
-    corner: "bl",
-  },
-  {
-    label: "Career",
-    href: "/dashboard/barber/account/professional-profile",
-    icon: ICON(<><rect x="3" y="7" width="18" height="13" rx="2" /><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" /><path d="M3 12.5h18" /></>),
-    place: { left: 1122, top: 262 },
-    corner: "tr",
-  },
-  {
-    label: "ePortfolio",
-    href: "/dashboard/barber/account/eportfolio",
-    icon: ICON(<><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="9" cy="10" r="2" /><path d="M21 16l-5-5-8 8" /></>),
-    place: { right: STAGE_W - 565, top: 562 },
-    corner: "tl",
-  },
-  {
-    label: "Analytics",
-    href: "/dashboard/barber/calendar/analytics",
-    icon: ICON(<><path d="M5 20v-6M10 20V10M15 20v-9M20 20V5" strokeWidth="2.6" /></>),
-    place: { left: 1108, top: 562 },
-    corner: "br",
-  },
-  {
-    label: "Settings",
-    href: "/dashboard/barber/account/settings",
-    icon: ICON(<><circle cx="12" cy="12" r="3.2" /><path d="M19.4 15a1.7 1.7 0 00.3 1.8l.1.1a2 2 0 11-2.8 2.8l-.1-.1a1.7 1.7 0 00-1.8-.3 1.7 1.7 0 00-1 1.5V21a2 2 0 11-4 0v-.1a1.7 1.7 0 00-1.1-1.5 1.7 1.7 0 00-1.8.3l-.1.1a2 2 0 11-2.8-2.8l.1-.1a1.7 1.7 0 00.3-1.8 1.7 1.7 0 00-1.5-1H3a2 2 0 110-4h.1a1.7 1.7 0 001.5-1.1 1.7 1.7 0 00-.3-1.8l-.1-.1a2 2 0 112.8-2.8l.1.1a1.7 1.7 0 001.8.3H9a1.7 1.7 0 001-1.5V3a2 2 0 114 0v.1a1.7 1.7 0 001 1.5 1.7 1.7 0 001.8-.3l.1-.1a2 2 0 112.8 2.8l-.1.1a1.7 1.7 0 00-.3 1.8V9a1.7 1.7 0 001.5 1H21a2 2 0 110 4h-.1a1.7 1.7 0 00-1.5 1z" /></>),
-    place: { left: STAGE_W / 2, top: 808, transform: "translateX(-50%)" },
-    corner: "tr",
-  },
+const AREAS: { key: Key; label: string; href: string }[] = [
+  { key: "details", label: "DETAILS", href: "/dashboard/barber/account/personal-details" },
+  { key: "career", label: "CAREER", href: "/dashboard/barber/account/professional-profile" },
+  { key: "eportfolio", label: "ePORTFOLIO", href: "/dashboard/barber/account/eportfolio" },
+  { key: "analytics", label: "ANALYTICS", href: "/dashboard/barber/calendar/analytics" },
+  { key: "settings", label: "SETTINGS", href: "/dashboard/barber/account/settings" },
 ];
 
-// Connectors: thin, straight, 90° turns; every line stops well clear of
-// POLAR (his silhouette spans x ≈ 716–956, y ≈ 203–760 on the stage).
-const CONNECTORS: { d: string; end: [number, number] }[] = [
-  { d: "M553 303 H620 V372 H660", end: [660, 372] },
-  { d: "M1114 303 H1050 V372 H1012", end: [1012, 372] },
-  { d: "M573 603 H630 V492 H662", end: [662, 492] },
-  { d: "M1100 603 H1044 V492 H1010", end: [1010, 492] },
-  { d: "M836 800 V784", end: [836, 784] },
-];
+// Outline glyphs drawn to match the master's icons (24-unit grid).
+const GLYPHS: Record<Key, React.ReactNode> = {
+  details: (
+    <>
+      <circle cx="12" cy="7" r="4.4" />
+      <path d="M3.6 21.2v-.9a6.9 6.9 0 0 1 6.9-6.9h3a6.9 6.9 0 0 1 6.9 6.9v.9z" />
+    </>
+  ),
+  career: (
+    <>
+      <rect x="2.4" y="6.8" width="19.2" height="14" rx="2" />
+      <path d="M8.6 6.8V4.9a1.6 1.6 0 0 1 1.6-1.6h3.6a1.6 1.6 0 0 1 1.6 1.6v1.9M2.4 12.6h8.1M13.5 12.6h8.1" />
+      <rect x="10.5" y="11" width="3" height="3.4" rx=".6" />
+    </>
+  ),
+  eportfolio: (
+    <>
+      <rect x="2.5" y="3.6" width="19" height="16.8" rx="1.6" />
+      <circle cx="8.3" cy="8.6" r="1.4" />
+      <circle cx="15.9" cy="8.6" r="1.4" />
+      <path d="M4.6 18.4l5.4-6.2 3.4 3.8 2.6-2.8 3.6 4.4" />
+    </>
+  ),
+  analytics: (
+    <g fill="currentColor" stroke="none">
+      <rect x="2.5" y="13" width="4.6" height="9" rx="1.3" />
+      <rect x="9.7" y="7.6" width="4.6" height="14.4" rx="1.3" />
+      <rect x="16.9" y="2" width="4.6" height="20" rx="1.3" />
+    </g>
+  ),
+  settings: (
+    <>
+      <circle cx="12" cy="12" r="3.3" />
+      <path d="M10.3 2.5h3.4l.5 2.6 1.6.7 2.2-1.5 2.4 2.4-1.5 2.2.7 1.6 2.6.5v3.4l-2.6.5-.7 1.6 1.5 2.2-2.4 2.4-2.2-1.5-1.6.7-.5 2.6h-3.4l-.5-2.6-1.6-.7-2.2 1.5-2.4-2.4 1.5-2.2-.7-1.6-2.6-.5v-3.4l2.6-.5.7-1.6-1.5-2.2 2.4-2.4 2.2 1.5 1.6-.7z" />
+    </>
+  ),
+};
 
 const SCALE_STYLE_ID = "profile-hub-scale";
+// Uniform "contain" scale, with the stage placed on whole pixels: a half-pixel
+// offset (e.g. centring 941 px by 50%) would make the browser resample every layer.
 function setScale() {
   const s = Math.min(window.innerWidth / STAGE_W, window.innerHeight / STAGE_H);
+  const x = Math.round((window.innerWidth - STAGE_W * s) / 2);
+  const y = Math.round((window.innerHeight - STAGE_H * s) / 2);
   let el = document.getElementById(SCALE_STYLE_ID);
   if (!el) {
     el = document.createElement("style");
     el.id = SCALE_STYLE_ID;
     document.head.appendChild(el);
   }
-  el.textContent = `:root{--profile-hub-scale:${s}}`;
+  el.textContent = `:root{--profile-hub-scale:${s};--profile-hub-x:${x}px;--profile-hub-y:${y}px}`;
 }
+
+const R = SPEC.room;
+const P = SPEC.polar;
 
 export function ProfileView() {
   useLayoutEffect(() => {
@@ -104,27 +112,34 @@ export function ProfileView() {
     <div id="barber-profile-page">
       <style>{`
         div:has(> #barber-profile-page) > nav { display: none; }
-        .ph-stage { position: absolute; left: 50%; top: 50%; width: ${STAGE_W}px; height: ${STAGE_H}px;
-          transform: translate(-50%, -50%) scale(var(--profile-hub-scale, 0.8)); transform-origin: 50% 50%; }
-        .ph-btn { position: absolute; display: flex; align-items: stretch; height: 74px; color: #fff;
-          filter: drop-shadow(0 0 10px rgba(${CYAN_RGB},0.45)); transition: filter .18s ease-out; }
-        .ph-btn:hover { filter: drop-shadow(0 0 16px rgba(${CYAN_RGB},0.8)) brightness(1.12); }
-        .ph-btn:focus-visible { outline: 2px solid #fff; outline-offset: 6px; }
-        .ph-shape { --c: 14px; clip-path: polygon(var(--c) 0, calc(100% - var(--c)) 0, 100% var(--c), 100% calc(100% - var(--c)), calc(100% - var(--c)) 100%, var(--c) 100%, 0 calc(100% - var(--c)), 0 var(--c)); }
+        .ph-stage { position: absolute; left: 0; top: 0; width: ${STAGE_W}px; height: ${STAGE_H}px;
+          transform: translate(var(--profile-hub-x, 0px), var(--profile-hub-y, 0px)) scale(var(--profile-hub-scale, 0.8)); transform-origin: 0 0; }
+        .ph-abs { position: absolute; max-width: none; pointer-events: none; user-select: none; }
+        .ph-polar { background: url(${R.src}) -${P.srcBox.x}px -${P.srcBox.y}px / ${R.width}px ${R.height}px no-repeat;
+          -webkit-mask: url(${P.matte}) 0 0 / 100% 100% no-repeat; mask: url(${P.matte}) 0 0 / 100% 100% no-repeat; }
+        .ph-strip { position: absolute; display: block; color: #fff; }
+        .ph-strip .ph-art { transition: filter .18s ease-out; }
+        .ph-strip:hover .ph-art { filter: brightness(1.28) saturate(1.1); }
+        .ph-strip:hover .ph-label { text-shadow: 0 0 12px rgba(31,214,255,.55); }
+        .ph-strip:focus-visible { outline: 2px solid #fff; outline-offset: 8px; border-radius: 6px; }
+        .ph-panel { position: absolute; inset: 3px; background: rgba(0,6,16,.96);
+          clip-path: polygon(15px 0, calc(100% - 15px) 0, 100% 15px, 100% calc(100% - 15px), calc(100% - 15px) 100%, 15px 100%, 0 calc(100% - 15px), 0 15px); }
+        .ph-label { position: absolute; font-size: 33px; font-weight: 600; line-height: 1; letter-spacing: -1.8px; white-space: nowrap; }
         .ph-x { position: absolute; right: 44px; top: 34px; display: grid; place-items: center; width: 58px; height: 58px; border-radius: 13px;
           border: 2.5px solid ${CYAN}; color: ${CYAN}; background: rgba(3,6,15,0.7);
-          box-shadow: 0 0 12px rgba(${CYAN_RGB},0.5), inset 0 0 9px rgba(${CYAN_RGB},0.22); transition: filter .15s; }
+          box-shadow: 0 0 12px rgba(31,214,255,0.5), inset 0 0 9px rgba(31,214,255,0.22); transition: filter .15s; }
         .ph-x:hover { filter: brightness(1.3); }
         .ph-x:focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+        @media (prefers-reduced-motion: reduce) { .ph-strip .ph-art, .ph-x { transition: none; } }
       `}</style>
 
-      {/* Phone — same five areas, simple list. */}
-      <main className={`min-h-[100dvh] px-6 py-10 text-white sm:hidden ${ui.className}`} style={{ background: BG }}>
+      {/* Phone and small tablet — same five areas, simple list. */}
+      <main className={`min-h-[100dvh] px-6 py-10 text-white lg:hidden ${ui.className}`} style={{ background: BG }}>
         <div className="flex items-start justify-between gap-4">
           <h1 className="min-w-0">
             <span className="sr-only">My Profile</span>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/dashboard/polar-ui/profile-title.webp" alt="" aria-hidden="true" className="h-auto w-full max-w-[280px]" />
+            <img src={SPEC.title.asset} alt="" aria-hidden="true" className="h-auto w-full max-w-[280px]" />
           </h1>
           <Link href="/dashboard/barber" aria-label="Close and return to dashboard" className="grid h-11 w-11 shrink-0 place-items-center rounded-xl border-2" style={{ borderColor: CYAN, color: CYAN }}>
             <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19" /></svg>
@@ -133,47 +148,79 @@ export function ProfileView() {
         <ul className="mt-8 space-y-3">
           {AREAS.map((a) => (
             <li key={a.href}>
-              <Link href={a.href} className="flex items-center gap-4 rounded-xl border-2 px-4 py-3 text-2xl font-bold" style={{ borderColor: CYAN, background: "rgba(6,11,30,0.9)" }}>
-                <span style={{ color: CYAN }}>{a.icon}</span>
-                <span className="flex-1">{displayLabel(a.label)}</span>
-                <Chevron />
+              <Link href={a.href} className="flex items-center gap-4 rounded-xl border-2 px-4 py-3 text-2xl font-semibold" style={{ borderColor: CYAN, background: "rgba(6,11,30,0.9)" }}>
+                <Glyph k={a.key} size={34} />
+                <span className="flex-1">{a.label}</span>
+                <Chevron width={14} height={26} />
               </Link>
             </li>
           ))}
         </ul>
       </main>
 
-      {/* Desktop — POLAR's profile world. */}
-      <main className={`relative hidden h-[100dvh] overflow-hidden sm:block ${ui.className}`} style={{ background: BG }}>
+      {/* Desktop — the approved master's composition. */}
+      <main className={`relative hidden h-[100dvh] overflow-hidden lg:block ${ui.className}`} style={{ background: BG }}>
         <div className="ph-stage">
+          {/* 1 room — untouched production scene, positioned (not altered). */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/dashboard/polar-ui/profile-hub-room.webp" alt="" aria-hidden="true" width={STAGE_W} height={STAGE_H} className="pointer-events-none absolute inset-0 select-none" />
+          <img src={R.src} alt="" aria-hidden="true" className="ph-abs" style={{ left: R.left, top: R.top, width: R.width, height: R.height }} />
 
-          {/* Title — official POLAR display lettering (the only place it appears here). */}
-          <h1 className="absolute" style={{ left: 424, top: 36, width: 732, height: 135 }}>
-            <span className="sr-only">My Profile</span>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/dashboard/polar-ui/profile-title.webp" alt="" aria-hidden="true" width={732} height={135} className="block" />
-          </h1>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/dashboard/polar-ui/clients-crown.webp" alt="" aria-hidden="true" className="absolute" style={{ left: 1164, top: 62 }} width={74} height={65} />
+          {/* 2 treatment — fade the scene's edges into the navy base; darken the clear zone either side of POLAR (the master's composition). */}
+          <div className="ph-abs" aria-hidden="true" style={{ left: R.left, top: 0, width: 170, height: STAGE_H, background: `linear-gradient(to right, ${BG}, rgba(${BG_RGB},0))` }} />
+          <div className="ph-abs" aria-hidden="true" style={{ left: R.left, top: R.top, width: R.width, height: 80, background: `linear-gradient(to bottom, ${BG}, rgba(${BG_RGB},0))` }} />
+          <div className="ph-abs" aria-hidden="true" style={{ left: R.left, top: R.top + R.height - 84, width: R.width, height: 84, background: `linear-gradient(to top, ${BG}, rgba(${BG_RGB},0))` }} />
+          <div className="ph-abs" aria-hidden="true" style={{ left: STAGE_W - 72, top: 0, width: 200, height: STAGE_H, background: `linear-gradient(to right, rgba(${BG_RGB},0), ${BG})` }} />
+          <div className="ph-abs" aria-hidden="true" style={{ left: STAGE_W + 128, top: 0, width: R.left + R.width - STAGE_W, height: STAGE_H, background: BG }} />
+          <div className="ph-abs" aria-hidden="true" style={{ left: 330, top: 140, width: 520, height: 680, background: `radial-gradient(ellipse at 52% 50%, rgba(${BG_RGB},.9) 0%, rgba(${BG_RGB},.9) 46%, rgba(${BG_RGB},0) 74%)` }} />
+          <div className="ph-abs" aria-hidden="true" style={{ left: 880, top: 180, width: 420, height: 600, background: `radial-gradient(ellipse at 45% 50%, rgba(${BG_RGB},.8) 0%, rgba(${BG_RGB},.8) 40%, rgba(${BG_RGB},0) 72%)` }} />
 
-          {/* Connectors — restrained cyan, stop clear of POLAR. */}
-          <svg className="pointer-events-none absolute inset-0" width={STAGE_W} height={STAGE_H} aria-hidden="true">
-            {CONNECTORS.map((c, i) => (
-              <g key={i}>
-                <path d={c.d} fill="none" stroke={CYAN} strokeOpacity="0.7" strokeWidth="2" />
-                <circle cx={c.end[0]} cy={c.end[1]} r="4.5" fill={CYAN} fillOpacity="0.85" />
-              </g>
-            ))}
+          {/* 3 back-glow — sits under POLAR, so it never tints him. */}
+          <div className="ph-abs" aria-hidden="true" style={{ left: P.centreX - 170, top: 170, width: 340, height: 620, background: "radial-gradient(ellipse at 50% 50%, rgba(20,110,255,.2) 0%, rgba(20,110,255,.07) 48%, rgba(20,110,255,0) 70%)" }} />
+
+          {/* 4 POLAR — original pixels, clipped to his silhouette. */}
+          <div className="ph-abs ph-polar" aria-hidden="true" style={{ left: R.left + P.srcBox.x, top: R.top + P.srcBox.y, width: P.srcBox.w, height: P.srcBox.h }} />
+
+          {/* 5 connectors */}
+          <svg className="ph-abs" width={STAGE_W} height={STAGE_H} style={{ left: 0, top: 0 }} aria-hidden="true">
+            <defs>
+              <filter id="ph-glow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="3" />
+              </filter>
+            </defs>
+            {Object.values(SPEC.connectors).map((c, i) => {
+              const d = "M" + c.path.map((p) => p.join(" ")).join(" L");
+              return (
+                <g key={i}>
+                  <path d={d} fill="none" stroke={CHEV_C} strokeWidth="6" strokeOpacity=".45" filter="url(#ph-glow)" />
+                  <path d={d} fill="none" stroke={CHEV_C} strokeWidth="2.6" />
+                  {c.dots.map(([x, y], j) => (
+                    <g key={j}>
+                      <circle cx={x} cy={y} r="8" fill={CHEV_C} fillOpacity=".5" filter="url(#ph-glow)" />
+                      <circle cx={x} cy={y} r="4.8" fill={CHEV_C} />
+                    </g>
+                  ))}
+                </g>
+              );
+            })}
           </svg>
 
+          {/* 9 title — official POLAR display lettering at the master's letter height. */}
+          <h1 className="absolute" style={{ ...SPEC.title.box }}>
+            <span className="sr-only">My Profile</span>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={SPEC.title.asset} alt="" aria-hidden="true" width={SPEC.title.box.width} height={SPEC.title.box.height} className="block" />
+          </h1>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={SPEC.crown.src} alt="" aria-hidden="true" className="ph-abs" style={{ ...SPEC.crown.box }} />
+
+          {/* 6–8 strips */}
           <nav aria-label="My Profile">
             {AREAS.map((a) => (
-              <HubButton key={a.href} area={a} />
+              <Strip key={a.key} area={a} />
             ))}
           </nav>
 
+          {/* 10 ✕ */}
           <Link href="/dashboard/barber" aria-label="Close and return to dashboard" title="Back to dashboard" className="ph-x">
             <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19" /></svg>
           </Link>
@@ -183,48 +230,44 @@ export function ProfileView() {
   );
 }
 
-// Controls read in caps, except the brand spelling ePORTFOLIO.
-function displayLabel(label: string) {
-  return label === "ePortfolio" ? "ePORTFOLIO" : label.toUpperCase();
-}
-
-function Chevron() {
+function Glyph({ k, size }: { k: Key; size: number }) {
   return (
-    <svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke={CYAN} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      <path d="M9 5l7 7-7 7" />
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" style={{ color: ICON_C }} aria-hidden="true">
+      {GLYPHS[k]}
     </svg>
   );
 }
 
-// ICON | TITLE | >  — content-fitted, chamfered, cyan; a tiny POLAR-pink
-// paint fleck at one corner is the page's only pink.
-function HubButton({ area }: { area: Area }) {
-  const fleck: React.CSSProperties = {
-    position: "absolute",
-    width: 44,
-    height: 31,
-    opacity: 0.8,
-    ...(area.corner === "tl" ? { left: -12, top: -12, transform: "rotate(180deg)" } : {}),
-    ...(area.corner === "tr" ? { right: -12, top: -12, transform: "scaleY(-1)" } : {}),
-    ...(area.corner === "bl" ? { left: -12, bottom: -12, transform: "scaleX(-1)" } : {}),
-    ...(area.corner === "br" ? { right: -12, bottom: -12 } : {}),
-  };
-  const label = displayLabel(area.label);
+function Chevron({ width, height }: { width: number; height: number }) {
   return (
-    <Link href={area.href} className="ph-btn" style={area.place} aria-label={area.label}>
-      <span className="ph-shape relative flex items-stretch p-[2px]" style={{ background: CYAN }}>
-        <span className="ph-shape flex items-stretch" style={{ background: "linear-gradient(180deg, #081533 0%, #050b1f 100%)" }}>
-          <span className="flex w-[74px] items-center justify-center" style={{ color: CYAN, borderRight: `2px solid rgba(${CYAN_RGB},0.55)` }}>
-            {area.icon}
-          </span>
-          <span className="flex items-center gap-7 pl-6 pr-5">
-            <span className="whitespace-nowrap text-[30px] font-bold leading-none tracking-wide">{label}</span>
-            <Chevron />
-          </span>
-        </span>
-      </span>
+    <svg viewBox="0 0 17 31" width={width} height={height} fill="none" stroke={CHEV_C} strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M3 3l11 12.5L3 28" />
+    </svg>
+  );
+}
+
+// One navigation strip at the master's frame box: dark panel, the master's
+// own frame/splatter art, and live icon, label and chevron at measured spots.
+function Strip({ area }: { area: (typeof AREAS)[number] }) {
+  const s = SPEC.strips[area.key];
+  const f = s.frame;
+  const [il, it, ir, ib] = s.icon;
+  const iconSize = Math.max(ir - il, ib - it) * 1.2;
+  const [cl, ct, cr, cb] = s.chevron;
+  return (
+    <Link href={area.href} className="ph-strip" aria-label={area.label === "ePORTFOLIO" ? "ePortfolio" : area.label.charAt(0) + area.label.slice(1).toLowerCase()} style={{ left: f.left, top: f.top, width: f.right - f.left + 1, height: f.bottom - f.top + 1 }}>
+      <span className="ph-panel" aria-hidden="true" />
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src="/dashboard/polar-ui/services-corner-splat.webp" alt="" aria-hidden="true" className="pointer-events-none select-none" style={fleck} />
+      <img src={s.art.src} alt="" aria-hidden="true" className="ph-abs ph-art" style={{ left: s.art.left - f.left, top: s.art.top - f.top, width: s.art.width, height: s.art.height }} />
+      <span className="ph-abs" style={{ left: (il + ir) / 2 - f.left - iconSize / 2, top: (it + ib) / 2 - f.top - iconSize / 2 }}>
+        <Glyph k={area.key} size={iconSize} />
+      </span>
+      <span className="ph-label" style={{ left: s.label[0] - f.left, top: s.label[1] - f.top - 6 }}>
+        {area.label}
+      </span>
+      <span className="ph-abs" style={{ left: cl - f.left, top: ct - f.top }}>
+        <Chevron width={cr - cl + 1} height={cb - ct + 1} />
+      </span>
     </Link>
   );
 }

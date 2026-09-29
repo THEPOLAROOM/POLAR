@@ -1,0 +1,385 @@
+{
+  "_source": "Measured by script from design-masters/my-profile-hub-concept.png (the approved visual master, 1672x941). Coordinates are stage px. Do not hand-edit to fit an implementation; re-measure from the master.",
+  "stage": {
+    "width": 1672,
+    "height": 941
+  },
+  "room": {
+    "src": "/dashboard/profile-room-v1.webp",
+    "width": 1944,
+    "height": 809,
+    "left": 276,
+    "top": 35
+  },
+  "polar": {
+    "matte": "/dashboard/polar-ui/profile-polar-matte.webp",
+    "srcBox": {
+      "x": 420,
+      "y": 155,
+      "w": 280,
+      "h": 580
+    },
+    "centreX": 838,
+    "soleY": 757,
+    "headTopY": 228
+  },
+  "title": {
+    "asset": "/dashboard/polar-ui/profile-title.webp",
+    "letters": [
+      504,
+      44,
+      1174,
+      145
+    ],
+    "_derivation": "Master letter core y 44–145 (101 px) over its own letters x 504–1174. Asset 1085×200, letter core rows 31–153 (122 px), letters x 10–1072 → scale 101/122 = 0.828; core top at y 44; letters centred on x 839.",
+    "box": {
+      "left": 391,
+      "top": 18,
+      "width": 898,
+      "height": 166
+    }
+  },
+  "crown": {
+    "src": "/dashboard/polar-ui/clients-crown.webp",
+    "concept": [
+      1178,
+      89,
+      1244,
+      148
+    ],
+    "box": {
+      "left": 1287,
+      "top": 85,
+      "width": 74,
+      "height": 65
+    }
+  },
+  "colours": {
+    "icon": [
+      2,
+      172,
+      248
+    ],
+    "chevron": [
+      4,
+      220,
+      249
+    ],
+    "panel": [
+      0,
+      6,
+      16
+    ]
+  },
+  "strips": {
+    "details": {
+      "frame": {
+        "left": 213,
+        "top": 259,
+        "right": 545,
+        "bottom": 343
+      },
+      "art": {
+        "src": "/dashboard/polar-ui/profile-strip-details.webp",
+        "left": 165,
+        "top": 219,
+        "width": 428,
+        "height": 186
+      },
+      "icon": [
+        245,
+        274,
+        291,
+        326
+      ],
+      "label": [
+        334,
+        290,
+        410,
+        313
+      ],
+      "chevron": [
+        507,
+        288,
+        523,
+        318
+      ]
+    },
+    "career": {
+      "frame": {
+        "left": 1122,
+        "top": 259,
+        "right": 1462,
+        "bottom": 344
+      },
+      "art": {
+        "src": "/dashboard/polar-ui/profile-strip-career.webp",
+        "left": 1074,
+        "top": 219,
+        "width": 436,
+        "height": 187
+      },
+      "icon": [
+        1153,
+        276,
+        1205,
+        327
+      ],
+      "label": [
+        1246,
+        291,
+        1320,
+        314
+      ],
+      "chevron": [
+        1424,
+        287,
+        1441,
+        318
+      ]
+    },
+    "eportfolio": {
+      "frame": {
+        "left": 271,
+        "top": 562,
+        "right": 566,
+        "bottom": 644
+      },
+      "art": {
+        "src": "/dashboard/polar-ui/profile-strip-eportfolio.webp",
+        "left": 223,
+        "top": 522,
+        "width": 391,
+        "height": 184
+      },
+      "icon": [
+        299,
+        582,
+        347,
+        627
+      ],
+      "label": [
+        378,
+        593,
+        491,
+        616
+      ],
+      "chevron": [
+        529,
+        589,
+        545,
+        620
+      ]
+    },
+    "analytics": {
+      "frame": {
+        "left": 1108,
+        "top": 560,
+        "right": 1440,
+        "bottom": 646
+      },
+      "art": {
+        "src": "/dashboard/polar-ui/profile-strip-analytics.webp",
+        "left": 1060,
+        "top": 520,
+        "width": 428,
+        "height": 188
+      },
+      "icon": [
+        1136,
+        580,
+        1180,
+        628
+      ],
+      "label": [
+        1233,
+        593,
+        1338,
+        616
+      ],
+      "chevron": [
+        1402,
+        589,
+        1419,
+        620
+      ]
+    },
+    "settings": {
+      "frame": {
+        "left": 652,
+        "top": 782,
+        "right": 1014,
+        "bottom": 868
+      },
+      "art": {
+        "src": "/dashboard/polar-ui/profile-strip-settings.webp",
+        "left": 604,
+        "top": 742,
+        "width": 458,
+        "height": 138
+      },
+      "icon": [
+        684,
+        799,
+        735,
+        852
+      ],
+      "label": [
+        780,
+        815,
+        876,
+        838
+      ],
+      "chevron": [
+        974,
+        811,
+        990,
+        842
+      ]
+    }
+  },
+  "connectors": {
+    "details": {
+      "path": [
+        [
+          556,
+          297.5
+        ],
+        [
+          629.5,
+          297.5
+        ],
+        [
+          629.5,
+          371
+        ],
+        [
+          689,
+          371
+        ]
+      ],
+      "dots": [
+        [
+          560,
+          297.5
+        ],
+        [
+          689,
+          371
+        ]
+      ]
+    },
+    "career": {
+      "path": [
+        [
+          1110,
+          298.5
+        ],
+        [
+          1042,
+          298.5
+        ],
+        [
+          1042,
+          371.5
+        ],
+        [
+          974,
+          371.5
+        ]
+      ],
+      "dots": [
+        [
+          1106,
+          298.5
+        ],
+        [
+          974,
+          371.5
+        ]
+      ]
+    },
+    "eportfolio": {
+      "path": [
+        [
+          575,
+          591
+        ],
+        [
+          632.5,
+          591
+        ],
+        [
+          632.5,
+          491
+        ],
+        [
+          699,
+          491
+        ]
+      ],
+      "dots": [
+        [
+          579,
+          591
+        ],
+        [
+          699,
+          491
+        ]
+      ]
+    },
+    "analytics": {
+      "path": [
+        [
+          1095,
+          589.5
+        ],
+        [
+          1034.5,
+          589.5
+        ],
+        [
+          1034.5,
+          491
+        ],
+        [
+          970,
+          491
+        ]
+      ],
+      "dots": [
+        [
+          1091,
+          589.5
+        ],
+        [
+          970,
+          491
+        ]
+      ]
+    },
+    "settings": {
+      "path": [
+        [
+          830,
+          719
+        ],
+        [
+          830,
+          780
+        ]
+      ],
+      "dots": [
+        [
+          830,
+          719
+        ],
+        [
+          830,
+          776
+        ]
+      ]
+    }
+  }
+}
