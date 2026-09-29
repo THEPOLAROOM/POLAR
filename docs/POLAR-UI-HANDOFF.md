@@ -94,11 +94,12 @@ A wide pink restyle of every Barber page (`b72259c`) was **rolled back** (`5dfbb
 
 **Next steps:**
 1. Confirm CAREER vs PROFESSIONAL with the user.
-2. Create the ePORTFOLIO and SETTINGS pages. Use honest content only, with ✕ back to `/dashboard/barber/account`.
-3. Render the hub at 1672 × 941 and compare it with `my-profile-hub-concept.png`.
-4. Check the connectors stop clear of POLAR and that there is no dead space in the controls.
-5. Test all five links, the ✕, the phone list, and the Details name save.
-6. Build, commit only these files, and deploy. The user asked for deploy once testing passes.
+2. **Get approval for the background re-framing.** `profile-hub-room.webp` re-frames and darkens the approved `profile-room-v1.webp` so POLAR stands centred. The owner's standing rule is never to crop or reframe approved artwork without asking, and this was done without asking. Show it to the user and get approval, or have the user supply a centred-POLAR production scene.
+3. Create the ePORTFOLIO and SETTINGS pages. Use honest content only, with ✕ back to `/dashboard/barber/account`.
+4. Render the hub at 1672 × 941 and compare it with `my-profile-hub-concept.png`.
+5. Check the connectors stop clear of POLAR and that there is no dead space in the controls.
+6. Test all five links, the ✕, the phone list, and the Details name save.
+7. Build, commit only these files, and deploy. The user asked for deploy once testing passes.
 
 ## 5. Asset scripts (`design-masters/tools/`)
 
