@@ -1,6 +1,6 @@
 # POLAR UI — development handoff (source of truth)
 
-Last updated: 2026-09-29. This file preserves the working state and decisions from a long Claude Code session, so a fresh session can continue without it.
+Last updated: 2026-09-29 (My Profile shipped). This file preserves the working state and decisions from a long Claude Code session, so a fresh session can continue without it.
 
 Product truth, users, brand commitments and the locked **POLAR UI design rule** are in [`PRODUCT.md`](../PRODUCT.md). Read that first; this file does not repeat it.
 
@@ -15,7 +15,7 @@ Product truth, users, brand commitments and the locked **POLAR UI design rule** 
 | Asset-generation scripts | `design-masters/tools/*.cjs` (see §5) |
 | Generated UI artwork | `public/dashboard/polar-ui/` |
 
-**Rollback tags:** `pre-barber-redesign-2026-09-28`, `pre-clients-redesign-2026-09-28`, `pre-services-redesign-2026-09-28`.
+**Rollback tags:** `pre-barber-redesign-2026-09-28`, `pre-clients-redesign-2026-09-28`, `pre-services-redesign-2026-09-28`, `pre-my-profile-2026-09-29`.
 
 ## 2. Page status
 
@@ -24,7 +24,7 @@ Product truth, users, brand commitments and the locked **POLAR UI design rule** 
 | Calendar | `/dashboard/barber/calendar` | **Master / approved.** On `PolarStage`, with Reschedule and Mark No Show in the appointment details. | Hot pink |
 | Clients | `/dashboard/barber/clients` | **Approved and live.** On `PolarStage`, with the official CLIENTS title. | Blue/cyan |
 | My Services | `/dashboard/barber/services` | **Live** (commit `1f66971`), same system. | Hot pink (blue only on the Active status) |
-| My Profile | `/dashboard/barber/account` | **IN PROGRESS, not deployed** (see §4). | Blue/cyan, with a very subtle POLAR pink accent |
+| My Profile | `/dashboard/barber/account` | **Live** (see §4): hub + DETAILS name field + new SETTINGS and ePORTFOLIO pages. | Blue/cyan, with a very subtle POLAR pink accent |
 | Workflow Mode | `/dashboard/barber/shift` | Leave as it is (user instruction). | — |
 | POLAR Room hub | `/dashboard/barber` | Leave as it is. | — |
 | Smart Analytics, POLAR CV, Personal Details | — | Earlier dedicated designs; untouched by the redesign. | cyan/pink family |
@@ -57,9 +57,9 @@ A wide pink restyle of every Barber page (`b72259c`) was **rolled back** (`5dfbb
   - Confirm no console errors, no horizontal overflow, and that `next build` passes.
   - Commit only that page's files. Deploy by fast-forwarding `main` and pushing.
 
-## 4. CURRENT TASK — My Profile hub (unfinished)
+## 4. My Profile hub (shipped 2026-09-29)
 
-**Where the code is:** in the design worktree, on local branch **`profile-hub`**, committed there as a WIP commit. **Not pushed, not deployed.**
+**State:** live on `main`. CAREER is the confirmed label. The owner accepted the re-framed background on 2026-09-29 (a 1:1 pixel shift, so POLAR is centred; the right-hand tool station falls outside the frame; the room is at 22% light).
 
 **Spec (user-approved, 2026-09-28):** My Profile becomes a visual navigation hub, "POLAR's profile world after closing time".
 - **Background:** the production POLAR scene, much darker, with POLAR centred and lit and large clear space around him.
@@ -67,7 +67,7 @@ A wide pink restyle of every Barber page (`b72259c`) was **rolled back** (`5dfbb
   - The official POLAR character is the identity source: arctic-white fur, glowing electric-blue eyes with no pupils, navy POLAR tracksuit, crown branding. Never substitute an AI-redrawn bear. **Production assets beat the concept image.**
 - **Title:** MY PROFILE in the official lettering (`profile-title.webp`, blue edge, subtle pink flecks). The display lettering appears **only** here on this page.
 - **Exactly five controls:** DETAILS, CAREER, ePORTFOLIO, ANALYTICS, SETTINGS.
-  - The last design brief says **CAREER** replaces "Professional". A later migration note said "PROFESSIONAL"; **confirm with the user** which label is final.
+  - **CAREER** is final (confirmed by the owner 2026-09-29).
   - Each control is **icon + title + arrow only**: no descriptions, no "Coming soon". Controls are compact and content-fitted, and use Barlow Condensed.
 - **Layout:**
   - DETAILS upper-left, CAREER upper-right, ePORTFOLIO lower-left, ANALYTICS lower-right, SETTINGS bottom-centre. The hub is laid out to match the concept's composition.
@@ -79,27 +79,15 @@ A wide pink restyle of every Barber page (`b72259c`) was **rolled back** (`5dfbb
 
 | Control | Route | State |
 |---|---|---|
-| DETAILS | `/dashboard/barber/account/personal-details` | Exists. The WIP moves **name editing** here: a "Your Name" field that saves through the existing `updateBarberName`. It replaces the hub's old Edit Profile dialog. |
+| DETAILS | `/dashboard/barber/account/personal-details` | **Name editing** lives here: a "Your Name" field saved by the existing `updateBarberName`. It replaces the hub's old Edit Profile dialog. |
 | CAREER | `/dashboard/barber/account/professional-profile` | Exists (POLAR CV). Credentials and qualifications live here. |
-| ePORTFOLIO | `/dashboard/barber/account/eportfolio` | **Page not created yet.** No portfolio storage exists. It needs an honest empty state, not an invented feature. |
+| ePORTFOLIO | `/dashboard/barber/account/eportfolio` | Live: an honest empty state (no portfolio storage exists yet). Adding uploads is future work that needs storage first. |
 | ANALYTICS | `/dashboard/barber/calendar/analytics` | Exists. |
-| SETTINGS | `/dashboard/barber/account/settings` | **Page not created yet.** Real content available today: signed-in email and Log out (`logout` in `src/lib/actions/auth.ts`). Visibility and emergency contact have **no storage**, so don't fake them. Record any such gaps rather than inventing them. |
+| SETTINGS | `/dashboard/barber/account/settings` | Live: signed-in email and Log out (`logout` in `src/lib/actions/auth.ts`). Visibility and emergency contact have **no storage**, so they are not shown. |
 
-**The WIP so far:**
-- `account/page.tsx` is now navigation only.
-- `account/profile-view.tsx` has been rewritten as the hub (desktop stage plus a phone list).
-- `personal-details/page.tsx` and `personal-details-view.tsx` have the name field.
-- New assets: `profile-hub-room.webp`, `profile-title.webp`.
-- Type-check passes. It has **not** been rendered, screenshot or tested yet.
+**Files:** `account/page.tsx` (navigation only), `account/profile-view.tsx` (hub: desktop stage + phone list), `account/account-subpage.tsx` (shared shell for SETTINGS/ePORTFOLIO in the Personal Details visual family), `settings/*`, `eportfolio/*`, and the name field in `personal-details/*`.
 
-**Next steps:**
-1. Confirm CAREER vs PROFESSIONAL with the user.
-2. **Get approval for the background re-framing.** `profile-hub-room.webp` re-frames and darkens the approved `profile-room-v1.webp` so POLAR stands centred. The owner's standing rule is never to crop or reframe approved artwork without asking, and this was done without asking. Show it to the user and get approval, or have the user supply a centred-POLAR production scene.
-3. Create the ePORTFOLIO and SETTINGS pages. Use honest content only, with ✕ back to `/dashboard/barber/account`.
-4. Render the hub at 1672 × 941 and compare it with `my-profile-hub-concept.png`.
-5. Check the connectors stop clear of POLAR and that there is no dead space in the controls.
-6. Test all five links, the ✕, the phone list, and the Details name save.
-7. Build, commit only these files, and deploy. The user asked for deploy once testing passes.
+**Open:** the signed-in round trip of the DETAILS name save still needs checking with a real barber login (the form wiring was verified; the action itself is unchanged).
 
 ## 5. Asset scripts (`design-masters/tools/`)
 
