@@ -7,8 +7,8 @@ import { Barlow_Condensed } from "next/font/google";
 import SPEC from "./profile-hub-spec.json";
 
 // MY PROFILE hub. On desktop the page IS the owner's approved master image
-// (design-masters/my-profile-hub-concept.png, served pixel-identical as
-// my-profile-master.webp): room, POLAR, title, strips, icons, connectors and
+// (design-masters/my-profile-master.png, 2019 × 779, served pixel-identical as
+// my-profile-master-wide.webp): room, POLAR, title, strips, icons, connectors and
 // splatter all come from it, never recreated here. The five strips are made
 // usable by transparent links laid exactly over the master's own strip frames
 // (profile-hub-spec.json). They scale with the image, so they stay aligned.
@@ -72,13 +72,22 @@ const GLYPHS: Record<Key, React.ReactNode> = {
   ),
 };
 
-// Uniform "contain" scale, with the stage placed on whole pixels: a half-pixel
-// offset (e.g. centring 941 px by 50%) would make the browser resample the master.
+// The master is wider than a desktop browser window, so it "covers" the window:
+// scaled uniformly to fill it and centred, trimming only room at the far edges.
+// The zoom is capped so SPEC.safe (the five strips, the title, POLAR, SETTINGS)
+// always stays fully visible; if the cap binds, a thin ambient band shows instead.
+// The stage sits on whole pixels: a half-pixel offset would resample the master.
+const SAFE = SPEC.safe;
 const SCALE_STYLE_ID = "profile-hub-scale";
 function setScale() {
-  const s = Math.min(window.innerWidth / STAGE_W, window.innerHeight / STAGE_H);
-  const x = Math.round((window.innerWidth - STAGE_W * s) / 2);
-  const y = Math.round((window.innerHeight - STAGE_H * s) / 2);
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const cover = Math.max(vw / STAGE_W, vh / STAGE_H);
+  const s = Math.min(cover, vw / (SAFE.right - SAFE.left + 1), vh / (SAFE.bottom - SAFE.top + 1));
+  // Centre on the safe area; where the master overflows, keep it covering the window.
+  const place = (view: number, size: number, centre: number) =>
+    size * s >= view ? Math.round(Math.min(0, Math.max(view - size * s, view / 2 - centre * s))) : Math.round((view - size * s) / 2);
+  const x = place(vw, STAGE_W, (SAFE.left + SAFE.right + 1) / 2);
+  const y = place(vh, STAGE_H, (SAFE.top + SAFE.bottom + 1) / 2);
   let el = document.getElementById(SCALE_STYLE_ID);
   if (!el) {
     el = document.createElement("style");
@@ -152,9 +161,9 @@ export function ProfileView() {
         </ul>
       </main>
 
-      {/* Desktop — the approved master, with transparent links over its strips. */}
+      {/* Desktop — the approved master filling the window, with transparent links over its strips. */}
       <main className="relative hidden h-[100dvh] overflow-hidden lg:block" style={{ background: BG }}>
-        {/* Outside the master's own frame (wider/taller viewports): a blurred, dimmed copy of it, so the room carries on instead of flat bars. */}
+        {/* Only visible if the zoom cap binds (unusually narrow/tall windows): a blurred, dimmed copy of the master behind it. */}
         <div className="ph-ambient" aria-hidden="true" />
         <div className="ph-stage">
           <h1 className="sr-only">My Profile</h1>

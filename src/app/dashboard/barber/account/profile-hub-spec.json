@@ -1,44 +1,50 @@
 {
-  "_source": "MY PROFILE desktop hub = the approved master image itself (design-masters/my-profile-hub-concept.png, identical to the owner's POLAR-MY-PROFILE-FULL-PAGE.png), served as a pixel-identical lossless WebP. Hit areas are the master's own strip frame lines, measured by script from the master (stage px).",
+  "_source": "MY PROFILE desktop hub = the owner's approved master image itself (design-masters/my-profile-master.png = POLAR-MY-PROFILE.png, 2019x779), served as a pixel-identical lossless WebP. Hit areas are the master's own strip frame lines, measured by script (image px). safe = region that must always stay visible (the five strips with a 16 px splatter margin, title top to SETTINGS drips).",
   "stage": {
-    "width": 1672,
-    "height": 941
+    "width": 2019,
+    "height": 779
   },
   "master": {
-    "src": "/dashboard/polar-ui/my-profile-master.webp",
-    "width": 1672,
-    "height": 941
+    "src": "/dashboard/polar-ui/my-profile-master-wide.webp",
+    "width": 2019,
+    "height": 779
+  },
+  "safe": {
+    "left": 248,
+    "top": 10,
+    "right": 1774,
+    "bottom": 772
   },
   "hitAreas": {
     "details": {
-      "left": 213,
-      "top": 259,
-      "right": 545,
-      "bottom": 343
+      "left": 264,
+      "top": 215,
+      "right": 584,
+      "bottom": 290
     },
     "career": {
-      "left": 1122,
-      "top": 259,
-      "right": 1462,
-      "bottom": 344
+      "left": 1435,
+      "top": 216,
+      "right": 1757,
+      "bottom": 290
     },
     "eportfolio": {
-      "left": 271,
-      "top": 562,
-      "right": 566,
-      "bottom": 644
+      "left": 384,
+      "top": 482,
+      "right": 693,
+      "bottom": 558
     },
     "analytics": {
-      "left": 1108,
-      "top": 560,
-      "right": 1440,
-      "bottom": 646
+      "left": 1325,
+      "top": 483,
+      "right": 1638,
+      "bottom": 559
     },
     "settings": {
-      "left": 652,
-      "top": 782,
-      "right": 1014,
-      "bottom": 868
+      "left": 841,
+      "top": 650,
+      "right": 1172,
+      "bottom": 728
     }
   }
 }

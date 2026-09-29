@@ -1,6 +1,6 @@
 # POLAR UI — development handoff (source of truth)
 
-Last updated: 2026-09-29 (My Profile hub = the approved master image + transparent links). This file preserves the working state and decisions from a long Claude Code session, so a fresh session can continue without it.
+Last updated: 2026-09-29 (My Profile hub = the owner's wide master image, filling the window, with transparent links). This file preserves the working state and decisions from a long Claude Code session, so a fresh session can continue without it.
 
 Product truth, users, brand commitments and the locked **POLAR UI design rule** are in [`PRODUCT.md`](../PRODUCT.md). Read that first; this file does not repeat it.
 
@@ -11,11 +11,11 @@ Product truth, users, brand commitments and the locked **POLAR UI design rule** 
 | Production | www.thepolaroom.com. Vercel project `polar1` (also `polar`) deploys `main` automatically. Supabase project `jhgqxsdzmpxdfsasreeg`. |
 | Main checkout | `C:/Users/New Guest/Documents/GitHub/POLAR` (branch `main`) |
 | Design worktree | `C:/Users/New Guest/Documents/GitHub/POLAR-barber-redesign` (git worktree; its `node_modules` is a junction to the main checkout's) |
-| Approved visual masters | `design-masters/barber-calendar-master.png` (Calendar), `design-masters/polar-display-alphabet.png` (official A–Z lettering), `design-masters/my-profile-hub-concept.png` (**My Profile visual master**: it outranks any written brief) |
+| Approved visual masters | `design-masters/barber-calendar-master.png` (Calendar), `design-masters/polar-display-alphabet.png` (official A–Z lettering), `design-masters/my-profile-master.png` (**My Profile visual master**, 2019 × 779; it outranks any written brief). `my-profile-hub-concept.png` is the superseded 16:9 version. |
 | Asset-generation scripts | `design-masters/tools/*.cjs` (see §5) |
 | Generated UI artwork | `public/dashboard/polar-ui/` |
 
-**Rollback tags:** `pre-barber-redesign-2026-09-28`, `pre-clients-redesign-2026-09-28`, `pre-services-redesign-2026-09-28`, `pre-my-profile-2026-09-29`, `pre-my-profile-fidelity-2026-09-29`, `pre-my-profile-master-2026-09-29`.
+**Rollback tags:** `pre-barber-redesign-2026-09-28`, `pre-clients-redesign-2026-09-28`, `pre-services-redesign-2026-09-28`, `pre-my-profile-2026-09-29`, `pre-my-profile-fidelity-2026-09-29`, `pre-my-profile-master-2026-09-29`, `pre-my-profile-wide-2026-09-29`.
 
 ## 2. Page status
 
@@ -59,21 +59,30 @@ A wide pink restyle of every Barber page (`b72259c`) was **rolled back** (`5dfbb
 
 ## 4. My Profile hub (the approved master, 2026-09-29)
 
-**The owner's decision (2026-09-29):** the approved image IS the desktop hub. It isn't a concept to recreate. The file is `design-masters/my-profile-hub-concept.png`, byte-identical to the owner's `POLAR-MY-PROFILE-FULL-PAGE.png`. The image is the visual master; the existing app is the functional master.
+**The owner's decision (2026-09-29):** the approved image IS the desktop hub. It isn't a concept to recreate. The current master is `design-masters/my-profile-master.png` (2019 × 779, ratio 2.59), byte-identical to the owner's `POLAR-MY-PROFILE.png`. It replaced the 16:9 `my-profile-hub-concept.png`, which left side bands in real browser windows. The image is the visual master; the existing app is the functional master.
 
 **How it's built** (`account/profile-view.tsx`, desktop at 1024 px and wider):
-- **The master:** `/dashboard/polar-ui/my-profile-master.webp`, a lossless WebP that is pixel-identical to the master PNG and 22% smaller. It supplies the room, POLAR, title, crown, strips, icons, arrows, connectors, splatter and lighting. **Nothing is recreated in CSS**, and no HTML labels or icons are laid over it.
-- **Five transparent links:** `<a>` elements (DETAILS, CAREER, ePORTFOLIO, ANALYTICS, SETTINGS) placed exactly over the master's own strip frame lines. The boxes come from `profile-hub-spec.json` (`hitAreas`, measured from the master). They carry accessible names, a keyboard-only focus ring, and the tab order DETAILS → CAREER → ePORTFOLIO → ANALYTICS → SETTINGS → ✕.
-- **Scaling:** the stage (image plus links) is contain-scaled as one unit and placed on whole pixels. It's never distorted or cropped, and the links stay aligned at every size.
-- **Beyond the master's own frame** (viewports wider or taller than 16:9): a blurred, dimmed copy of the master fills the space, so the room carries on instead of flat bars.
-- **Exit:** a small, restrained ✕ fixed to the viewport's top-right corner, outside the composition on most screens. **Esc** also returns to the dashboard.
+- **The master:** `/dashboard/polar-ui/my-profile-master-wide.webp`, a lossless WebP that is pixel-identical to the master PNG. It supplies the room, POLAR, title, crown, strips, icons, arrows, connectors, splatter and lighting. **Nothing is recreated in CSS**, and no HTML labels or icons are laid over it.
+- **Five transparent links:** `<a>` elements placed exactly over the master's own strip frame lines. The boxes come from `profile-hub-spec.json` (`hitAreas`, measured from the master). They carry accessible names, a keyboard-only focus ring, and the tab order DETAILS → CAREER → ePORTFOLIO → ANALYTICS → SETTINGS → ✕.
+- **Fill ("subtle zoom", owner-allowed):** the master *covers* the window. It's scaled uniformly to fill it, trimming only room at the far left and right (about 190–250 px of the master's 2019 per side in typical windows).
+  - The zoom is capped so `SPEC.safe` always stays fully visible: the five strips with a 16 px splatter margin, and the title top to the SETTINGS drips.
+  - The stage is centred on that safe area, placed on whole pixels and never distorted.
+  - Typical browser windows (1366×657, 1536×730, 1920×953, 2560×1305) and 3440 ultrawide fill completely.
+  - Only true 16:9 or 4:3 screens (full-screen 1920×1080, 1366×768, 1024×768) hit the cap. There, a blurred, dimmed copy of the master shows in thin bands top and bottom (50 px at 1920×1080), because filling them would cut DETAILS and CAREER.
+- **Exit:** a small, restrained ✕ fixed to the viewport's top-right corner. **Esc** also returns to the dashboard.
 - **Below 1024 px:** the dedicated list layout (five areas, title, ✕).
 
-**Fidelity gate:** run `node design-masters/tools/my-profile-fidelity.cjs <url-of-a-page-rendering-ProfileView> <outDir>`, with `PLAYWRIGHT_CORE` and `CHROMIUM` set. At 1672 × 941 the render must equal the master pixel for pixel, except the ✕ corner. At 1024–2560 px wide the master must be undistorted and uncropped, and every link aligned within 1 px. **78/78 passed** at deploy. The only differing pixels were Next's dev-mode badge, which production doesn't render.
+**Fidelity gate:** run `node design-masters/tools/my-profile-fidelity.cjs <url-of-a-page-rendering-ProfileView> <outDir>`, with `PLAYWRIGHT_CORE` and `CHROMIUM` set. At 2019 × 779 the render must equal the master pixel for pixel, except the ✕ corner. At 9 window sizes it checks four things:
+- the safe area is fully visible;
+- the master fills the window unless the cap binds;
+- there's no distortion;
+- every link is aligned within 1 px.
 
-**Deviations from the master:** only the ✕ (owner-requested) and the keyboard focus ring (accessibility, shown only on focus).
+**109/109 passed** at deploy. The only differing pixels were Next's dev-mode badge, which production doesn't render.
 
-**Superseded:** two earlier builds reconstructed the hub: `72fa02a` (loose reconstruction) and `c73f0e1` (measured reconstruction with extracted strip art and a POLAR matte). Their reconstruction assets and tools were removed; they remain in git history.
+**Deviations from the master:** the ✕ (owner-requested), the keyboard focus ring (accessibility, shown only on focus), and the edge trim from filling the window (owner-allowed).
+
+**Superseded builds:** `72fa02a` and `c73f0e1` (reconstructions), then `ef85304` (the 16:9 master with side bands). The reconstruction assets remain in git history only.
 
 **Workflow (owner, 2026-09-29):** implement, test, then deploy. The owner reviews on production, not locally, and sends final edits from there. Tag a rollback point before each deploy.
 
