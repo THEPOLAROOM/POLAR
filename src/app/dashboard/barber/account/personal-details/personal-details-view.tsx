@@ -3,7 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { Barlow, Russo_One } from "next/font/google";
-import { updateBarberProfile, updateBarberAddresses } from "@/lib/actions/barber-account";
+import { updateBarberName, updateBarberProfile, updateBarberAddresses } from "@/lib/actions/barber-account";
 
 const ui = Barlow({ subsets: ["latin"], weight: ["400", "500", "600", "700"] });
 const display = Russo_One({ subsets: ["latin"], weight: "400" });
@@ -29,10 +29,15 @@ type Addresses = {
 // UI into the mastered visual system and a single Save Changes
 // control. Both existing actions are called from the same FormData,
 // unchanged, on submit.
+// DETAILS (My Profile). The barber's name — previously edited from the
+// My Profile hub's Edit Profile dialog — now lives here with the rest of
+// the personal information, saved by the same updateBarberName() action.
 export function PersonalDetailsView({
+  name,
   phone,
   addresses,
 }: {
+  name: string;
   phone: string;
   addresses: Addresses | null;
 }) {
@@ -45,11 +50,13 @@ export function PersonalDetailsView({
     const formData = new FormData(e.currentTarget);
     setStatus(null);
     startTransition(async () => {
-      const [profileResult, addressResult] = await Promise.all([
+      const [nameResult, profileResult, addressResult] = await Promise.all([
+        updateBarberName(formData),
         updateBarberProfile(formData),
         updateBarberAddresses(formData),
       ]);
       const error =
+        (nameResult && "error" in nameResult && nameResult.error) ||
         (profileResult && "error" in profileResult && profileResult.error) ||
         (addressResult && "error" in addressResult && addressResult.error);
       if (error) {
@@ -95,8 +102,11 @@ export function PersonalDetailsView({
           <section className="pd-panel">
             <PanelHead icon="phone" title="CONTACT DETAILS" />
             <div className="pd-inset">
-              <p className="pd-desc">Your personal contact information (private, not shown to clients).</p>
+              <p className="pd-desc">Your name and contact number. Your phone number is private — never shown to clients.</p>
               <div className="pd-grid pd-grid-1">
+                <Field label="Your Name" icon="user">
+                  <input name="full_name" type="text" required defaultValue={name} />
+                </Field>
                 <Field label="Phone Number" icon="phone">
                   <input name="phone" type="text" required defaultValue={phone} />
                 </Field>
@@ -216,9 +226,10 @@ function Field({ label, icon, chevron, children }: { label: string; icon: IconNa
 
 /* ------------------------------------------------------------------ */
 
-type IconName = "phone" | "home" | "briefcase" | "pin" | "page" | "building" | "map" | "envelope" | "globe" | "down" | "info" | "save" | "x";
+type IconName = "user" | "phone" | "home" | "briefcase" | "pin" | "page" | "building" | "map" | "envelope" | "globe" | "down" | "info" | "save" | "x";
 
 const PATHS: Record<IconName, React.ReactNode> = {
+  user: (<><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" /></>),
   phone: <path d="M4.5 3.5h3L9 8l-2 1.3a12 12 0 006.2 6.2L14.5 13.5l4.5 1.5v3a2 2 0 01-2.2 2A16.5 16.5 0 013.5 5.7a2 2 0 012-2.2z" />,
   home: (<><path d="M4 11.5L12 4l8 7.5" /><path d="M6 10v10h12V10" /><path d="M10 20v-6h4v6" /></>),
   briefcase: (<><rect x="3" y="7" width="18" height="13" rx="2" /><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2" /><path d="M3 12.5h18" /></>),

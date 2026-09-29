@@ -27,5 +27,5 @@ export default async function BarberPersonalDetailsPage() {
       .maybeSingle(),
   ]);
 
-  return <PersonalDetailsView phone={profile?.phone ?? ""} addresses={addresses ?? null} />;
+  return <PersonalDetailsView name={profile?.full_name ?? ""} phone={profile?.phone ?? ""} addresses={addresses ?? null} />;
 }
