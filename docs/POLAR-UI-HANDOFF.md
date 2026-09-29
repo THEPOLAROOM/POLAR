@@ -1,6 +1,6 @@
 # POLAR UI — development handoff (source of truth)
 
-Last updated: 2026-09-29 (My Profile rebuilt to its approved master). This file preserves the working state and decisions from a long Claude Code session, so a fresh session can continue without it.
+Last updated: 2026-09-29 (My Profile hub = the approved master image + transparent links). This file preserves the working state and decisions from a long Claude Code session, so a fresh session can continue without it.
 
 Product truth, users, brand commitments and the locked **POLAR UI design rule** are in [`PRODUCT.md`](../PRODUCT.md). Read that first; this file does not repeat it.
 
@@ -15,7 +15,7 @@ Product truth, users, brand commitments and the locked **POLAR UI design rule** 
 | Asset-generation scripts | `design-masters/tools/*.cjs` (see §5) |
 | Generated UI artwork | `public/dashboard/polar-ui/` |
 
-**Rollback tags:** `pre-barber-redesign-2026-09-28`, `pre-clients-redesign-2026-09-28`, `pre-services-redesign-2026-09-28`, `pre-my-profile-2026-09-29`, `pre-my-profile-fidelity-2026-09-29`.
+**Rollback tags:** `pre-barber-redesign-2026-09-28`, `pre-clients-redesign-2026-09-28`, `pre-services-redesign-2026-09-28`, `pre-my-profile-2026-09-29`, `pre-my-profile-fidelity-2026-09-29`, `pre-my-profile-master-2026-09-29`.
 
 ## 2. Page status
 
@@ -24,7 +24,7 @@ Product truth, users, brand commitments and the locked **POLAR UI design rule** 
 | Calendar | `/dashboard/barber/calendar` | **Master / approved.** On `PolarStage`, with Reschedule and Mark No Show in the appointment details. | Hot pink |
 | Clients | `/dashboard/barber/clients` | **Approved and live.** On `PolarStage`, with the official CLIENTS title. | Blue/cyan |
 | My Services | `/dashboard/barber/services` | **Live** (commit `1f66971`), same system. | Hot pink (blue only on the Active status) |
-| My Profile | `/dashboard/barber/account` | **Live, rebuilt to its master** (see §4). The owner reviews it on production and sends final edits. | Blue/cyan with the master's own pink/blue splatter |
+| My Profile | `/dashboard/barber/account` | **Live: the approved master image itself**, with transparent links (see §4). The owner reviews it on production and sends final edits. | As the master |
 | Workflow Mode | `/dashboard/barber/shift` | Leave as it is (user instruction). | — |
 | POLAR Room hub | `/dashboard/barber` | Leave as it is. | — |
 | Smart Analytics, POLAR CV, Personal Details | — | Earlier dedicated designs; untouched by the redesign. | cyan/pink family |
@@ -57,40 +57,23 @@ A wide pink restyle of every Barber page (`b72259c`) was **rolled back** (`5dfbb
   - Confirm no console errors, no horizontal overflow, and that `next build` passes.
   - Commit only that page's files. Deploy by fast-forwarding `main` and pushing.
 
-## 4. My Profile hub (rebuilt to its master, 2026-09-29)
+## 4. My Profile hub (the approved master, 2026-09-29)
 
-**Source of truth:** `design-masters/my-profile-hub-concept.png` is the visual master. Written briefs never override it; raise any conflict with the owner. A first build (`72fa02a`) treated the concept as loose inspiration: it re-lit POLAR, approximated the strips in CSS and diverged badly. It was replaced.
+**The owner's decision (2026-09-29):** the approved image IS the desktop hub. It isn't a concept to recreate. The file is `design-masters/my-profile-hub-concept.png`, byte-identical to the owner's `POLAR-MY-PROFILE-FULL-PAGE.png`. The image is the visual master; the existing app is the functional master.
 
-**How it's built.** Layers, back to front, on the 1672 × 941 stage in `account/profile-view.tsx`:
-1. **Room:** `/dashboard/profile-room-v1.webp`, the untouched file, positioned at +276, +35 so POLAR stands centred.
-2. **Room treatment:** CSS only. The scene's edges fade into navy, and the clear zone either side of POLAR is darkened to the master's levels.
-3. **Back-glow:** blue light behind POLAR.
-4. **POLAR:** the same untouched file again, clipped by `profile-polar-matte.webp` (CSS mask). His pixels are exactly the source's; the fidelity test proves 0 difference.
-5. **Connectors:** SVG at the master's measured paths.
-6. **Strip panels:** a CSS dark panel for each strip.
-7. **Strip art:** `profile-strip-*.webp`, the frame, glow, splatter and drips cut from the master.
-8. **Live controls:** icon, label and chevron at the master's measured boxes. Each `<a>` spans the master's frame box.
-9. **Title:** `profile-title.webp` (official alphabet) at the master's letter-core height (101 px), centred on the master's letters. Then the crown.
-10. **✕:** top right.
+**How it's built** (`account/profile-view.tsx`, desktop at 1024 px and wider):
+- **The master:** `/dashboard/polar-ui/my-profile-master.webp`, a lossless WebP that is pixel-identical to the master PNG and 22% smaller. It supplies the room, POLAR, title, crown, strips, icons, arrows, connectors, splatter and lighting. **Nothing is recreated in CSS**, and no HTML labels or icons are laid over it.
+- **Five transparent links:** `<a>` elements (DETAILS, CAREER, ePORTFOLIO, ANALYTICS, SETTINGS) placed exactly over the master's own strip frame lines. The boxes come from `profile-hub-spec.json` (`hitAreas`, measured from the master). They carry accessible names, a keyboard-only focus ring, and the tab order DETAILS → CAREER → ePORTFOLIO → ANALYTICS → SETTINGS → ✕.
+- **Scaling:** the stage (image plus links) is contain-scaled as one unit and placed on whole pixels. It's never distorted or cropped, and the links stay aligned at every size.
+- **Beyond the master's own frame** (viewports wider or taller than 16:9): a blurred, dimmed copy of the master fills the space, so the room carries on instead of flat bars.
+- **Exit:** a small, restrained ✕ fixed to the viewport's top-right corner, outside the composition on most screens. **Esc** also returns to the dashboard.
+- **Below 1024 px:** the dedicated list layout (five areas, title, ✕).
 
-All geometry lives in `account/profile-hub-spec.json`, measured from the master by `design-masters/tools/my-profile-*.cjs`. Don't hand-tune it; re-measure. The stage is contain-scaled and placed on whole pixels (a half-pixel offset resamples every layer). Below 1024 px wide, a separate list layout is shown.
+**Fidelity gate:** run `node design-masters/tools/my-profile-fidelity.cjs <url-of-a-page-rendering-ProfileView> <outDir>`, with `PLAYWRIGHT_CORE` and `CHROMIUM` set. At 1672 × 941 the render must equal the master pixel for pixel, except the ✕ corner. At 1024–2560 px wide the master must be undistorted and uncropped, and every link aligned within 1 px. **78/78 passed** at deploy. The only differing pixels were Next's dev-mode badge, which production doesn't render.
 
-**Fidelity gate:** run `node design-masters/tools/my-profile-fidelity.cjs <url-of-a-page-rendering-ProfileView> <outDir>`, with `PLAYWRIGHT_CORE` and `CHROMIUM` set. It scores the render against the master and writes a report, an onion-skin and a diff heatmap. It exits 1 on any failure. **57/57 passed** at deploy:
-- strip art error ≤ 1 where opaque;
-- POLAR pixels exact;
-- labels, icons and chevrons within 3 px;
-- title core 100 vs 101 px;
-- strip pink 99% of the master's.
+**Deviations from the master:** only the ✕ (owner-requested) and the keyboard focus ring (accessibility, shown only on focus).
 
-**Deviation register:** owner-approved differences from the master, 2026-09-29.
-- **D1/D4 POLAR:** production POLAR at 1:1, untouched. Not the master's re-rendered POLAR (his head sits about 25 px higher).
-- **D4 Room:** the untouched production room. It doesn't have the master's layout (left lamp/chair, right shelves and pink cabinet, brighter floor). The left 276 px and the top and bottom edges fade to navy.
-- **D2 Title:** the official alphabet at the master's letter height. It's wider than the master's lettering and has no splatter halo.
-- **D3 Pink:** the master's own pink/blue strip splatter is the target, replacing the old "90% blue / tiny pink" brief.
-- **SETTINGS strip:** the lower drips are truncated and the top glow thinned, because floor reflections contaminate the master there.
-- **D5 ✕:** not in the master; placed top right.
-
-Any other visible difference from the master is a bug.
+**Superseded:** two earlier builds reconstructed the hub: `72fa02a` (loose reconstruction) and `c73f0e1` (measured reconstruction with extracted strip art and a POLAR matte). Their reconstruction assets and tools were removed; they remain in git history.
 
 **Workflow (owner, 2026-09-29):** implement, test, then deploy. The owner reviews on production, not locally, and sends final edits from there. Tag a rollback point before each deploy.
 
@@ -104,13 +87,13 @@ Any other visible difference from the master is a bug.
 | ANALYTICS | `/dashboard/barber/calendar/analytics` | Exists. |
 | SETTINGS | `/dashboard/barber/account/settings` | Live: signed-in email and Log out (`logout` in `src/lib/actions/auth.ts`). Visibility and emergency contact have **no storage**, so they are not shown. |
 
-**Files:** `account/page.tsx` (navigation only), `account/profile-view.tsx` (hub: desktop stage + list layout below 1024 px), `account/profile-hub-spec.json` (measured geometry), `account/account-subpage.tsx` (shared shell for SETTINGS/ePORTFOLIO in the Personal Details visual family), `settings/*`, `eportfolio/*`, and the name field in `personal-details/*`.
+**Files:** `account/page.tsx` (navigation only), `account/profile-view.tsx` (hub: master image + links on desktop, list layout below 1024 px), `account/profile-hub-spec.json` (hit areas), `account/account-subpage.tsx` (shared shell for SETTINGS/ePORTFOLIO in the Personal Details visual family), `settings/*`, `eportfolio/*`, and the name field in `personal-details/*`.
 
 **Open:** the signed-in round trip of the DETAILS name save still needs checking with a real barber login (the form wiring was verified; the action itself is unchanged).
 
 ## 5. Asset scripts (`design-masters/tools/`)
 
-These are Node scripts using the repo's `sharp`. The older ones (Calendar, Clients, Services, titles) have paths pointing at the old session's scratchpad and the design worktree, so **edit their paths before running**. The `my-profile-*` scripts use repo-relative paths.
+These are Node scripts using the repo's `sharp`. The older ones (Calendar, Clients, Services, titles) have paths pointing at the old session's scratchpad and the design worktree, so **edit their paths before running**. `my-profile-fidelity.cjs` uses repo-relative paths.
 
 | Script | Produces |
 |---|---|
@@ -118,12 +101,9 @@ These are Node scripts using the repo's `sharp`. The older ones (Calendar, Clien
 | `page-chrome-blue.cjs` / `page-chrome-pink.cjs` | Master chrome without the Calendar lettering, in blue (Clients) or pink (Services), plus the crown and corner splat |
 | `alpha-title.cjs WORD pink\|blue\|bluepink out.webp` | A title built from the official alphabet. Environment variables: `OVERLAP` (default 0.27; use about 0.1 when a letter's bowl gets covered, e.g. the P in PROFILE) and `BODY_MIN` (default 92; use 66 for grey-shaded strokes). |
 | `clients-title.cjs` | CLIENTS, cut from the alphabet sheet's own example title |
-| `my-profile-strips.cjs` | My Profile strip art cut from the master, plus the measured strip boxes (run with no arguments) |
-| `my-profile-matte.cjs` | The POLAR silhouette matte (alpha mask) for `profile-room-v1.webp` |
-| `my-profile-connectors.cjs` | Measures the master's connector paths and dots |
 | `my-profile-fidelity.cjs` | The My Profile fidelity gate (see §4) |
 
-`profile-hub-room.cjs` and its baked `profile-hub-room.webp` are **retired**. They re-lit and recoloured POLAR, which isn't allowed. They remain in git history only.
+Retired My Profile reconstruction tools (`profile-hub-room.cjs`, `my-profile-strips.cjs`, `my-profile-matte.cjs`, `my-profile-connectors.cjs`) and their assets remain in git history only.
 
 ## 6. Mistakes not to repeat
 
