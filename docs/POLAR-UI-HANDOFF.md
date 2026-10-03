@@ -26,7 +26,7 @@ Product truth, users, brand commitments and the locked **POLAR UI design rule** 
 | My Services | `/dashboard/barber/services` | **Live** (commit `1f66971`), same system. | Hot pink (blue only on the Active status) |
 | My Profile | `/dashboard/barber/account` | **Live: the approved master image itself**, with transparent links (see §4). The owner reviews it on production and sends final edits. | As the master |
 | Workflow Mode | `/dashboard/barber/shift` | Leave as it is (user instruction). | — |
-| POLAR Room hub | `/dashboard/barber` | Leave as it is. | — |
+| Barber Dashboard (POLAR Room hub) | `/dashboard/barber` | **Live, two layers** (2026-10-03): the owner's locked dashboard artwork (`design-masters/barber-dashboard-master.png`, 2018×779, served pixel-identical as `polar-room/barber-dashboard-dark.webp`) plus the official POLAR mascot as a separate transparent layer (`design-masters/polar-mascot.png` → `polar-room/polar-mascot.webp`), placed by `MASCOT` in `dashboard-scene.tsx`. Five destinations = transparent links over each pill + object (POLAR is part of My Profile). The pills span the full width, so typical windows show blurred-room bands top and bottom. `BarberRoom` (the darkened room behind Calendar/Clients/Services/Workflow) still uses `barber-dashboard-v3.webp`, unchanged. | As the artwork |
 | Smart Analytics, POLAR CV, Personal Details | — | Earlier dedicated designs; untouched by the redesign. | cyan/pink family |
 | Old `/schedule` + barber reschedule page | — | Keep until the user confirms signed-in tests of Calendar Reschedule and No Show; then retire them. | — |
 
