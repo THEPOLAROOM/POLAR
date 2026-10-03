@@ -98,11 +98,12 @@ const DASH_STAGE_STYLE = {
   top: offset("100dvh", DASH_STAGE_H, (DASH_SAFE.y0 + DASH_SAFE.y1) / 2),
 } as React.CSSProperties;
 
-type Box = readonly [x: number, y: number, w: number, h: number];
+export type Box = readonly [x: number, y: number, w: number, h: number];
+export type Destination = { href: string; label: string; zones: readonly Box[] };
 
 // Existing Barber Dashboard routes, mapped 1:1 onto the artwork. Each
 // destination is its pill plus its physical object (POLAR for My Profile).
-export const DESTINATIONS: readonly { href: string; label: string; zones: readonly Box[] }[] = [
+export const DESTINATIONS: readonly Destination[] = [
   { href: "/dashboard/barber/clients", label: "Clients", zones: [[50, 252, 236, 67], [4, 352, 318, 348]] },
   { href: "/dashboard/barber/calendar", label: "Calendar", zones: [[392, 137, 273, 63], [387, 238, 273, 267]] },
   { href: "/dashboard/barber/shift", label: "Workflow Mode", zones: [[873, 231, 272, 61], [828, 326, 338, 379]] },
@@ -121,7 +122,17 @@ const artPct = ([x, y, w, h]: readonly number[]): React.CSSProperties => ({
 const ZONE_CLASS =
   "absolute rounded-2xl bg-transparent transition duration-200 ease-out group-hover:bg-white/[0.05] group-hover:shadow-[0_0_0_2px_rgba(91,155,255,0.55),0_0_28px_6px_rgba(91,155,255,0.45)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-royal-light";
 
-export function BarberDashboardScene() {
+// Reusing the same locked artwork for another hub (e.g. My Profile) only
+// ever changes these three things — never the art, geometry or mascot.
+export function BarberDashboardScene({
+  heading = "Barber Dashboard",
+  navLabel = "Barber dashboard",
+  destinations = DESTINATIONS,
+}: {
+  heading?: string;
+  navLabel?: string;
+  destinations?: readonly Destination[];
+} = {}) {
   return (
     <main className="relative hidden overflow-hidden sm:block" style={{ height: "100dvh", background: "#040308" }}>
       {/* Only visible where the window is taller than the artwork allows (the pills span its full width): a blurred, dimmed copy of the dashboard, so the room carries on. */}
@@ -131,15 +142,15 @@ export function BarberDashboardScene() {
         aria-hidden="true"
       />
       <div className="absolute" style={DASH_STAGE_STYLE}>
-        <h1 className="sr-only">Barber Dashboard</h1>
+        <h1 className="sr-only">{heading}</h1>
         {/* Layer 1 — dashboard artwork. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={DASHBOARD_SRC} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full max-w-none select-none" draggable={false} fetchPriority="high" />
         {/* Layer 2 — POLAR, independent of the artwork. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={MASCOT_SRC} alt="" aria-hidden="true" className="pointer-events-none absolute max-w-none select-none" style={artPct([MASCOT.left, MASCOT.top, MASCOT.width, MASCOT.height])} draggable={false} data-layer="polar" />
-        <nav aria-label="Barber dashboard">
-          {DESTINATIONS.map(({ href, label, zones }) => (
+        <nav aria-label={navLabel}>
+          {destinations.map(({ href, label, zones }) => (
             <span key={href} className="group contents">
               {zones.map((z, i) => (
                 <Link

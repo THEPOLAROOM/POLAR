@@ -24,7 +24,7 @@ Product truth, users, brand commitments and the locked **POLAR UI design rule** 
 | Calendar | `/dashboard/barber/calendar` | **Master / approved.** On `PolarStage`, with Reschedule and Mark No Show in the appointment details. | Hot pink |
 | Clients | `/dashboard/barber/clients` | **Approved and live.** On `PolarStage`, with the official CLIENTS title. | Blue/cyan |
 | My Services | `/dashboard/barber/services` | **Live** (commit `1f66971`), same system. | Hot pink (blue only on the Active status) |
-| My Profile | `/dashboard/barber/account` | **Live: the approved master image itself**, with transparent links (see §4). The owner reviews it on production and sends final edits. | As the master |
+| My Profile | `/dashboard/barber/account` | **Live (2026-10-03): rebuilt on the Barber Dashboard Home's own room/furniture/mascot artwork** (`<BarberDashboardScene>`, made prop-driven), repurposed with this hub's five destinations (see §4a). Supersedes the 2026-09-29 dedicated master-image build. The owner reviews it on production and sends final edits. | As the dashboard artwork |
 | Workflow Mode | `/dashboard/barber/shift` | Leave as it is (user instruction). | — |
 | Barber Dashboard (POLAR Room hub) | `/dashboard/barber` | **Live, two layers** (2026-10-03): the owner's locked dashboard artwork (`design-masters/barber-dashboard-master.png`, 2018×779, served pixel-identical as `polar-room/barber-dashboard-dark.webp`) plus the official POLAR mascot as a separate transparent layer (`design-masters/polar-mascot.png` → `polar-room/polar-mascot.webp`), placed by `MASCOT` in `dashboard-scene.tsx`. Five destinations = transparent links over each pill + object (POLAR is part of My Profile). The pills span the full width, so typical windows show blurred-room bands top and bottom. `BarberRoom` (the darkened room behind Calendar/Clients/Services/Workflow) still uses `barber-dashboard-v3.webp`, unchanged. | As the artwork |
 | Smart Analytics, POLAR CV, Personal Details | — | Earlier dedicated designs; untouched by the redesign. | cyan/pink family |
@@ -57,7 +57,33 @@ A wide pink restyle of every Barber page (`b72259c`) was **rolled back** (`5dfbb
   - Confirm no console errors, no horizontal overflow, and that `next build` passes.
   - Commit only that page's files. Deploy by fast-forwarding `main` and pushing.
 
-## 4. My Profile hub (the approved master, 2026-09-29)
+## 4a. My Profile hub — rebuilt on the Dashboard's furniture (2026-10-03, current)
+
+**The owner's decision (2026-10-03):** retire the dedicated master-image hub below (§4, superseded) in favour of reusing the Barber Dashboard Home's own locked room artwork, mascot layer and hotspot geometry as this hub's navigation too — "our furniture IS our navigation UI." No new artwork was generated; nothing in the locked dashboard art was redrawn.
+
+**How it's built:**
+- `dashboard-scene.tsx`'s `BarberDashboardScene` became prop-driven (`heading`, `navLabel`, `destinations`), defaulting to the Barber Dashboard Home's own values so that page is pixel- and behaviour-identical to before. `Box` and `Destination` are exported for reuse.
+- `account/profile-view.tsx` renders `<BarberDashboardScene heading="My Profile" navLabel="My Profile" destinations={PROFILE_DESTINATIONS} />` on desktop (same `sm:` breakpoint as the dashboard), with its own ✕/Esc-to-dashboard exit layered on top. The five zones are the **same pixel coordinates** as `DESTINATIONS` in `dashboard-scene.tsx` — only `href` and `label` differ, mapped by the physical object at each zone:
+
+  | Zone (dashboard's object) | New label | Route (unchanged from the old hub) |
+  |---|---|---|
+  | Tablet/kiosk cart (was "Clients") | Settings | `/dashboard/barber/account/settings` |
+  | Wall calendar | Analytics | `/dashboard/barber/calendar/analytics` |
+  | Barber chair (was "Workflow Mode") | Personal Details | `/dashboard/barber/account/personal-details` |
+  | POLAR mascot (was "My Profile") | ePortfolio | `/dashboard/barber/account/eportfolio` |
+  | Product cart/workstation (was "My Services") | POLAR CV | `/dashboard/barber/account/professional-profile` |
+
+- **Known, accepted limitation:** the dashboard artwork's printed pill text (CLIENTS, CALENDAR, WORKFLOW MODE, MY PROFILE, MY SERVICES) is pixels, not HTML, and was **not** re-lettered — doing so would mean drawing new text over locked art, which is explicitly forbidden (see §6). Each hotspot's accessible name and hover tooltip (`aria-label`/`title`) give the *true* destination (e.g. the "MY SERVICES" cart tooltips "POLAR CV"), but the pill a sighted mouse user sees still reads the original dashboard wording. Flagged to the owner at build time; new pill artwork would be a separate, explicit design task.
+- Below 640 px (`sm:`, matching the dashboard's own breakpoint): a plain HTML list (unchanged from the old hub's phone layout), with the same five destinations/icons relabelled — no artwork constraint there.
+- Tab order: Settings → Analytics → Personal Details → ePortfolio → POLAR CV → ✕. Esc returns to `/dashboard/barber`.
+
+**Verified before deploy:** `next build` clean; typecheck clean; unauthenticated route checks (dashboard's five + the hub's five) all 307 → `/login`; a temporary auth-free preview (`src/app/dev-preview/*-qa`, deleted before commit) confirmed via Playwright — hotspot boxes align with the visible furniture, aria-labels/hrefs match the table above, full Tab order, Esc→dashboard→login round trip, and the Dashboard Home's default (no-props) rendering is unchanged (same hrefs/labels/heading as before this refactor).
+
+**Files touched:** `dashboard-scene.tsx` (props added), `account/profile-view.tsx` (rebuilt on `BarberDashboardScene`). `account/profile-hub-spec.json` and `my-profile-master-wide.webp` are no longer referenced by code but were left in place (not deleted) in case of rollback; tag `pre-my-profile-dashboard-reuse-2026-10-03` points at the prior commit.
+
+**Open:** the owner has not yet decided a final visible label for the chair's pill in new artwork (if any is ever commissioned) — PERSONAL DETAILS is the confirmed functional label for now, unrelated to the pixel text.
+
+## 4. My Profile hub (the approved master, 2026-09-29) — SUPERSEDED 2026-10-03, see §4a
 
 **The owner's decision (2026-09-29):** the approved image IS the desktop hub. It isn't a concept to recreate. The current master is `design-masters/my-profile-master.png` (2019 × 779, ratio 2.59), byte-identical to the owner's `POLAR-MY-PROFILE.png`. It replaced the 16:9 `my-profile-hub-concept.png`, which left side bands in real browser windows. The image is the visual master; the existing app is the functional master.
 
