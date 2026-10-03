@@ -128,24 +128,27 @@ export function BarberDashboardScene({
   heading = "Barber Dashboard",
   navLabel = "Barber dashboard",
   destinations = DESTINATIONS,
+  backgroundSrc = DASHBOARD_SRC,
 }: {
   heading?: string;
   navLabel?: string;
   destinations?: readonly Destination[];
+  /** A relabelled duplicate of the dashboard artwork (same geometry), e.g. My Profile. */
+  backgroundSrc?: string;
 } = {}) {
   return (
     <main className="relative hidden overflow-hidden sm:block" style={{ height: "100dvh", background: "#040308" }}>
       {/* Only visible where the window is taller than the artwork allows (the pills span its full width): a blurred, dimmed copy of the dashboard, so the room carries on. */}
       <div
         className="absolute -inset-[60px] bg-cover bg-center"
-        style={{ backgroundImage: `url(${DASHBOARD_SRC})`, filter: "blur(36px) brightness(.42) saturate(1.1)" }}
+        style={{ backgroundImage: `url(${backgroundSrc})`, filter: "blur(36px) brightness(.42) saturate(1.1)" }}
         aria-hidden="true"
       />
       <div className="absolute" style={DASH_STAGE_STYLE}>
         <h1 className="sr-only">{heading}</h1>
         {/* Layer 1 — dashboard artwork. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={DASHBOARD_SRC} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full max-w-none select-none" draggable={false} fetchPriority="high" />
+        <img src={backgroundSrc} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full max-w-none select-none" draggable={false} fetchPriority="high" />
         {/* Layer 2 — POLAR, independent of the artwork. */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={MASCOT_SRC} alt="" aria-hidden="true" className="pointer-events-none absolute max-w-none select-none" style={artPct([MASCOT.left, MASCOT.top, MASCOT.width, MASCOT.height])} draggable={false} data-layer="polar" />

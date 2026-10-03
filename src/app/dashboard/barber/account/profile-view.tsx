@@ -6,16 +6,19 @@ import { useRouter } from "next/navigation";
 import { Barlow_Condensed } from "next/font/google";
 import { BarberDashboardScene, type Destination } from "../dashboard-scene";
 
-// MY PROFILE hub. Desktop reuses the Barber Dashboard Home's own locked
-// room artwork, mascot layer and hotspot geometry (<BarberDashboardScene>)
-// — the same furniture, repurposed as navigation for this hub instead of
-// the dashboard's own five destinations. The printed pill text in that
-// artwork (CLIENTS, CALENDAR, WORKFLOW MODE, MY PROFILE, MY SERVICES) is
-// locked and is NOT re-lettered here (no text is drawn over the art); only
-// each hotspot's link target and accessible name/tooltip change to the
-// area it now opens. Below 1024 px a dedicated list layout is shown
-// instead, with real HTML labels (no artwork constraint there).
+// MY PROFILE hub. Desktop reuses the Barber Dashboard Home's room, furniture,
+// mascot and hotspot geometry (<BarberDashboardScene>), but on a dedicated
+// duplicate background image (your-profile-dark.webp, derived from
+// design-masters/your-profile-master.png) with the five pills genuinely
+// relabelled — Settings, Analytics, Personal Details, ePortfolio, POLAR CV —
+// in the same font/weight/glow/chevron style as the original. The original
+// Barber Dashboard Home's artwork (barber-dashboard-dark.webp /
+// barber-dashboard-master.png) is a separate file and is never edited; this
+// hub only ever reads its own duplicate. Below 640 px a dedicated list
+// layout is shown instead, with real HTML labels.
 // The hub shows no data; each area holds its own information.
+
+const YOUR_PROFILE_SRC = "/dashboard/polar-room/your-profile-dark.webp";
 
 const ui = Barlow_Condensed({ subsets: ["latin"], weight: ["600"] });
 
@@ -128,8 +131,8 @@ export function ProfileView() {
       </main>
 
       {/* Desktop — the Barber Dashboard Home's own room, furniture and
-          mascot, repurposed with this hub's five destinations. */}
-      <BarberDashboardScene heading="My Profile" navLabel="My Profile" destinations={PROFILE_DESTINATIONS} />
+          mascot, on this hub's own relabelled duplicate background. */}
+      <BarberDashboardScene heading="My Profile" navLabel="My Profile" destinations={PROFILE_DESTINATIONS} backgroundSrc={YOUR_PROFILE_SRC} />
       <Link href="/dashboard/barber" aria-label="Close and return to dashboard" title="Back to dashboard (Esc)" className="ph-exit hidden sm:grid">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" aria-hidden="true"><path d="M5 5l14 14M19 5L5 19" /></svg>
       </Link>

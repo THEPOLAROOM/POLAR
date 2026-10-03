@@ -57,31 +57,32 @@ A wide pink restyle of every Barber page (`b72259c`) was **rolled back** (`5dfbb
   - Confirm no console errors, no horizontal overflow, and that `next build` passes.
   - Commit only that page's files. Deploy by fast-forwarding `main` and pushing.
 
-## 4a. My Profile hub — rebuilt on the Dashboard's furniture (2026-10-03, current)
+## 4a. My Profile hub — rebuilt on the Dashboard's furniture, pills relabelled (2026-10-03, current)
 
-**The owner's decision (2026-10-03):** retire the dedicated master-image hub below (§4, superseded) in favour of reusing the Barber Dashboard Home's own locked room artwork, mascot layer and hotspot geometry as this hub's navigation too — "our furniture IS our navigation UI." No new artwork was generated; nothing in the locked dashboard art was redrawn.
+**The owner's decision (2026-10-03):** retire the dedicated master-image hub below (§4, superseded) in favour of reusing the Barber Dashboard Home's own locked room artwork, mascot layer and hotspot geometry as this hub's navigation too — "our furniture IS our navigation UI." The original dashboard artwork is never edited; this hub instead renders on its own **derived duplicate** image with the five pill words genuinely changed, approved by the owner from a scratchpad preview before anything was written to the repo.
 
 **How it's built:**
-- `dashboard-scene.tsx`'s `BarberDashboardScene` became prop-driven (`heading`, `navLabel`, `destinations`), defaulting to the Barber Dashboard Home's own values so that page is pixel- and behaviour-identical to before. `Box` and `Destination` are exported for reuse.
-- `account/profile-view.tsx` renders `<BarberDashboardScene heading="My Profile" navLabel="My Profile" destinations={PROFILE_DESTINATIONS} />` on desktop (same `sm:` breakpoint as the dashboard), with its own ✕/Esc-to-dashboard exit layered on top. The five zones are the **same pixel coordinates** as `DESTINATIONS` in `dashboard-scene.tsx` — only `href` and `label` differ, mapped by the physical object at each zone:
+- `dashboard-scene.tsx`'s `BarberDashboardScene` is prop-driven (`heading`, `navLabel`, `destinations`, `backgroundSrc`), defaulting to the Barber Dashboard Home's own values/art so that page is pixel- and behaviour-identical to before. `Box` and `Destination` are exported for reuse.
+- `design-masters/your-profile-master.png` / `public/dashboard/polar-room/your-profile-dark.webp` are a **duplicate** of `barber-dashboard-master.png`/`barber-dashboard-dark.webp` with only the five pill words redrawn in place (built with a one-off Node/sharp script, not kept in the repo): each word repainted in Arial Black, matching the original's weight, white fill with a dark stroke, and the pill's own neon glow colour (cyan or pink), sized to fit within the icon→chevron gap without touching either. The old word is erased first with a feathered patch sampled from that pill's own interior fill colour. Room, furniture, mascot, borders, icons, chevrons and colours are byte-identical to the original everywhere outside the five text regions.
+- `account/profile-view.tsx` renders `<BarberDashboardScene heading="My Profile" navLabel="My Profile" destinations={PROFILE_DESTINATIONS} backgroundSrc={YOUR_PROFILE_SRC} />` on desktop (same `sm:` breakpoint as the dashboard), with its own ✕/Esc-to-dashboard exit layered on top. The five zones are the **same pixel coordinates** as `DESTINATIONS` in `dashboard-scene.tsx`:
 
-  | Zone (dashboard's object) | New label | Route (unchanged from the old hub) |
+  | Zone (dashboard's object) | Pill now reads | Route (unchanged from the old hub) |
   |---|---|---|
-  | Tablet/kiosk cart (was "Clients") | Settings | `/dashboard/barber/account/settings` |
-  | Wall calendar | Analytics | `/dashboard/barber/calendar/analytics` |
-  | Barber chair (was "Workflow Mode") | Personal Details | `/dashboard/barber/account/personal-details` |
-  | POLAR mascot (was "My Profile") | ePortfolio | `/dashboard/barber/account/eportfolio` |
+  | Tablet/kiosk cart (was "Clients") | SETTINGS | `/dashboard/barber/account/settings` |
+  | Wall calendar (was "Calendar") | ANALYTICS | `/dashboard/barber/calendar/analytics` |
+  | Barber chair (was "Workflow Mode") | PERSONAL DETAILS | `/dashboard/barber/account/personal-details` |
+  | POLAR mascot (was "My Profile") | EPORTFOLIO | `/dashboard/barber/account/eportfolio` |
   | Product cart/workstation (was "My Services") | POLAR CV | `/dashboard/barber/account/professional-profile` |
 
-- **Known, accepted limitation:** the dashboard artwork's printed pill text (CLIENTS, CALENDAR, WORKFLOW MODE, MY PROFILE, MY SERVICES) is pixels, not HTML, and was **not** re-lettered — doing so would mean drawing new text over locked art, which is explicitly forbidden (see §6). Each hotspot's accessible name and hover tooltip (`aria-label`/`title`) give the *true* destination (e.g. the "MY SERVICES" cart tooltips "POLAR CV"), but the pill a sighted mouse user sees still reads the original dashboard wording. Flagged to the owner at build time; new pill artwork would be a separate, explicit design task.
-- Below 640 px (`sm:`, matching the dashboard's own breakpoint): a plain HTML list (unchanged from the old hub's phone layout), with the same five destinations/icons relabelled — no artwork constraint there.
+  `aria-label`/`title` on each hotspot now match the printed pill exactly (no more tooltip-vs-pixel mismatch — the earlier same-day build that kept the old dashboard wording and only changed hrefs/tooltips is superseded by this one).
+- Below 640 px (`sm:`, matching the dashboard's own breakpoint): a plain HTML list (unchanged from the old hub's phone layout), labels aligned to the table above.
 - Tab order: Settings → Analytics → Personal Details → ePortfolio → POLAR CV → ✕. Esc returns to `/dashboard/barber`.
 
-**Verified before deploy:** `next build` clean; typecheck clean; unauthenticated route checks (dashboard's five + the hub's five) all 307 → `/login`; a temporary auth-free preview (`src/app/dev-preview/*-qa`, deleted before commit) confirmed via Playwright — hotspot boxes align with the visible furniture, aria-labels/hrefs match the table above, full Tab order, Esc→dashboard→login round trip, and the Dashboard Home's default (no-props) rendering is unchanged (same hrefs/labels/heading as before this refactor).
+**Verified before deploy:** `next build` clean; typecheck clean; unauthenticated route checks (dashboard's five + the hub's five) all 307 → `/login`; a temporary auth-free preview (`src/app/dev-preview/*-qa`, deleted before commit) confirmed via Playwright — hotspot boxes align with the visible (relabelled) furniture, aria-labels/hrefs match the table above, full Tab order, Esc→dashboard round trip, and the Dashboard Home's default (no-props) rendering is byte-identical to before (confirmed via `git diff --stat` showing zero change to the original art files).
 
-**Files touched:** `dashboard-scene.tsx` (props added), `account/profile-view.tsx` (rebuilt on `BarberDashboardScene`). `account/profile-hub-spec.json` and `my-profile-master-wide.webp` are no longer referenced by code but were left in place (not deleted) in case of rollback; tag `pre-my-profile-dashboard-reuse-2026-10-03` points at the prior commit.
+**Files touched:** `dashboard-scene.tsx` (`backgroundSrc` prop added), `account/profile-view.tsx` (points at the new background), two new binary assets (`design-masters/your-profile-master.png`, `public/dashboard/polar-room/your-profile-dark.webp`). `account/profile-hub-spec.json` and `my-profile-master-wide.webp` (the pre-10-03 hub) remain unreferenced but in place for rollback; tags `pre-my-profile-dashboard-reuse-2026-10-03` and `pre-my-profile-relabel-2026-10-03` mark the two steps of this rebuild.
 
-**Open:** the owner has not yet decided a final visible label for the chair's pill in new artwork (if any is ever commissioned) — PERSONAL DETAILS is the confirmed functional label for now, unrelated to the pixel text.
+**Open:** no further relabelling planned; if the owner wants the chair's pill word changed again later, redo the same sharp-based patch rather than hand-editing the webp.
 
 ## 4. My Profile hub (the approved master, 2026-09-29) — SUPERSEDED 2026-10-03, see §4a
 
