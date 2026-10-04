@@ -207,6 +207,11 @@ const REFINEMENT_ON = true;
 
 const REFINEMENT = {
   chairScale: 1.22, // ~20-25% larger, anchored to its own floor contact point
+  // STEP 1 (2026-10-04, independently undoable — see tabletTrolley.enabled):
+  // the left tablet trolley enlarged ~20-25%, anchored to its own bottom-
+  // RIGHT corner (floor contact + the tablet/logo side stay put), so growth
+  // pushes its left side off the page edge rather than shrinking to fit.
+  tabletTrolley: { enabled: true, scale: 1.22 },
   shade: {
     // Per-asset overlay images: same silhouette (alpha) as the furniture,
     // so the darken never produces a rectangular patch — see
@@ -232,29 +237,50 @@ function enlargeFromBottomCenter([x, y, w, h]: Box, scale: number): Box {
   return [x + w / 2 - nw / 2, y + h - nh, nw, nh];
 }
 
+// Growth extends left and up only — the floor contact (bottom) and the
+// tablet/logo side (right) stay exactly where they are, so the trolley
+// reads as "closer to the viewer" and its left edge is free to run off
+// the page rather than being shrunk to fit.
+function enlargeFromBottomRight([x, y, w, h]: Box, scale: number): Box {
+  const nw = w * scale, nh = h * scale;
+  const right = x + w, bottom = y + h;
+  return [right - nw, bottom - nh, nw, nh];
+}
+
 // The chair's pre-refinement box — restored exactly when REFINEMENT_ON
 // is false.
 const CHAIR_BASE_BOX: Box = [828, 415, 338, 290];
 const CHAIR_BOX: Box = REFINEMENT_ON ? enlargeFromBottomCenter(CHAIR_BASE_BOX, REFINEMENT.chairScale) : CHAIR_BASE_BOX;
 
+// The tablet trolley's pre-step-1 box — restored independently of
+// everything else in REFINEMENT by REFINEMENT.tabletTrolley.enabled.
+const TABLET_BASE_BOX: Box = [7, 352, 313, 348];
+const TABLET_BOX: Box = REFINEMENT_ON && REFINEMENT.tabletTrolley.enabled
+  ? enlargeFromBottomRight(TABLET_BASE_BOX, REFINEMENT.tabletTrolley.scale)
+  : TABLET_BASE_BOX;
+
 // Each furniture piece's box is the old object's zone (DESTINATIONS
 // zones[1]) with the new asset's own trimmed content fitted inside it —
 // width- or height-constrained, whichever keeps it inside the old
-// footprint — and floor-aligned to the zone's bottom edge. The chair
-// alone uses CHAIR_BOX (enlarged when REFINEMENT_ON, original otherwise);
+// footprint — and floor-aligned to the zone's bottom edge. The chair and
+// tablet trolley use their own (independently toggleable) enlarged boxes;
 // everything else is unchanged from the 2026-10-04 corridor build.
 const CORRIDOR_FURNITURE: readonly { key: string; src: string; box: Box; shadeSrc?: string }[] = [
-  { key: "clients", src: "/dashboard/polar-room/furniture-tablet-toolbox.webp", box: [7, 352, 313, 348], shadeSrc: REFINEMENT_ON ? REFINEMENT.shade.tabletToolbox : undefined },
+  { key: "clients", src: "/dashboard/polar-room/furniture-tablet-toolbox.webp", box: TABLET_BOX, shadeSrc: REFINEMENT_ON ? REFINEMENT.shade.tabletToolbox : undefined },
   { key: "calendar", src: "/dashboard/polar-room/furniture-calendar.webp", box: [387, 259, 273, 246] },
   { key: "workflow", src: "/dashboard/polar-room/furniture-chair.webp", box: CHAIR_BOX, shadeSrc: REFINEMENT_ON ? REFINEMENT.shade.chair : undefined },
   { key: "services", src: "/dashboard/polar-room/furniture-toolbox.webp", box: [1623, 350, 362, 350], shadeSrc: REFINEMENT_ON ? REFINEMENT.shade.toolbox : undefined },
 ];
 
-// The enlarged chair pushes its floor contact point up; the WORKFLOW MODE
-// sign stays exactly where it is (its zones[0] box is untouched), only
-// its connector's lower endpoint follows the chair's new top edge.
+// The enlarged chair/trolley push their floor-contact silhouettes past
+// their original zone; the CLIENTS and WORKFLOW MODE signs stay exactly
+// where they are (zones[0] untouched), only each connector's lower
+// endpoint follows the new box.
 const CONNECTOR_OVERRIDE: Record<string, { x: number; y: number }> = REFINEMENT_ON
-  ? { "/dashboard/barber/shift": { x: CHAIR_BOX[0] + CHAIR_BOX[2] / 2, y: CHAIR_BOX[1] } }
+  ? {
+      ...(REFINEMENT.tabletTrolley.enabled ? { "/dashboard/barber/clients": { x: TABLET_BOX[0] + TABLET_BOX[2] / 2, y: TABLET_BOX[1] } } : {}),
+      "/dashboard/barber/shift": { x: CHAIR_BOX[0] + CHAIR_BOX[2] / 2, y: CHAIR_BOX[1] },
+    }
   : {};
 
 /** Contact shadow + floor shadow + blue neon spill for a toolbox-shaped piece. */
