@@ -14,15 +14,10 @@ export default async function BarberDashboardPage() {
   const { supabase, user } = await requireRole("barber");
 
   const today = getShopToday();
-  const allBookingsToday = await getBarberBookingsForDate(
+  const todaysBookings = await getBarberBookingsForDate(
     supabase,
     user.id,
     today
-  );
-  // Blocked time/breaks/unclaimed walk-ins are real rows but not
-  // client appointments — excluded here so they don't show as bookings.
-  const todaysBookings = allBookingsToday.filter(
-    (b) => b.clientProfileId && !b.isBlocked && !b.isBreak
   );
 
   return (
