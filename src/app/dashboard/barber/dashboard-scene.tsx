@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { Fragment } from "react";
 
 /* ------------------------------------------------------------------ */
 /* The darkened POLAR Room behind Calendar, Clients, Services and
@@ -193,16 +194,126 @@ const CORRIDOR_BG_SRC = "/dashboard/polar-room/barber-dashboard-corridor.webp";
 const LOGO_SRC = "/dashboard/polar-room/polar-logo-wordmark.webp";
 const LOGO_BOX: Box = [860, 0, 290, 205];
 
+/* ------------------------------------------------------------------ */
+/* Integration refinement (2026-10-04) — ONE switch. Set REFINEMENT_ON to
+   false to restore the corridor scene exactly as it shipped on 2026-10-04
+   before this pass: original chair size, plain furniture images, no
+   shadows/glow/reflections/shade. Every tunable value lives in
+   REFINEMENT below, grouped by what it controls. Nothing here touches
+   the original image files, BarberDashboardScene, DESTINATIONS, MASCOT,
+   LOGO_BOX or the five sign/furniture source boxes above — nothing is
+   flattened, and this is additive layers only. */
+const REFINEMENT_ON = true;
+
+const REFINEMENT = {
+  chairScale: 1.22, // ~20-25% larger, anchored to its own floor contact point
+  shade: {
+    // Per-asset overlay images: same silhouette (alpha) as the furniture,
+    // so the darken never produces a rectangular patch — see
+    // design-masters/tools or the generation note in the handoff doc.
+    tabletToolbox: "/dashboard/polar-room/furniture-tablet-toolbox-shade.webp",
+    chair: "/dashboard/polar-room/furniture-chair-shade.webp",
+    toolbox: "/dashboard/polar-room/furniture-toolbox-shade.webp",
+  },
+  contactShadow: { opacity: 0.5, blur: 5 }, // tight, under wheels/base
+  floorShadow: { opacity: 0.22, blur: 20 }, // wide, soft, under the cabinet
+  neonSpill: { opacity: 0.13, blur: 26, color: "#1fd6ff" }, // both toolboxes' own blue trim
+  chairGlowPool: { opacity: 0.17, blur: 24, color: "#2fd8ff" },
+  reflection: { opacity: 0.13, blurPx: 2 }, // faint, faded floor mirror
+  calendarBloom: { opacity: 0.26, blur: 7, color: "#ff2ec4" }, // restrained, not heavily blurred
+  // Optional, OFF by default — see §5 of the brief: compare only, never
+  // ship enabled without separate approval, and never touch the main
+  // pink/POLAR/LONDON branding.
+  crownDim: { enabled: false, opacity: 0.32, box: [860, 150, 340, 230] as Box },
+};
+
+function enlargeFromBottomCenter([x, y, w, h]: Box, scale: number): Box {
+  const nw = w * scale, nh = h * scale;
+  return [x + w / 2 - nw / 2, y + h - nh, nw, nh];
+}
+
+// The chair's pre-refinement box — restored exactly when REFINEMENT_ON
+// is false.
+const CHAIR_BASE_BOX: Box = [828, 415, 338, 290];
+const CHAIR_BOX: Box = REFINEMENT_ON ? enlargeFromBottomCenter(CHAIR_BASE_BOX, REFINEMENT.chairScale) : CHAIR_BASE_BOX;
+
 // Each furniture piece's box is the old object's zone (DESTINATIONS
 // zones[1]) with the new asset's own trimmed content fitted inside it —
 // width- or height-constrained, whichever keeps it inside the old
-// footprint — and floor-aligned to the zone's bottom edge.
-const CORRIDOR_FURNITURE: readonly { src: string; box: Box }[] = [
-  { src: "/dashboard/polar-room/furniture-tablet-toolbox.webp", box: [7, 352, 313, 348] },
-  { src: "/dashboard/polar-room/furniture-calendar.webp", box: [387, 259, 273, 246] },
-  { src: "/dashboard/polar-room/furniture-chair.webp", box: [828, 415, 338, 290] },
-  { src: "/dashboard/polar-room/furniture-toolbox.webp", box: [1623, 350, 362, 350] },
+// footprint — and floor-aligned to the zone's bottom edge. The chair
+// alone uses CHAIR_BOX (enlarged when REFINEMENT_ON, original otherwise);
+// everything else is unchanged from the 2026-10-04 corridor build.
+const CORRIDOR_FURNITURE: readonly { key: string; src: string; box: Box; shadeSrc?: string }[] = [
+  { key: "clients", src: "/dashboard/polar-room/furniture-tablet-toolbox.webp", box: [7, 352, 313, 348], shadeSrc: REFINEMENT_ON ? REFINEMENT.shade.tabletToolbox : undefined },
+  { key: "calendar", src: "/dashboard/polar-room/furniture-calendar.webp", box: [387, 259, 273, 246] },
+  { key: "workflow", src: "/dashboard/polar-room/furniture-chair.webp", box: CHAIR_BOX, shadeSrc: REFINEMENT_ON ? REFINEMENT.shade.chair : undefined },
+  { key: "services", src: "/dashboard/polar-room/furniture-toolbox.webp", box: [1623, 350, 362, 350], shadeSrc: REFINEMENT_ON ? REFINEMENT.shade.toolbox : undefined },
 ];
+
+// The enlarged chair pushes its floor contact point up; the WORKFLOW MODE
+// sign stays exactly where it is (its zones[0] box is untouched), only
+// its connector's lower endpoint follows the chair's new top edge.
+const CONNECTOR_OVERRIDE: Record<string, { x: number; y: number }> = REFINEMENT_ON
+  ? { "/dashboard/barber/shift": { x: CHAIR_BOX[0] + CHAIR_BOX[2] / 2, y: CHAIR_BOX[1] } }
+  : {};
+
+/** Contact shadow + floor shadow + blue neon spill for a toolbox-shaped piece. */
+function ToolboxFX({ box, fxKey }: { box: Box; fxKey: string }) {
+  const [x, y, w, h] = box;
+  const cx = x + w / 2, bottom = y + h;
+  return (
+    <g key={fxKey}>
+      <ellipse cx={cx} cy={bottom - h * 0.03} rx={w * 0.58} ry={h * 0.14} fill={REFINEMENT.neonSpill.color} opacity={REFINEMENT.neonSpill.opacity} style={{ filter: `blur(${REFINEMENT.neonSpill.blur}px)` }} />
+      <ellipse cx={cx} cy={bottom + h * 0.015} rx={w * 0.62} ry={h * 0.07} fill="#01030a" opacity={REFINEMENT.floorShadow.opacity} style={{ filter: `blur(${REFINEMENT.floorShadow.blur}px)` }} />
+      <ellipse cx={cx} cy={bottom} rx={w * 0.4} ry={h * 0.035} fill="#000103" opacity={REFINEMENT.contactShadow.opacity} style={{ filter: `blur(${REFINEMENT.contactShadow.blur}px)` }} />
+    </g>
+  );
+}
+
+/** Contact shadow + soft blue light pool for the chair (its neon ring is part of the asset itself). */
+function ChairFX({ box }: { box: Box }) {
+  const [x, y, w, h] = box;
+  const cx = x + w / 2, bottom = y + h;
+  return (
+    <g>
+      <ellipse cx={cx} cy={bottom - h * 0.04} rx={w * 0.5} ry={h * 0.16} fill={REFINEMENT.chairGlowPool.color} opacity={REFINEMENT.chairGlowPool.opacity} style={{ filter: `blur(${REFINEMENT.chairGlowPool.blur}px)` }} />
+      <ellipse cx={cx} cy={bottom + h * 0.01} rx={w * 0.46} ry={h * 0.05} fill="#01030a" opacity={REFINEMENT.floorShadow.opacity} style={{ filter: `blur(${REFINEMENT.floorShadow.blur}px)` }} />
+      <ellipse cx={cx} cy={bottom} rx={w * 0.28} ry={h * 0.028} fill="#000103" opacity={REFINEMENT.contactShadow.opacity} style={{ filter: `blur(${REFINEMENT.contactShadow.blur * 0.8}px)` }} />
+    </g>
+  );
+}
+
+/** Restrained pink bloom around the calendar's own border — no shade/shadow/reflection for this piece. */
+function CalendarFX({ box }: { box: Box }) {
+  const [x, y, w, h] = box;
+  const pad = 6;
+  return (
+    <rect x={x - pad} y={y - pad} width={w + pad * 2} height={h + pad * 2} rx={14} fill="none" stroke={REFINEMENT.calendarBloom.color} strokeWidth={9} opacity={REFINEMENT.calendarBloom.opacity} style={{ filter: `blur(${REFINEMENT.calendarBloom.blur}px)` }} />
+  );
+}
+
+/** Faint, fading mirror of a furniture piece below its own floor contact line. */
+function FloorReflection({ src, box }: { src: string; box: Box }) {
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt=""
+      aria-hidden="true"
+      draggable={false}
+      className="pointer-events-none absolute max-w-none select-none"
+      style={{
+        ...artPct(box),
+        transform: "scaleY(-1)",
+        transformOrigin: "50% 100%",
+        opacity: REFINEMENT.reflection.opacity,
+        filter: `blur(${REFINEMENT.reflection.blurPx}px)`,
+        maskImage: "linear-gradient(to top, rgba(0,0,0,0.85), transparent 62%)",
+        WebkitMaskImage: "linear-gradient(to top, rgba(0,0,0,0.85), transparent 62%)",
+      }}
+    />
+  );
+}
 
 // The five original pills, extracted from the furnished master at their
 // exact DESTINATIONS zones[0] boxes (expanded a few px for a feathered
@@ -227,10 +338,52 @@ export function BarberDashboardCorridorScene() {
       <div className="absolute" style={DASH_STAGE_STYLE}>
         <h1 className="sr-only">Barber Dashboard</h1>
 
-        {/* Furniture — the four new pieces, each its own layer. */}
+        {/* Optional, OFF by default: a local dim over the rear blue LED
+            crown only, for a reversible before/after comparison. Never
+            touches the pink POLAR/LONDON branding. */}
+        {REFINEMENT_ON && REFINEMENT.crownDim.enabled && (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute"
+            style={{ ...artPct(REFINEMENT.crownDim.box), background: `radial-gradient(ellipse at center, rgba(0,0,0,${REFINEMENT.crownDim.opacity}), transparent 70%)` }}
+          />
+        )}
+
+        {/* Shadows, floor shadows, neon spill and calendar bloom — above
+            the room, underneath the furniture that casts them. Positioned
+            from each piece's own box, so they stay put as the viewport
+            changes, same as everything else on this stage. */}
+        {REFINEMENT_ON && (
+          <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox={`0 0 ${ART.w} ${ART.h}`} preserveAspectRatio="none" aria-hidden="true">
+            <CalendarFX box={CORRIDOR_FURNITURE[1].box} />
+            <ToolboxFX box={CORRIDOR_FURNITURE[0].box} fxKey="clients-fx" />
+            <ToolboxFX box={CORRIDOR_FURNITURE[3].box} fxKey="services-fx" />
+            <ChairFX box={CHAIR_BOX} />
+          </svg>
+        )}
+
+        {/* Faint floor reflections — tablet toolbox, chair, services
+            toolbox only (not the calendar, a wall-mounted panel). */}
+        {REFINEMENT_ON && (
+          <>
+            <FloorReflection src={CORRIDOR_FURNITURE[0].src} box={CORRIDOR_FURNITURE[0].box} />
+            <FloorReflection src={CORRIDOR_FURNITURE[2].src} box={CHAIR_BOX} />
+            <FloorReflection src={CORRIDOR_FURNITURE[3].src} box={CORRIDOR_FURNITURE[3].box} />
+          </>
+        )}
+
+        {/* Furniture — the four new pieces, each its own layer, each with
+            an optional per-asset shade overlay (same silhouette, so it
+            only ever darkens the furniture itself — see REFINEMENT.shade). */}
         {CORRIDOR_FURNITURE.map((f) => (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img key={f.src} src={f.src} alt="" aria-hidden="true" className="pointer-events-none absolute max-w-none select-none" style={artPct(f.box)} draggable={false} />
+          <Fragment key={f.src}>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={f.src} alt="" aria-hidden="true" className="pointer-events-none absolute max-w-none select-none" style={artPct(f.box)} draggable={false} />
+            {REFINEMENT_ON && f.shadeSrc && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={f.shadeSrc} alt="" aria-hidden="true" className="pointer-events-none absolute max-w-none select-none" style={artPct(f.box)} draggable={false} />
+            )}
+          </Fragment>
         ))}
 
         {/* The original POLAR/LONDON logo, unchanged position and size. */}
@@ -256,8 +409,10 @@ export function BarberDashboardCorridorScene() {
           {DESTINATIONS.map((d, i) => {
             const [sx, sy, sw, sh] = d.zones[0];
             const [ox, oy, ow] = d.zones[1];
+            const override = CONNECTOR_OVERRIDE[d.href];
             const x1 = sx + sw / 2, y1 = sy + sh;
-            const x2 = ox + ow / 2, y2 = oy;
+            const x2 = override ? override.x : ox + ow / 2;
+            const y2 = override ? override.y : oy;
             const color = CORRIDOR_SIGNS[i].color;
             return (
               <g key={d.href}>
