@@ -3,7 +3,7 @@ import { requireRole } from "@/lib/auth/require-role";
 import { getBarberBookingsForDate } from "@/lib/queries/barber-schedule";
 import { getShopToday, formatTime12h } from "@/lib/dates";
 import { logout } from "@/lib/actions/auth";
-import { BarberDashboardScene, DESTINATIONS } from "./dashboard-scene";
+import { BarberDashboardCorridorScene, DESTINATIONS } from "./dashboard-scene";
 
 // Desktop scene (artwork + five destination click targets) lives in
 // dashboard-scene.tsx; this page does the role check and data first.
@@ -14,10 +14,15 @@ export default async function BarberDashboardPage() {
   const { supabase, user } = await requireRole("barber");
 
   const today = getShopToday();
-  const todaysBookings = await getBarberBookingsForDate(
+  const allBookingsToday = await getBarberBookingsForDate(
     supabase,
     user.id,
     today
+  );
+  // Blocked time/breaks/unclaimed walk-ins are real rows but not
+  // client appointments — excluded here so they don't show as bookings.
+  const todaysBookings = allBookingsToday.filter(
+    (b) => b.clientProfileId && !b.isBlocked && !b.isBreak
   );
 
   return (
@@ -88,7 +93,7 @@ export default async function BarberDashboardPage() {
       {/* Desktop / landscape — the dashboard scene, fixed to 100dvh so
           the route never scrolls. The shared barber nav is hidden for
           this page only via the `:has()` rule above. */}
-      <BarberDashboardScene />
+      <BarberDashboardCorridorScene />
 
       {/* Minimal, unstyled-for-now Log Out control — this page hides
           the shared barber nav (see the style block above), so it

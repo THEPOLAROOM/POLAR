@@ -174,3 +174,120 @@ export function BarberDashboardScene({
     </main>
   );
 }
+
+/* ------------------------------------------------------------------ */
+/* Barber Dashboard home, corridor rebuild (2026-10-04). The owner
+   supplied a new plain POLAR Room background (a deeper corridor, not the
+   old shallow room) plus four new furniture pieces. Unlike
+   BarberDashboardScene above, this is NOT one flattened image: the
+   background, the four furniture pieces, the original POLAR/LONDON logo,
+   the five nav signs and POLAR are five independent image layers. Only
+   the background and the four furniture pieces are new; everything else
+   is extracted unmodified from the original furnished master
+   (barber-dashboard-master.png) and placed at the SAME artwork-px boxes
+   as DESTINATIONS/MASCOT above — nothing moved, only the pixels under it
+   changed. This component is used only by the Barber Dashboard Home;
+   BarberDashboardScene (and My Profile, which calls it) are untouched. */
+
+const CORRIDOR_BG_SRC = "/dashboard/polar-room/barber-dashboard-corridor.webp";
+const LOGO_SRC = "/dashboard/polar-room/polar-logo-wordmark.webp";
+const LOGO_BOX: Box = [860, 0, 290, 205];
+
+// Each furniture piece's box is the old object's zone (DESTINATIONS
+// zones[1]) with the new asset's own trimmed content fitted inside it —
+// width- or height-constrained, whichever keeps it inside the old
+// footprint — and floor-aligned to the zone's bottom edge.
+const CORRIDOR_FURNITURE: readonly { src: string; box: Box }[] = [
+  { src: "/dashboard/polar-room/furniture-tablet-toolbox.webp", box: [7, 352, 313, 348] },
+  { src: "/dashboard/polar-room/furniture-calendar.webp", box: [387, 259, 273, 246] },
+  { src: "/dashboard/polar-room/furniture-chair.webp", box: [828, 415, 338, 290] },
+  { src: "/dashboard/polar-room/furniture-toolbox.webp", box: [1623, 350, 362, 350] },
+];
+
+// The five original pills, extracted from the furnished master at their
+// exact DESTINATIONS zones[0] boxes (expanded a few px for a feathered
+// edge, so they blend into the new background with no hard crop seam).
+const CORRIDOR_SIGNS: readonly { src: string; box: Box; color: string }[] = [
+  { src: "/dashboard/polar-room/sign-clients.webp", box: [28, 230, 280, 111], color: "#1fd6ff" },
+  { src: "/dashboard/polar-room/sign-calendar.webp", box: [370, 115, 317, 107], color: "#ff2ec4" },
+  { src: "/dashboard/polar-room/sign-workflow.webp", box: [851, 209, 316, 105], color: "#1fd6ff" },
+  { src: "/dashboard/polar-room/sign-myprofile.webp", box: [1256, 50, 314, 108], color: "#1fd6ff" },
+  { src: "/dashboard/polar-room/sign-services.webp", box: [1662, 209, 348, 116], color: "#ff2ec4" },
+];
+
+export function BarberDashboardCorridorScene() {
+  return (
+    <main className="relative hidden overflow-hidden sm:block" style={{ height: "100dvh", background: "#040308" }}>
+      {/* Background — its own full-bleed cover-fit layer, independent of
+          the interactive stage below, so it always fills the window with
+          no letterboxed/blurred bands, whatever happens to the stage. */}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={CORRIDOR_BG_SRC} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover select-none" draggable={false} fetchPriority="high" />
+
+      <div className="absolute" style={DASH_STAGE_STYLE}>
+        <h1 className="sr-only">Barber Dashboard</h1>
+
+        {/* Furniture — the four new pieces, each its own layer. */}
+        {CORRIDOR_FURNITURE.map((f) => (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img key={f.src} src={f.src} alt="" aria-hidden="true" className="pointer-events-none absolute max-w-none select-none" style={artPct(f.box)} draggable={false} />
+        ))}
+
+        {/* The original POLAR/LONDON logo, unchanged position and size. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={LOGO_SRC} alt="" aria-hidden="true" className="pointer-events-none absolute max-w-none select-none" style={artPct(LOGO_BOX)} draggable={false} />
+
+        {/* POLAR — unchanged layer, position and size. */}
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={MASCOT_SRC} alt="" aria-hidden="true" className="pointer-events-none absolute max-w-none select-none" style={artPct([MASCOT.left, MASCOT.top, MASCOT.width, MASCOT.height])} draggable={false} data-layer="polar" />
+
+        {/* The five nav signs, each its own layer at its original box. */}
+        {CORRIDOR_SIGNS.map((s) => (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img key={s.src} src={s.src} alt="" aria-hidden="true" className="pointer-events-none absolute max-w-none select-none" style={artPct(s.box)} draggable={false} />
+        ))}
+
+        {/* Connector stub + dot from each sign down to its object — the
+            originals can't be cleanly lifted off the old furnished master
+            (they sit over ambient light bleed, not a clean backdrop), so
+            these are redrawn in the same short-stub style and each
+            sign's own neon colour. */}
+        <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox={`0 0 ${ART.w} ${ART.h}`} preserveAspectRatio="none" aria-hidden="true">
+          {DESTINATIONS.map((d, i) => {
+            const [sx, sy, sw, sh] = d.zones[0];
+            const [ox, oy, ow] = d.zones[1];
+            const x1 = sx + sw / 2, y1 = sy + sh;
+            const x2 = ox + ow / 2, y2 = oy;
+            const color = CORRIDOR_SIGNS[i].color;
+            return (
+              <g key={d.href}>
+                <line x1={x1} y1={y1} x2={x2} y2={y2} stroke={color} strokeWidth={3} opacity={0.55} />
+                <circle cx={x2} cy={y2} r={5} fill={color} />
+                <circle cx={x2} cy={y2} r={2.5} fill="#fff" />
+              </g>
+            );
+          })}
+        </svg>
+
+        <nav aria-label="Barber dashboard">
+          {DESTINATIONS.map(({ href, label, zones }) => (
+            <span key={href} className="group contents">
+              {zones.map((z, i) => (
+                <Link
+                  key={i}
+                  href={href}
+                  aria-label={i === 0 ? label : undefined}
+                  aria-hidden={i === 0 ? undefined : true}
+                  tabIndex={i === 0 ? undefined : -1}
+                  title={label}
+                  className={ZONE_CLASS}
+                  style={artPct(z)}
+                />
+              ))}
+            </span>
+          ))}
+        </nav>
+      </div>
+    </main>
+  );
+}
